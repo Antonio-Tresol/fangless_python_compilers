@@ -3,7 +3,7 @@
 
 ## Setting up the Virtual Environment (optional)
 
-1. **Install `virtualenv` **:
+1. **Install `virtualenv`**:
 
    If you haven't already, install `virtualenv` using pip:
 
