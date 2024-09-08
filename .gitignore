@@ -7,3 +7,9 @@ src/__pycache__/test_lexer.cpython-312-pytest-8.3.2.pyc
 __pycache__/errors.cpython-312.pyc
 tests/__pycache__/test_lexer.cpython-312-pytest-8.3.2.pyc
 src/garden_snake.py
+fangless_python_compiler/__pycache__/__init__.cpython-312.pyc
+fangless_python_compiler/__pycache__/common.cpython-312.pyc
+fangless_python_compiler/__pycache__/errors.cpython-312.pyc
+fangless_python_compiler/__pycache__/lexer.cpython-312.pyc
+fangless_python_compiler/__pycache__/test_lexer.cpython-312-pytest-8.3.2.pyc
+tests/__pycache__/__init__.cpython-312.pyc

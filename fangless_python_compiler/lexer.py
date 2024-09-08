@@ -1,7 +1,7 @@
 # Copyright 2024, ode adapted from Garden Snake by A. Badilla Olivas, Joseph
 # Valverde Kong and Kenneth Villalobos Solis
 
-import common
+from fangless_python_compiler import common
 from ply import lex
 
 
