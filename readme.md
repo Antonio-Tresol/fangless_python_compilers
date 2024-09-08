@@ -53,4 +53,24 @@ If the virtual enviroment is active the dependencies will be install there and n
    pip install -r requirements.txt
    ```
 
+## Tests
 
+Unit test are done using the pytest library. Each component of the compiler has its own test.
+To execute the unit test on a component e.g. the lexer, the following command can be used
+
+ ```bash
+   pytest tests/test_lexer.py
+ ```
+
+or to execute all tests from the root of the repository
+
+ ```bash
+   pytest
+ ```
+
+## Run the compiler
+To run the compiler over a .py file use the followin command
+
+ ```bash
+   python fangless_python_compiler/compiler.py <program.py>
+ ```
