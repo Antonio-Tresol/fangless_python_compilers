@@ -1,6 +1,6 @@
 from pathlib import Path
 import sys
-from compiler.lexer import FanglessPythonLexer
+from lexer import FanglessPythonLexer
 
 
 class FanglessPythonCompiler:
@@ -13,13 +13,14 @@ class FanglessPythonCompiler:
 
         with program_to_compile_file_name.open("r") as source_file:
             content = source_file.read()
-            self.lexer.test(content)
+
+            self.lexer.lex_stream(content)
+            self.lexer.test()
 
 
 def main() -> None:
     compiler = FanglessPythonCompiler()
     compiler.compile()
-
 
 if __name__ == "__main__":
     main()
