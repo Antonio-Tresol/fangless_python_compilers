@@ -1,6 +1,6 @@
 # test_lexer.py
 import pytest
-from fangless_python_compiler.lexer import FanglessPythonLexer
+from compiler.lexer import FanglessPythonLexer
 
 # Test cases for the lexer
 

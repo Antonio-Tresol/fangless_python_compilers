@@ -1,6 +1,6 @@
 from pathlib import Path
 import sys
-from fangless_python_compiler.lexer import FanglessPythonLexer
+from compiler.lexer import FanglessPythonLexer
 
 
 class FanglessPythonCompiler:
