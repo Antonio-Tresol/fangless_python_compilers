@@ -2,16 +2,12 @@
 # Valverde Kong and Kenneth Villalobos Solis
 
 import errors
-from indentation_manager import IndentationManager
+from indentation_manager import FanglessIndentationManager
 from ply import lex
-
-NO_INDENT = 0
-MAY_INDENT = 1
-MUST_INDENT = 2
+from common import new_token
 
 
-class FanglessPythonLexer:
-
+class FanglessLexer:
     RESERVED = {
         # Functions
         "def": "DEF",
@@ -90,7 +86,6 @@ class FanglessPythonLexer:
         "HAT_EQUAL",
         "LEFT_SHIFT_EQUAL",
         "RIGHT_SHIFT_EQUAL",
-
         ###
         # Cycles
         "WHILE",
@@ -146,7 +141,8 @@ class FanglessPythonLexer:
         "PASS",
         "WHITESPACE",
         "NEWLINE",
-        "ENDMARKER",
+        "START_TOKEN",
+        "END_TOKEN",
     )
 
     precedence = (
@@ -204,32 +200,34 @@ class FanglessPythonLexer:
         self.parenthesis_count = 0
         self.bracket_count = 0
         self.curly_braces_count = 0
-        # self.at_line_start = True
         self.curly_brace_count = 0
+        self.token_stream = None
 
     def build(self, **kwargs: dict) -> None:
         self.lexer = lex.lex(module=self, **kwargs)
 
     def test(self) -> None:
-        for i, token in enumerate(self.tokens):
+        for i, token in enumerate(self.token_stream):
             print(f"Token {i}: {token}")
 
     def lex_stream(self, data: str) -> None:
         self.lexer.input(data)
 
-        tokens = iter(self.lexer.token, None)
+        lex_tokens = iter(self.lexer.token, None)
 
-        tokens = IndentationManager.add_indentations(tokens, self.lexer)
+        lex_tokens = FanglessIndentationManager.add_indentations(lex_tokens, self.lexer, )
+        line_number = 1
+        if len(lex_tokens) != 0:
+            line_number = lex_tokens[-1].lineno
+        lex_tokens.append(new_token("END_TOKEN", line_number, 0))
+        lex_tokens.insert(0, new_token("START_TOKEN", 1, 0))
+        self.token_stream = lex_tokens
+        print(self.token_stream)
 
-        self.tokens = tokens
-
-    def _new_token(self, token_type: str, line_number: int) -> lex.LexToken:
-        token = lex.LexToken()
-        token.type = token_type
-        token.value = None
-        token.lexer.lineno = line_number
-
-        return token
+    def token(self) -> lex.LexToken | None:
+        if self.token_stream and len(self.token_stream) > 0:
+            return self.token_stream.pop(0)
+        return None
 
     # ============================== literal Rules ============================
     def t_INTEGER_NUMBER(self, token: lex.LexToken) -> lex.LexToken:
@@ -276,7 +274,7 @@ class FanglessPythonLexer:
         return token
 
     def t_UNICODESTRING(self, token: lex.LexToken) -> lex.LexToken:
-        r'[uU](\"(\\.|[^\"\n]|(\\\n))*\") | [uU](\'(\\.|[^\'\n]|(\\\n))*\')'
+        r"[uU](\"(\\.|[^\"\n]|(\\\n))*\") | [uU](\'(\\.|[^\'\n]|(\\\n))*\')"
         return token
 
     def t_STRING(self, token: lex.LexToken) -> lex.LexToken:
@@ -346,7 +344,7 @@ class FanglessPythonLexer:
         return None
 
     def t_WHITESPACE(self, token: lex.LexToken) -> None | lex.LexToken:
-        r""" [ \t\f]+ """
+        r"""[ \t\f]+"""
         value = token.value
         value = value.rsplit("\f", 1)[-1]
         pos = 0
@@ -356,7 +354,7 @@ class FanglessPythonLexer:
             if pos == -1:
                 break
             n = 8 - (pos % 8)
-            value = value[:pos] + " " * n + value[pos + 1:]
+            value = value[:pos] + " " * n + value[pos + 1 :]
         token.value = value
 
         if (
@@ -378,12 +376,3 @@ class FanglessPythonLexer:
             f"at line number {token.lexer.lineno}"
         )
         raise SyntaxError(error)
-
-    # ============================= Indentation rules =========================
-    # Synthesize a DEDENT tag
-    def DEDENT(self, line_number: int) -> lex.LexToken:
-        return self._new_token("DEDENT", line_number)
-
-    # Synthesize an INDENT tag
-    def INDENT(self, line_number: int) -> lex.LexToken:
-        return self._new_token("INDENT", line_number)

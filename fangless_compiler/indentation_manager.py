@@ -1,19 +1,18 @@
-
-from ply import lex
 from ply.lex import Lexer, LexToken
 from collections.abc import Iterable
 import sys
+from common import new_token
 
 NO_INDENT = 0
 MAY_INDENT = 1
 MUST_INDENT = 2
 
 
-class IndentationManager:
+class FanglessIndentationManager:
     @staticmethod
     def add_indentations(tokens: Iterable, lexer: Lexer) -> list:
-        new_tokens = IndentationManager.identify_indentations(lexer, tokens)
-        return IndentationManager.assign_indentations(new_tokens)
+        new_tokens = FanglessIndentationManager.identify_indentations(lexer, tokens)
+        return FanglessIndentationManager.assign_indentations(new_tokens)
 
     @staticmethod
     def identify_indentations(lexer: Lexer, token_stream: Iterable) -> list:
@@ -96,17 +95,26 @@ class IndentationManager:
         if len(levels) > 1:
             assert token is not None
 
-            for _ in range(1, len(levels)):
-                new_token_list.append(create_dedent(token.lineno))
+            new_token_list.extend(
+                create_dedent(token.lineno)
+                for _ in range(
+                    1,
+                    len(levels),
+                )
+            )
 
         return new_token_list
 
 
-def check_for_indentation(token: LexToken, depth: int
-    , levels: list, new_token_list: list) -> None:
+def check_for_indentation(
+    token: LexToken,
+    depth: int,
+    levels: list,
+    new_token_list: list,
+) -> None:
     if token.must_indent:
         if not (depth > levels[-1]):
-            print(f"Indentation Error on must indent in line no { str(token.lineno) }")
+            print(f"Indentation Error on must indent in line no {token.lineno}")
             raise ValueError
 
         levels.append(depth)
@@ -117,13 +125,16 @@ def check_for_indentation(token: LexToken, depth: int
             pass
 
         elif depth > levels[-1]:
-            print(f"Indentation Error on line start in line no {str(token.lineno)} with depth greater than levels")
+            print(
+                f"Indentation Error on line start in line no {token.lineno}"
+                " with depth greater than levels",
+            )
 
         else:
             try:
                 i = levels.index(depth)
             except ValueError:
-                print(f"Indentation Error on line start in line no {str(token.lineno)}")
+                print(f"Indentation Error on line start in line no {token.lineno}")
                 raise
 
             for _ in range(i + 1, len(levels)):
@@ -133,19 +144,8 @@ def check_for_indentation(token: LexToken, depth: int
 
 
 def create_indent(line_number: int) -> LexToken:
-    return new_token("INDENT", line_number)
+    return new_token("INDENT", line_number, -100)
 
 
 def create_dedent(line_number: int) -> LexToken:
-    return new_token("DEDENT", line_number)
-
-
-def new_token(new_type: str, line_number: int) -> LexToken:
-    tok = lex.LexToken()
-
-    tok.type = new_type
-    tok.value = None
-    tok.lineno = line_number
-    tok.lexpos = -100
-
-    return tok
+    return new_token("DEDENT", line_number, -100)
