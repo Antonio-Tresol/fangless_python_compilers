@@ -4,7 +4,7 @@
 import errors
 from indentation_manager import FanglessIndentationManager
 from ply import lex
-from common import new_token
+from common import new_token, TOKENS
 
 
 class FanglessLexer:
@@ -40,111 +40,7 @@ class FanglessLexer:
         "print": "PRINT",
     }
 
-    tokens = (
-        ###
-        # Functions
-        "DEF",
-        "NAME",
-        "RETURN",
-        ###
-        # Conditionals
-        "IF",
-        "ELSE",
-        "ELIF",
-        # Logical
-        "AND",
-        "OR",
-        "NOT",
-        "TRUE",
-        "FALSE",
-        ###
-        # Arithmetic
-        "PLUS",
-        "MINUS",
-        "STAR",
-        "SLASH",
-        "DOUBLE_SLASH",
-        "MOD",
-        "PLUS_EQUAL",
-        "MINUS_EQUAL",
-        "STAR_EQUAL",
-        "SLASH_EQUAL",
-        "DOUBLE_SLASH_EQUAL",
-        "MOD_EQUAL",
-        "DOUBLE_STAR",
-        "DOUBLE_STAR_EQUAL",
-        ###
-        # BITWISE
-        "AMPERSAND",
-        "BAR",
-        "HAT",
-        "TILDE",
-        "LEFT_SHIFT",
-        "RIGHT_SHIFT",
-        "AMPERSAND_EQUAL",
-        "BAR_EQUAL",
-        "HAT_EQUAL",
-        "LEFT_SHIFT_EQUAL",
-        "RIGHT_SHIFT_EQUAL",
-        ###
-        # Cycles
-        "WHILE",
-        "FOR",
-        "CONTINUE",
-        "BREAK",
-        "IN",
-        "RANGE",
-        ###
-        # Classes
-        "CLASS",
-        ###
-        # Comparison
-        "EQUAL",
-        "EQUAL_EQUAL",
-        "NOTEQUAL",
-        "LESS_THAN",
-        "LESS_EQUAL",
-        "GREATER_THAN",
-        "GREATER_EQUAL",
-        ###
-        # Literals
-        "FLOATING_NUMBER",
-        "INTEGER_NUMBER",
-        "BINARY_NUMBER",
-        "OCTAL_NUMBER",
-        "HEXADECIMAL_NUMBER",
-        "STRING",
-        "TRIPLE_STRING",
-        "RAW_STRING",
-        "UNICODE_STRING",
-        ###
-        # Indentation
-        "INDENT",
-        "DEDENT",
-        ###
-        # Punctuation
-        "DOT",  # .
-        "COLON",  # :
-        "COMMA",  # ,
-        "SEMICOLON",  # ;
-        "EXCLAMATION",  # !
-        ###
-        # Parenthesis
-        "L_PARENTHESIS",
-        "R_PARENTHESIS",
-        "L_BRACKET",
-        "R_BRACKET",
-        "L_CURLY_BRACE",
-        "R_CURLY_BRACE",
-        ###
-        # Others
-        "PASS",
-        "WHITESPACE",
-        "NEWLINE",
-        "START_TOKEN",
-        "END_TOKEN",
-    )
-
+    tokens = TOKENS
     precedence = (
         ("left", "EQUAL", "GREATER_THAN", "LESS_THAN"),
         ("left", "PLUS", "MINUS"),

@@ -1,12 +1,16 @@
 from ply import yacc
 from lexer import FanglessLexer
 from typing import Any
+from common import DEBUG_MODE, TOKENS
 
-tokens = None
-
+tokens = TOKENS
 
 def p_input(token_list: yacc.YaccProduction) -> None:
-    """input    :  START_TOKEN END_TOKEN """
+    """input    :   START_TOKEN END_TOKEN"""
+
+
+def p_error(token_list: yacc.YaccProduction) -> None:
+    print(f"Parser Error near '{token_list.value}' in line {token_list.lineno}")
 
 # def p_literal(token_list: yacc.YaccProduction) -> None:
 #     """literal  :   bool
@@ -143,9 +147,8 @@ class FanglessParser:
         if lexer is None:
             lexer = FanglessLexer()
         self.lexer = lexer
-        tokens = self.lexer.tokens
-        self.parser = yacc.yacc(start="input", debug=True)
+        self.parser = yacc.yacc(start="input", debug=DEBUG_MODE)
 
     def parse(self, source_code: str) -> Any:
         self.lexer.lex_stream(source_code)
-        return self.parser.parse(lexer=self.lexer, debug=True)
+        return self.parser.parse(lexer=self.lexer, debug=DEBUG_MODE)
