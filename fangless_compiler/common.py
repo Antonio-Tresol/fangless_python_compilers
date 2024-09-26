@@ -17,7 +17,6 @@ def new_token(
 
 
 DEBUG_MODE = True
-
 # ========TOKENS AND RESERVED WORDS=======
 TOKENS = (
         ###
@@ -80,7 +79,7 @@ TOKENS = (
         # Comparison
         "EQUAL",
         "EQUAL_EQUAL",
-        "NOTEQUAL",
+        "NOT_EQUAL",
         "LESS_THAN",
         "LESS_EQUAL",
         "GREATER_THAN",
@@ -106,7 +105,6 @@ TOKENS = (
         "COLON",  # :
         "COMMA",  # ,
         "SEMICOLON",  # ;
-        "EXCLAMATION",  # !
         ###
         # Parenthesis
         "L_PARENTHESIS",

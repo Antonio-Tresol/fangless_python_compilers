@@ -5,9 +5,9 @@ from common import DEBUG_MODE, TOKENS
 
 tokens = TOKENS
 
-
+# =================================== BASIC ===================================
 def p_input(token_list: yacc.YaccProduction) -> None:
-    """input    :   START_TOKEN literal_series END_TOKEN"""
+    """input    :   START_TOKEN operation_series END_TOKEN"""
     _ = token_list
 
 
@@ -16,20 +16,19 @@ def p_error(token_list: yacc.YaccProduction) -> None:
 
 
 # TODO: Delete later
-def p_literal_series(token_list: yacc.YaccProduction) -> None:
-    """literal_series   :   literal
-                        |   literal NEWLINE
-                        |   literal NEWLINE literal_series
+def p_operation_series_test(token_list: yacc.YaccProduction) -> None:
+    """operation_series : binary_operation
+                        | binary_operation NEWLINE
+                        | binary_operation NEWLINE operation_series
     """
     _ = token_list
 
-
+# ================================== LITERALS =================================
 def p_literal(token_list: yacc.YaccProduction) -> None:
     """literal  :   string
                 |   number
                 |   bool
                 |   structure
-                |   NAME
     """
     _ = token_list
 
@@ -59,6 +58,7 @@ def p_bool(token_list: yacc.YaccProduction) -> None:
     _ = token_list
 
 
+# =============================== STRUCTURES =======================================
 def p_structure(token_list: yacc.YaccProduction) -> None:
     """structure    :   dict
                     |   list
@@ -102,6 +102,7 @@ def p_general_structure_content(token_list: yacc.YaccProduction) -> None:
     _ = token_list
 
 
+# ============================ SERIES =======================================
 def p_key_value_series(token_list: yacc.YaccProduction) -> None:
     """key_value_series     :   key_value_pair
                             |   key_value_pair COMMA
@@ -123,32 +124,56 @@ def p_key_value_pair(token_list: yacc.YaccProduction) -> None:
     _ = token_list
 
 
-# def p_binary_statement(token_list: yacc.YaccProduction) -> None:
-#     """binary_statement     :   bynary_operation
-#     |   binary_statement
-#     """
+# ================================ UNARY OPERATIONS ===============================
+def p_unary_operation(token_list: yacc.YaccProduction) -> None:
+    """unary_operation  :   PLUS literal
+                        |   MINUS literal
+                        |   NOT literal
+                        |   TILDE literal
+                        |   literal LEFT_SHIFT
+                        |   literal RIGHT_SHIFT
+    """
+    _ = token_list
 
 
-# def p_math_operation(token_list: yacc.YaccProduction) -> None:
-#     """binary_operation     :   literal
-#     |   binary_operator
-#         literal
-#     """
+# ========================= BINARY OPERATIONS =======================================
 
 
-# def p_math_operator(token_list: yacc.YaccProduction) -> None:
-#     """binary_operator  :   PLUS
-#     |   MINUS
-#     |   STAR
-#     |   SLASH
-#     |   DOUBLE_SLASH
-#     |   MOD
-#     |   DOUBLE_STAR
-#     |   AND
-#     |   OR
-#     |   NOT
-#     |   EQUAL
-#     """
+def p_binary_operation(token_list: yacc.YaccProduction) -> None:
+    """binary_operation     :   binary_operand binary_operator binary_operand
+                            |   binary_operand binary_operator binary_operation
+    """
+    _ = token_list
+
+
+def p_binary_operand(token_list: yacc.YaccProduction) -> None:
+    """binary_operand   :   literal
+                        |   unary_operation
+    """
+    _ = token_list
+
+
+def p_binary_operator(token_list: yacc.YaccProduction) -> None:
+    """binary_operator  :   PLUS
+                        |   MINUS
+                        |   STAR
+                        |   DOUBLE_STAR
+                        |   SLASH
+                        |   DOUBLE_SLASH
+                        |   MOD
+                        |   AND
+                        |   OR
+                        |   AMPERSAND
+                        |   BAR
+                        |   HAT
+                        |   EQUAL_EQUAL
+                        |   NOT_EQUAL
+                        |   LESS_THAN
+                        |   LESS_EQUAL
+                        |   GREATER_THAN
+                        |   GREATER_EQUAL
+    """
+    _ = token_list
 
 
 def p_epsilon(token_list: yacc.YaccProduction) -> None:

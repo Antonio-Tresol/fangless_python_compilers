@@ -36,7 +36,7 @@ class FanglessLexer:
     # Comparison
     t_EQUAL = r"="
     t_EQUAL_EQUAL = r"=="
-    t_NOTEQUAL = r"!="
+    t_NOT_EQUAL = r"!="
     t_LESS_THAN = r"<"
     t_GREATER_THAN = r">"
     t_LESS_EQUAL = r"<="
@@ -58,7 +58,6 @@ class FanglessLexer:
     t_COLON = r":"
     t_COMMA = r","
     t_SEMICOLON = r";"
-    t_EXCLAMATION = r"!"
     # Others
 
     # ============================== Methods ==================================
