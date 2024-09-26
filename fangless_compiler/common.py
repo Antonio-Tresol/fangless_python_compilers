@@ -116,6 +116,7 @@ TOKENS = (
         ###
         # Others
         "PASS",
+        "PRINT",
         "WHITESPACE",
         "NEWLINE",
         "START_TOKEN",
@@ -152,4 +153,5 @@ RESERVED_WORDS = {
         "del": "DEL",
         "is": "IS",
         "print": "PRINT",
+        "len": "LEN",
     }

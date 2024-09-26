@@ -17,7 +17,7 @@ def p_input(token_list: yacc.YaccProduction) -> None:
 
 
 def p_error(token_list: yacc.YaccProduction) -> None:
-    print(f"Parser Error near '{token_list.value}' in line {token_list.lineno}")
+    print(f"Parser Error near '{token_list}' in line {token_list.lineno}")
 
 
 # TODO: Delete later
@@ -36,9 +36,9 @@ def p_literal(token_list: yacc.YaccProduction) -> None:
                 |   structure
                 |   NAME
     """
-    if (token_list[1].type == "NAME" 
-        and symbol_table(token_list[1].value) is None):
-        raise SyntaxError(f"Name: {token_list[1].value} not defined")
+    if (token_list.slice[1].type == "NAME" 
+        and symbol_table(token_list[1]) is None):
+        raise SyntaxError(f"Name: {token_list[1]} not defined")
 
 
 def p_string(token_list: yacc.YaccProduction) -> None:
@@ -146,9 +146,9 @@ def p_unary_operation(token_list: yacc.YaccProduction) -> None:
 
 # ========================= BINARY OPERATIONS =======================================
 
-
 def p_binary_operation(token_list: yacc.YaccProduction) -> None:
     """binary_operation     :   binary_operand binary_operator binary_operand
+                            |   L_PARENTHESIS binary_operation R_PARENTHESIS
                             |   binary_operand binary_operator binary_operation
     """
     _ = token_list
@@ -184,13 +184,15 @@ def p_binary_operator(token_list: yacc.YaccProduction) -> None:
     _ = token_list
 
 
+# ========================= ASSIGNATIONS ======================================
+
 def p_assignation(token_list: yacc.YaccProduction) -> None:
     """assignation  :   NAME assignation_operator literal
                     |   NAME assignation_operator assignation
                     |   NAME assignation_operator unary_operation
-                    |   NAME assination_operator binary_operation
+                    |   NAME assignation_operator binary_operation
     """
-    symbol_table[token_list[1].value] = str(token_list[3])
+    symbol_table[token_list[1]] = str(token_list[3])
 
 
 def p_assignation_operator(token_list: yacc.YaccProduction) -> None:
@@ -210,6 +212,93 @@ def p_assignation_operator(token_list: yacc.YaccProduction) -> None:
     """
     _ = token_list
 
+
+# ========================= STATEMENTS ========================================
+
+# All of this code is commented since it has not been tested ensuring
+# functionality
+# TODO(Any): Test the code
+# def p_statement(token_list: yacc.YaccProduction) -> None:
+#     """statement    :   unary_operation
+#                     |   binary_operation
+#                     |   assignation
+#                     |   if_block
+#                     |   while
+#                     |   len
+#                     |   RETURN
+#                     |   CONTINUE
+#                     |   BREAK
+#                     |   PASS
+#                     |   epsilon
+#     """
+#     _ = token_list
+
+
+# def p_statement_group(token_list: yacc.YaccProduction) -> None:
+#     """statement_group    :   statement
+#                           |   statement NEWLINE statement_group
+#     """
+#     _ = token_list
+
+
+# def p_body(token_list: yacc.YaccProduction) -> None:
+#     """body    :   INDENT statement_group DEDENT
+#     """
+#     _ = token_list
+
+
+# ============================ CONDITIONALS ===================================
+
+# def p_condition(token_list: yacc.YaccProduction) -> None:
+#     """condition    :   unary_operation
+#                     |   binary_operation
+#                     |   bool
+#     """
+#     _ = token_list
+
+
+# def p_if(token_list: yacc.YaccProduction) -> None:
+#     """if   :   IF condition COLON body"""
+#     _ = token_list
+
+
+# def p_if_block(token_list: yacc.YaccProduction) -> None:
+#     """if_block   :   if
+#                   |   if NEWLINE elif_block NEWLINE else
+#                   |   if NEWLINE else"""
+#     _ = token_list
+
+# def p_elif(token_list: yacc.YaccProduction) -> None:
+#     """elif   :   ELIF condition COLON body"""
+#     _ = token_list
+
+
+# def p_elif_block(token_list: yacc.YaccProduction) -> None:
+#     """elif_block   :   elif
+#                         elif NEWLINE elif_block"""
+#     _ = token_list
+
+
+# def p_else(token_list: yacc.YaccProduction) -> None:
+#     """else   :   ELSE COLON body"""
+#     _ = token_list
+
+
+# =============================== LOOPS =======================================
+
+# def p_while(token_list: yacc.YaccProduction) -> None:
+#     """while   :   WHILE condition COLON body"""
+#     _ = token_list
+
+
+# =============================== FUNCTIONS ===================================
+
+# def p_len(token_list: yacc.YaccProduction) -> None:
+#     """len   :   LEN L_PARENTHESIS structure R_PARENTHESIS"""
+#     _ = token_list
+
+
+# =============================== OTHER =======================================
 
 def p_epsilon(token_list: yacc.YaccProduction) -> None:
     """epsilon  :"""
