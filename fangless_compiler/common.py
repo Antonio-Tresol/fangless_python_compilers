@@ -15,8 +15,10 @@ def new_token(
 
     return tok
 
+
 DEBUG_MODE = True
 
+# ========TOKENS AND RESERVED WORDS=======
 TOKENS = (
         ###
         # Functions
@@ -121,3 +123,35 @@ TOKENS = (
         "START_TOKEN",
         "END_TOKEN",
     )
+
+RESERVED_WORDS = {
+        # Functions
+        "def": "DEF",
+        "return": "RETURN",
+        # Conditionals
+        "if": "IF",
+        "else": "ELSE",
+        "elif": "ELIF",
+        # Logical
+        "and": "AND",
+        "or": "OR",
+        "not": "NOT",
+        "True": "TRUE",
+        "False": "FALSE",
+        # Cycles
+        "while": "WHILE",
+        "for": "FOR",
+        "continue": "CONTINUE",
+        "break": "BREAK",
+        "in": "IN",
+        "range": "RANGE",
+        # Classes
+        "class": "CLASS",
+        # Others
+        "pass": "PASS",
+        "as": "AS",
+        "assert": "ASSERT",
+        "del": "DEL",
+        "is": "IS",
+        "print": "PRINT",
+    }

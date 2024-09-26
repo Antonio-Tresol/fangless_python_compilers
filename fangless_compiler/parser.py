@@ -5,113 +5,122 @@ from common import DEBUG_MODE, TOKENS
 
 tokens = TOKENS
 
+
 def p_input(token_list: yacc.YaccProduction) -> None:
-    """input    :   START_TOKEN END_TOKEN"""
+    """input    :   START_TOKEN literal_series END_TOKEN"""
+    _ = token_list
 
 
 def p_error(token_list: yacc.YaccProduction) -> None:
     print(f"Parser Error near '{token_list.value}' in line {token_list.lineno}")
 
-# def p_literal(token_list: yacc.YaccProduction) -> None:
-#     """literal  :   bool
-#                 |   number
-#                 |   string
-#                 |   structure
-#                 |   NAME
-#     """
+
+# TODO: Delete later
+def p_literal_series(token_list: yacc.YaccProduction) -> None:
+    """literal_series   :   literal
+                        |   literal NEWLINE
+                        |   literal NEWLINE literal_series
+    """
+    _ = token_list
 
 
-# def p_bool(token_list: yacc.YaccProduction) -> None:
-#     """bool     :   TRUE
-#     |   FALSE
-#     """
+def p_literal(token_list: yacc.YaccProduction) -> None:
+    """literal  :   string
+                |   number
+                |   bool
+                |   structure
+                |   NAME
+    """
+    _ = token_list
 
 
-# def p_number(token_list: yacc.YaccProduction) -> None:
-#     """number   :   FLOAT_NUMBER
-#     |   INTEGER_NUMBER
-#     |   BINARY_NUMBER
-#     |   OCTAL_NUMBER
-#     |   HEXADECIMAL_NUMBER
-#     """
+def p_string(token_list: yacc.YaccProduction) -> None:
+    """string   :   STRING
+                |   UNICODE_STRING
+                |   RAW_STRING
+    """
+    _ = token_list
 
 
-# def p_string(token_list: yacc.YaccProduction) -> None:
-#     """string   :   STRING
-#     |   UNICODESTRING
-#     |   RAWSTRING
-#     """
+def p_number(token_list: yacc.YaccProduction) -> None:
+    """number   :   FLOATING_NUMBER
+                |   INTEGER_NUMBER
+                |   BINARY_NUMBER
+                |   OCTAL_NUMBER
+                |   HEXADECIMAL_NUMBER
+    """
+    _ = token_list
 
 
-# def p_structure(token_list: yacc.YaccProduction) -> None:
-#     """structure    :   list
-#     |   dict
-#     |   tuple
-#     |   set
-#     """
+def p_bool(token_list: yacc.YaccProduction) -> None:
+    """bool     :   TRUE
+                |   FALSE
+    """
+    _ = token_list
 
 
-# def p_list(token_list: yacc.YaccProduction) -> None:
-#     """list :   L_BRACKET
-#     general_structure_content
-#     R_BRACKET
-#     """
+def p_structure(token_list: yacc.YaccProduction) -> None:
+    """structure    :   dict
+                    |   list
+                    |   tuple
+                    |   set
+    """
+    _ = token_list
 
 
-# def p_dict(token_list: yacc.YaccProduction) -> None:
-#     """dict :   L_CURLY_BRACE
-#     dict_content
-#     R_CURLY_BRACE
-#     """
+def p_dict(token_list: yacc.YaccProduction) -> None:
+    """dict :   L_CURLY_BRACE dict_content R_CURLY_BRACE"""
+    _ = token_list
 
 
-# def p_tuple(token_list: yacc.YaccProduction) -> None:
-#     """tuple    :   L_PARENTHESIS
-#     general_structure_content
-#     R_PARENTHESIS
-#     """
+def p_list(token_list: yacc.YaccProduction) -> None:
+    """list :   L_BRACKET general_structure_content R_BRACKET"""
+    _ = token_list
 
 
-# def p_set(token_list: yacc.YaccProduction) -> None:
-#     """set  :   L_CURLY_BRACE
-#     p_general_series
-#     R_CURLY_BRACE
-#     """
+def p_tuple(token_list: yacc.YaccProduction) -> None:
+    """tuple    :   L_PARENTHESIS general_structure_content R_PARENTHESIS"""
+    _ = token_list
 
 
-# def p_general_structure_content(token_list: yacc.YaccProduction) -> None:
-#     """general_structure_content    :   general_series
-#     |
-#     """
+def p_set(token_list: yacc.YaccProduction) -> None:
+    """set  :   L_CURLY_BRACE general_series R_CURLY_BRACE"""
+    _ = token_list
 
 
-# def p_dict_content(token_list: yacc.YaccProduction) -> None:
-#     """dict_content :   key_value_series
-#     |
-#     """
+def p_dict_content(token_list: yacc.YaccProduction) -> None:
+    """dict_content :   epsilon
+                    |   key_value_series
+    """
+    _ = token_list
 
 
-# def p_general_series(token_list: yacc.YaccProduction) -> None:
-#     """general_series   :   literal
-#     |   literal
-#         COMMA
-#         general_series
-#     """
+def p_general_structure_content(token_list: yacc.YaccProduction) -> None:
+    """general_structure_content    :   epsilon
+                                    |   general_series
+    """
+    _ = token_list
 
 
-# def p_key_value_series(token_list: yacc.YaccProduction) -> None:
-#     """key_value_series     :   key_value_pair
-#     |   key_value_pair
-#         COMMA
-#         key_value_series
-#     """
+def p_key_value_series(token_list: yacc.YaccProduction) -> None:
+    """key_value_series     :   key_value_pair
+                            |   key_value_pair COMMA
+                            |   key_value_pair COMMA key_value_series
+    """
+    _ = token_list
 
 
-# def p_key_value_pair(token_list: yacc.YaccProduction) -> None:
-#     """key_value_pair   :   literal
-#     COLON
-#     literal
-#     """
+def p_general_series(token_list: yacc.YaccProduction) -> None:
+    """general_series   :   literal
+                        |   literal COMMA
+                        |   literal COMMA general_series
+    """
+    _ = token_list
+
+
+def p_key_value_pair(token_list: yacc.YaccProduction) -> None:
+    """key_value_pair   :   literal COLON literal"""
+    _ = token_list
 
 
 # def p_binary_statement(token_list: yacc.YaccProduction) -> None:
@@ -140,6 +149,11 @@ def p_error(token_list: yacc.YaccProduction) -> None:
 #     |   NOT
 #     |   EQUAL
 #     """
+
+
+def p_epsilon(token_list: yacc.YaccProduction) -> None:
+    """epsilon  :"""
+    _ = token_list
 
 
 class FanglessParser:

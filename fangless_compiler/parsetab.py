@@ -6,9 +6,9 @@ _tabversion = '3.10'
 
 _lr_method = 'LALR'
 
-_lr_signature = 'inputAMPERSAND AMPERSAND_EQUAL AND BAR BAR_EQUAL BINARY_NUMBER BREAK CLASS COLON COMMA CONTINUE DEDENT DEF DOT DOUBLE_SLASH DOUBLE_SLASH_EQUAL DOUBLE_STAR DOUBLE_STAR_EQUAL ELIF ELSE END_TOKEN EQUAL EQUAL_EQUAL EXCLAMATION FALSE FLOATING_NUMBER FOR GREATER_EQUAL GREATER_THAN HAT HAT_EQUAL HEXADECIMAL_NUMBER IF IN INDENT INTEGER_NUMBER LEFT_SHIFT LEFT_SHIFT_EQUAL LESS_EQUAL LESS_THAN L_BRACKET L_CURLY_BRACE L_PARENTHESIS MINUS MINUS_EQUAL MOD MOD_EQUAL NAME NEWLINE NOT NOTEQUAL OCTAL_NUMBER OR PASS PLUS PLUS_EQUAL RANGE RAW_STRING RETURN RIGHT_SHIFT RIGHT_SHIFT_EQUAL R_BRACKET R_CURLY_BRACE R_PARENTHESIS SEMICOLON SLASH SLASH_EQUAL STAR START_TOKEN STAR_EQUAL STRING TILDE TRIPLE_STRING TRUE UNICODE_STRING WHILE WHITESPACEinput    :   START_TOKEN END_TOKEN'
+_lr_signature = 'inputAMPERSAND AMPERSAND_EQUAL AND BAR BAR_EQUAL BINARY_NUMBER BREAK CLASS COLON COMMA CONTINUE DEDENT DEF DOT DOUBLE_SLASH DOUBLE_SLASH_EQUAL DOUBLE_STAR DOUBLE_STAR_EQUAL ELIF ELSE END_TOKEN EQUAL EQUAL_EQUAL EXCLAMATION FALSE FLOATING_NUMBER FOR GREATER_EQUAL GREATER_THAN HAT HAT_EQUAL HEXADECIMAL_NUMBER IF IN INDENT INTEGER_NUMBER LEFT_SHIFT LEFT_SHIFT_EQUAL LESS_EQUAL LESS_THAN L_BRACKET L_CURLY_BRACE L_PARENTHESIS MINUS MINUS_EQUAL MOD MOD_EQUAL NAME NEWLINE NOT NOTEQUAL OCTAL_NUMBER OR PASS PLUS PLUS_EQUAL RANGE RAW_STRING RETURN RIGHT_SHIFT RIGHT_SHIFT_EQUAL R_BRACKET R_CURLY_BRACE R_PARENTHESIS SEMICOLON SLASH SLASH_EQUAL STAR START_TOKEN STAR_EQUAL STRING TILDE TRIPLE_STRING TRUE UNICODE_STRING WHILE WHITESPACEinput    :   START_TOKEN literal_series END_TOKENliteral_series   :   literal\n                        |   literal NEWLINE\n                        |   literal NEWLINE literal_series\n    literal  :   string\n                |   number\n                |   bool\n                |   structure\n                |   NAME\n    string   :   STRING\n                |   UNICODE_STRING\n                |   RAW_STRING\n    number   :   FLOATING_NUMBER\n                |   INTEGER_NUMBER\n                |   BINARY_NUMBER\n                |   OCTAL_NUMBER\n                |   HEXADECIMAL_NUMBER\n    bool     :   TRUE\n                |   FALSE\n    structure    :   dict\n                    |   list\n                    |   tuple\n                    |   set\n    dict :   L_CURLY_BRACE dict_content R_CURLY_BRACElist :   L_BRACKET general_structure_content R_BRACKETtuple    :   L_PARENTHESIS general_structure_content R_PARENTHESISset  :   L_CURLY_BRACE general_series R_CURLY_BRACEdict_content :   epsilon\n                    |   key_value_series\n    general_structure_content    :   epsilon\n                                    |   general_series\n    key_value_series     :   key_value_pair\n                            |   key_value_pair COMMA\n                            |   key_value_pair COMMA key_value_series\n    general_series   :   literal\n                        |   literal COMMA\n                        |   literal COMMA general_series\n    key_value_pair   :   literal COLON literalepsilon  :'
     
-_lr_action_items = {'START_TOKEN':([0,],[2,]),'$end':([1,3,],[0,-1,]),'END_TOKEN':([2,],[3,]),}
+_lr_action_items = {'START_TOKEN':([0,],[2,]),'$end':([1,27,],[0,-1,]),'NAME':([2,24,25,26,28,43,44,45,],[9,9,9,9,9,9,9,9,]),'STRING':([2,24,25,26,28,43,44,45,],[10,10,10,10,10,10,10,10,]),'UNICODE_STRING':([2,24,25,26,28,43,44,45,],[11,11,11,11,11,11,11,11,]),'RAW_STRING':([2,24,25,26,28,43,44,45,],[12,12,12,12,12,12,12,12,]),'FLOATING_NUMBER':([2,24,25,26,28,43,44,45,],[13,13,13,13,13,13,13,13,]),'INTEGER_NUMBER':([2,24,25,26,28,43,44,45,],[14,14,14,14,14,14,14,14,]),'BINARY_NUMBER':([2,24,25,26,28,43,44,45,],[15,15,15,15,15,15,15,15,]),'OCTAL_NUMBER':([2,24,25,26,28,43,44,45,],[16,16,16,16,16,16,16,16,]),'HEXADECIMAL_NUMBER':([2,24,25,26,28,43,44,45,],[17,17,17,17,17,17,17,17,]),'TRUE':([2,24,25,26,28,43,44,45,],[18,18,18,18,18,18,18,18,]),'FALSE':([2,24,25,26,28,43,44,45,],[19,19,19,19,19,19,19,19,]),'L_CURLY_BRACE':([2,24,25,26,28,43,44,45,],[24,24,24,24,24,24,24,24,]),'L_BRACKET':([2,24,25,26,28,43,44,45,],[25,25,25,25,25,25,25,25,]),'L_PARENTHESIS':([2,24,25,26,28,43,44,45,],[26,26,26,26,26,26,26,26,]),'END_TOKEN':([3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,28,40,41,42,46,47,],[27,-2,-5,-6,-7,-8,-9,-10,-11,-12,-13,-14,-15,-16,-17,-18,-19,-20,-21,-22,-23,-3,-4,-24,-27,-25,-26,]),'NEWLINE':([4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,41,42,46,47,],[28,-5,-6,-7,-8,-9,-10,-11,-12,-13,-14,-15,-16,-17,-18,-19,-20,-21,-22,-23,-24,-27,-25,-26,]),'COMMA':([5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,33,34,38,41,42,46,47,49,],[-5,-6,-7,-8,-9,-10,-11,-12,-13,-14,-15,-16,-17,-18,-19,-20,-21,-22,-23,43,45,43,-24,-27,-25,-26,-38,]),'COLON':([5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,33,41,42,46,47,51,],[-5,-6,-7,-8,-9,-10,-11,-12,-13,-14,-15,-16,-17,-18,-19,-20,-21,-22,-23,44,-24,-27,-25,-26,44,]),'R_CURLY_BRACE':([5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,29,30,31,32,33,34,38,41,42,43,45,46,47,48,49,50,],[-5,-6,-7,-8,-9,-10,-11,-12,-13,-14,-15,-16,-17,-18,-19,-20,-21,-22,-23,-39,41,42,-28,-29,-35,-32,-35,-24,-27,-36,-33,-25,-26,-37,-38,-34,]),'R_BRACKET':([5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,25,35,36,37,38,41,42,43,46,47,48,],[-5,-6,-7,-8,-9,-10,-11,-12,-13,-14,-15,-16,-17,-18,-19,-20,-21,-22,-23,-39,46,-30,-31,-35,-24,-27,-36,-25,-26,-37,]),'R_PARENTHESIS':([5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,26,36,37,38,39,41,42,43,46,47,48,],[-5,-6,-7,-8,-9,-10,-11,-12,-13,-14,-15,-16,-17,-18,-19,-20,-21,-22,-23,-39,-30,-31,-35,47,-24,-27,-36,-25,-26,-37,]),}
 
 _lr_action = {}
 for _k, _v in _lr_action_items.items():
@@ -17,7 +17,7 @@ for _k, _v in _lr_action_items.items():
       _lr_action[_x][_k] = _y
 del _lr_action_items
 
-_lr_goto_items = {'input':([0,],[1,]),}
+_lr_goto_items = {'input':([0,],[1,]),'literal_series':([2,28,],[3,40,]),'literal':([2,24,25,26,28,43,44,45,],[4,33,38,38,4,38,49,51,]),'string':([2,24,25,26,28,43,44,45,],[5,5,5,5,5,5,5,5,]),'number':([2,24,25,26,28,43,44,45,],[6,6,6,6,6,6,6,6,]),'bool':([2,24,25,26,28,43,44,45,],[7,7,7,7,7,7,7,7,]),'structure':([2,24,25,26,28,43,44,45,],[8,8,8,8,8,8,8,8,]),'dict':([2,24,25,26,28,43,44,45,],[20,20,20,20,20,20,20,20,]),'list':([2,24,25,26,28,43,44,45,],[21,21,21,21,21,21,21,21,]),'tuple':([2,24,25,26,28,43,44,45,],[22,22,22,22,22,22,22,22,]),'set':([2,24,25,26,28,43,44,45,],[23,23,23,23,23,23,23,23,]),'dict_content':([24,],[29,]),'general_series':([24,25,26,43,],[30,37,37,48,]),'epsilon':([24,25,26,],[31,36,36,]),'key_value_series':([24,45,],[32,50,]),'key_value_pair':([24,45,],[34,34,]),'general_structure_content':([25,26,],[35,39,]),}
 
 _lr_goto = {}
 for _k, _v in _lr_goto_items.items():
@@ -27,5 +27,43 @@ for _k, _v in _lr_goto_items.items():
 del _lr_goto_items
 _lr_productions = [
   ("S' -> input","S'",1,None,None,None),
-  ('input -> START_TOKEN END_TOKEN','input',2,'p_input','parser.py',9),
+  ('input -> START_TOKEN literal_series END_TOKEN','input',3,'p_input','parser.py',10),
+  ('literal_series -> literal','literal_series',1,'p_literal_series','parser.py',20),
+  ('literal_series -> literal NEWLINE','literal_series',2,'p_literal_series','parser.py',21),
+  ('literal_series -> literal NEWLINE literal_series','literal_series',3,'p_literal_series','parser.py',22),
+  ('literal -> string','literal',1,'p_literal','parser.py',28),
+  ('literal -> number','literal',1,'p_literal','parser.py',29),
+  ('literal -> bool','literal',1,'p_literal','parser.py',30),
+  ('literal -> structure','literal',1,'p_literal','parser.py',31),
+  ('literal -> NAME','literal',1,'p_literal','parser.py',32),
+  ('string -> STRING','string',1,'p_string','parser.py',38),
+  ('string -> UNICODE_STRING','string',1,'p_string','parser.py',39),
+  ('string -> RAW_STRING','string',1,'p_string','parser.py',40),
+  ('number -> FLOATING_NUMBER','number',1,'p_number','parser.py',46),
+  ('number -> INTEGER_NUMBER','number',1,'p_number','parser.py',47),
+  ('number -> BINARY_NUMBER','number',1,'p_number','parser.py',48),
+  ('number -> OCTAL_NUMBER','number',1,'p_number','parser.py',49),
+  ('number -> HEXADECIMAL_NUMBER','number',1,'p_number','parser.py',50),
+  ('bool -> TRUE','bool',1,'p_bool','parser.py',56),
+  ('bool -> FALSE','bool',1,'p_bool','parser.py',57),
+  ('structure -> dict','structure',1,'p_structure','parser.py',63),
+  ('structure -> list','structure',1,'p_structure','parser.py',64),
+  ('structure -> tuple','structure',1,'p_structure','parser.py',65),
+  ('structure -> set','structure',1,'p_structure','parser.py',66),
+  ('dict -> L_CURLY_BRACE dict_content R_CURLY_BRACE','dict',3,'p_dict','parser.py',72),
+  ('list -> L_BRACKET general_structure_content R_BRACKET','list',3,'p_list','parser.py',77),
+  ('tuple -> L_PARENTHESIS general_structure_content R_PARENTHESIS','tuple',3,'p_tuple','parser.py',82),
+  ('set -> L_CURLY_BRACE general_series R_CURLY_BRACE','set',3,'p_set','parser.py',87),
+  ('dict_content -> epsilon','dict_content',1,'p_dict_content','parser.py',92),
+  ('dict_content -> key_value_series','dict_content',1,'p_dict_content','parser.py',93),
+  ('general_structure_content -> epsilon','general_structure_content',1,'p_general_structure_content','parser.py',99),
+  ('general_structure_content -> general_series','general_structure_content',1,'p_general_structure_content','parser.py',100),
+  ('key_value_series -> key_value_pair','key_value_series',1,'p_key_value_series','parser.py',106),
+  ('key_value_series -> key_value_pair COMMA','key_value_series',2,'p_key_value_series','parser.py',107),
+  ('key_value_series -> key_value_pair COMMA key_value_series','key_value_series',3,'p_key_value_series','parser.py',108),
+  ('general_series -> literal','general_series',1,'p_general_series','parser.py',114),
+  ('general_series -> literal COMMA','general_series',2,'p_general_series','parser.py',115),
+  ('general_series -> literal COMMA general_series','general_series',3,'p_general_series','parser.py',116),
+  ('key_value_pair -> literal COLON literal','key_value_pair',3,'p_key_value_pair','parser.py',122),
+  ('epsilon -> <empty>','epsilon',0,'p_epsilon','parser.py',155),
 ]

@@ -4,42 +4,12 @@
 import errors
 from indentation_manager import FanglessIndentationManager
 from ply import lex
-from common import new_token, TOKENS
+from common import new_token, TOKENS, RESERVED_WORDS, DEBUG_MODE
 
 
 class FanglessLexer:
-    RESERVED = {
-        # Functions
-        "def": "DEF",
-        "return": "RETURN",
-        # Conditionals
-        "if": "IF",
-        "else": "ELSE",
-        "elif": "ELIF",
-        # Logical
-        "and": "AND",
-        "or": "OR",
-        "not": "NOT",
-        "True": "TRUE",
-        "False": "FALSE",
-        # Cycles
-        "while": "WHILE",
-        "for": "FOR",
-        "continue": "CONTINUE",
-        "break": "BREAK",
-        "in": "IN",
-        "range": "RANGE",
-        # Classes
-        "class": "CLASS",
-        # Others
-        "pass": "PASS",
-        "as": "AS",
-        "assert": "ASSERT",
-        "del": "DEL",
-        "is": "IS",
-        "print": "PRINT",
-    }
-
+    # tokens and reserve words definition
+    RESERVED = RESERVED_WORDS
     tokens = TOKENS
     precedence = (
         ("left", "EQUAL", "GREATER_THAN", "LESS_THAN"),
@@ -102,23 +72,29 @@ class FanglessLexer:
     def build(self, **kwargs: dict) -> None:
         self.lexer = lex.lex(module=self, **kwargs)
 
-    def test(self) -> None:
+    def print_token_stream(self) -> None:
+        print("FANGLESS: LEXER DEBUG START")
         for i, token in enumerate(self.token_stream):
             print(f"Token {i}: {token}")
+        print("FANGLESS: LEXER DEBUG END")
 
     def lex_stream(self, data: str) -> None:
         self.lexer.input(data)
 
         lex_tokens = iter(self.lexer.token, None)
 
-        lex_tokens = FanglessIndentationManager.add_indentations(lex_tokens, self.lexer, )
+        lex_tokens = FanglessIndentationManager.add_indentations(
+            lex_tokens,
+            self.lexer,
+        )
         line_number = 1
         if len(lex_tokens) != 0:
             line_number = lex_tokens[-1].lineno
         lex_tokens.append(new_token("END_TOKEN", line_number, 0))
         lex_tokens.insert(0, new_token("START_TOKEN", 1, 0))
         self.token_stream = lex_tokens
-        print(self.token_stream)
+        if DEBUG_MODE:
+            self.print_token_stream()
 
     def token(self) -> lex.LexToken | None:
         if self.token_stream and len(self.token_stream) > 0:
@@ -126,9 +102,9 @@ class FanglessLexer:
         return None
 
     # ============================== literal Rules ============================
-    def t_INTEGER_NUMBER(self, token: lex.LexToken) -> lex.LexToken:
-        r"""\d+"""
-        token.value = int(token.value)
+    def t_FLOATING_NUMBER(self, token: lex.LexToken) -> lex.LexToken:
+        r"""(\d+\.\d*)|(\.\d+)"""
+        token.value = float(token.value)
 
         return token
 
@@ -150,9 +126,9 @@ class FanglessLexer:
 
         return token
 
-    def t_FLOATING_NUMBER(self, token: lex.LexToken) -> lex.LexToken:
-        r"""(\d+(\.\d*)?|\.\d+)([eE][-+]?\d+)?"""
-        token.value = float(token.value)
+    def t_INTEGER_NUMBER(self, token: lex.LexToken) -> lex.LexToken:
+        r"""\d+"""
+        token.value = int(token.value)
 
         return token
 
@@ -203,7 +179,7 @@ class FanglessLexer:
 
     def t_L_BRACKET(self, token: lex.LexToken) -> lex.LexToken:
         r"""\["""
-        self.bracket_count += 0
+        self.bracket_count += 1
 
         return token
 
