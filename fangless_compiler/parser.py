@@ -3,7 +3,12 @@ from lexer import FanglessLexer
 from typing import Any
 from common import DEBUG_MODE, TOKENS
 
+# ================================ NEEDED OBJECTS =============================
 tokens = TOKENS
+from collections import defaultdict
+from typing import Any
+
+symbol_table: defaultdict[str, Any] = defaultdict(lambda: None)
 
 # =================================== BASIC ===================================
 def p_input(token_list: yacc.YaccProduction) -> None:
@@ -29,8 +34,11 @@ def p_literal(token_list: yacc.YaccProduction) -> None:
                 |   number
                 |   bool
                 |   structure
+                |   NAME
     """
-    _ = token_list
+    if (token_list[1].type == "NAME" 
+        and symbol_table(token_list[1].value) is None):
+        raise SyntaxError(f"Name: {token_list[1].value} not defined")
 
 
 def p_string(token_list: yacc.YaccProduction) -> None:
@@ -172,6 +180,33 @@ def p_binary_operator(token_list: yacc.YaccProduction) -> None:
                         |   LESS_EQUAL
                         |   GREATER_THAN
                         |   GREATER_EQUAL
+    """
+    _ = token_list
+
+
+def p_assignation(token_list: yacc.YaccProduction) -> None:
+    """assignation  :   NAME assignation_operator literal
+                    |   NAME assignation_operator assignation
+                    |   NAME assignation_operator unary_operation
+                    |   NAME assination_operator binary_operation
+    """
+    symbol_table[token_list[1].value] = str(token_list[3])
+
+
+def p_assignation_operator(token_list: yacc.YaccProduction) -> None:
+    """assignation_operator :   EQUAL
+                            |   PLUS_EQUAL
+                            |   MINUS_EQUAL
+                            |   STAR_EQUAL
+                            |   SLASH_EQUAL
+                            |   DOUBLE_SLASH_EQUAL
+                            |   MOD_EQUAL
+                            |   DOUBLE_STAR_EQUAL
+                            |   AMPERSAND_EQUAL
+                            |   BAR_EQUAL
+                            |   HAT_EQUAL
+                            |   LEFT_SHIFT_EQUAL
+                            |   RIGHT_SHIFT_EQUAL
     """
     _ = token_list
 
