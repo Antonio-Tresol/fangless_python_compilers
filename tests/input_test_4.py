@@ -4,3 +4,4 @@
 True
 False
 [1]
+{}

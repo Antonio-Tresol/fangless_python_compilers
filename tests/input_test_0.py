@@ -3,4 +3,5 @@
 "hola"
 True
 False
-[1]
+{}
+[]
