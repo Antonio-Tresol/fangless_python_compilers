@@ -67,10 +67,16 @@ or to execute all tests from the root of the repository
  ```bash
    pytest
  ```
+ For the parser there are many test cases in dir tests. All named input_test_n.py
+ All of them should end properly by executing the following command 
+ ```bash
+   python fangless_compiler/compiler.py input_test_n.py
+ ```
+
 
 ## Run the compiler
 To run the compiler over a .py file use the followin command
 
  ```bash
-   python fangless_python_compiler/compiler.py <program.py>
+   python fangless_compiler/compiler.py <program.py>
  ```

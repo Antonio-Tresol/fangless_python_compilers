@@ -115,6 +115,8 @@ def p_key_value_pair(token_list: yacc.YaccProduction) -> None:
 
 
 # ================================= LIST, SET, TUPLE ==========================
+# both tuples and list can be declared empty so general structure considers
+# series of literals (general series) or empty called epsilon
 def p_list(token_list: yacc.YaccProduction) -> None:
     """list :   L_BRACKET general_structure_content R_BRACKET"""
     _ = token_list
@@ -125,15 +127,16 @@ def p_tuple(token_list: yacc.YaccProduction) -> None:
     _ = token_list
 
 
-def p_set(token_list: yacc.YaccProduction) -> None:
-    """set  :   L_CURLY_BRACE general_series R_CURLY_BRACE"""
-    _ = token_list
-
-
 def p_general_structure_content(token_list: yacc.YaccProduction) -> None:
     """general_structure_content    :   general_series
                                     |   epsilon
     """
+    _ = token_list
+
+
+# sets can not be declared empty so they can only have a general series inside
+def p_set(token_list: yacc.YaccProduction) -> None:
+    """set  :   L_CURLY_BRACE general_series R_CURLY_BRACE"""
     _ = token_list
 
 
@@ -145,6 +148,7 @@ def p_general_series(token_list: yacc.YaccProduction) -> None:
 
 
 # ================================ UNARY OPERATIONS ===========================
+# is not a syntax error to use an unary operator agains any literal
 def p_unary_operation(token_list: yacc.YaccProduction) -> None:
     """unary_operation  :   PLUS literal
                         |   MINUS literal
@@ -157,6 +161,7 @@ def p_unary_operation(token_list: yacc.YaccProduction) -> None:
 
 
 # ========================= BINARY OPERATIONS =================================
+# TODO: should we put the first rule to recurse left?
 def p_binary_operation(token_list: yacc.YaccProduction) -> None:
     """binary_operation     :   binary_operand binary_operator binary_operation
                             |   L_PARENTHESIS binary_operation R_PARENTHESIS
@@ -196,6 +201,7 @@ def p_binary_operator(token_list: yacc.YaccProduction) -> None:
 
 
 # ========================= ASSIGNATIONS ======================================
+# One can have many asignation following themselves
 def p_assignation(token_list: yacc.YaccProduction) -> None:
     """assignation  :   assignation assignation_operator asignation_value
                     |   NAME assignation_operator asignation_value
@@ -230,9 +236,7 @@ def p_asignation_value(token_list: yacc.YaccProduction) -> None:
 
 
 # ========================= STATEMENTS ========================================
-# All of this code is commented since it has not been tested ensuring
-# functionality
-# TODO(Any): Test the code
+# TODO(Any): add while
 def p_statement(token_list: yacc.YaccProduction) -> None:
     """statement    :   if_block
                     |   assignation
@@ -261,6 +265,8 @@ def p_body(token_list: yacc.YaccProduction) -> None:
 
 
 # ============================ CONDITIONALS ===================================
+# TODO: what if we have a something like if (variable):
+# TODO: if (variable is None), we might need to add it to binary operations
 def p_condition(token_list: yacc.YaccProduction) -> None:
     """condition    :   binary_operation
                     |   unary_operation
@@ -269,6 +275,8 @@ def p_condition(token_list: yacc.YaccProduction) -> None:
     _ = token_list
 
 
+# if block is if with the body and elifs and elses with their bodies to the end.
+# it doesn't hold the newline token so that we can use it to group statements
 def p_if_block(token_list: yacc.YaccProduction) -> None:
     """if_block     :   if NEWLINE elif_block NEWLINE else
                     |   if NEWLINE elif_block
@@ -278,6 +286,8 @@ def p_if_block(token_list: yacc.YaccProduction) -> None:
     _ = token_list
 
 
+# if rule holds the if and its body or statement
+# (which doesn't contain the newline token)
 def p_if(token_list: yacc.YaccProduction) -> None:
     """if   :   IF condition COLON NEWLINE body
             |   IF condition COLON statement
@@ -292,6 +302,7 @@ def p_elif_block(token_list: yacc.YaccProduction) -> None:
     _ = token_list
 
 
+# same logic as if rule
 def p_elif(token_list: yacc.YaccProduction) -> None:
     """elif     :   ELIF condition COLON NEWLINE body
                 |   ELIF condition COLON statement
@@ -299,6 +310,7 @@ def p_elif(token_list: yacc.YaccProduction) -> None:
     _ = token_list
 
 
+# same for the as for if and elif rules
 def p_else(token_list: yacc.YaccProduction) -> None:
     """else     :   ELSE COLON NEWLINE body
                 |   ELSE COLON statement
@@ -307,6 +319,7 @@ def p_else(token_list: yacc.YaccProduction) -> None:
 
 
 # =============================== LOOPS =======================================
+# TODO: repair whiles
 # def p_while(token_list: yacc.YaccProduction) -> None:
 #     """while   :   WHILE condition COLON NEWLINE body"""
 #     _ = token_list
