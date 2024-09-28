@@ -1,7 +1,7 @@
 from ply.lex import Lexer, LexToken
 from collections.abc import Iterable
 import sys
-from common import new_token
+from common import new_token, VERBOSE_INDENTATION
 
 NO_INDENT = 0
 MAY_INDENT = 1
@@ -11,6 +11,8 @@ MUST_INDENT = 2
 class FanglessIndentationManager:
     @staticmethod
     def add_indentations(tokens: Iterable, lexer: Lexer) -> list:
+        if VERBOSE_INDENTATION:
+            print("----INDENTATION MANAGER DEBUG----")
         new_tokens = FanglessIndentationManager.identify_indentations(lexer, tokens)
         return FanglessIndentationManager.assign_indentations(new_tokens)
 
@@ -24,34 +26,34 @@ class FanglessIndentationManager:
         for token in token_stream:
             token.atLineStart = at_line_start
 
-            if token.type == "COLON":
-                at_line_start = False
-                indent = MAY_INDENT
-                token.must_indent = False
-
-            elif token.type == "NEWLINE":
-                at_line_start = True
-
-                if indent == MAY_INDENT:
-                    indent = MUST_INDENT
-
-                token.must_indent = False
-
-            elif token.type == "WHITESPACE":
-                assert token.atLineStart is True
-
-                at_line_start = True
-                token.must_indent = False
-
-            else:
-                if indent == MUST_INDENT:
-                    token.must_indent = True
-
-                else:
+            match token.type:
+                case "COLON":
+                    at_line_start = False
+                    indent = MAY_INDENT
                     token.must_indent = False
 
-                at_line_start = False
-                indent = NO_INDENT
+                case "NEWLINE":
+                    at_line_start = True
+
+                    if indent == MAY_INDENT:
+                        indent = MUST_INDENT
+
+                    token.must_indent = False
+
+                case "WHITESPACE":
+                    assert token.atLineStart is True
+
+                    at_line_start = True
+                    token.must_indent = False
+
+                case _:
+                    if indent == MUST_INDENT:
+                        token.must_indent = True
+                    else:
+                        token.must_indent = False
+
+                    at_line_start = False
+                    indent = NO_INDENT
 
             new_token_list.append(token)
             lexer.atLineStart = at_line_start
@@ -68,20 +70,22 @@ class FanglessIndentationManager:
         new_token_list = []
 
         for token in token_stream:
-            if token.type == "WHITESPACE":
-                assert depth == 0
-                depth = len(token.value)
-                last_seen_whitespace = True
-                continue
-
-            if token.type == "NEWLINE":
-                depth = 0
-
-                if last_seen_whitespace or token.atLineStart:
+            match token.type:
+                case "WHITESPACE":
+                    assert depth == 0
+                    depth = len(token.value)
+                    last_seen_whitespace = True
                     continue
 
-                new_token_list.append(token)
-                continue
+                case "NEWLINE":
+                    depth = 0
+
+                    if not last_seen_whitespace and not token.atLineStart:
+                        new_token_list.append(token)
+                    continue
+
+                case _:
+                    pass
 
             last_seen_whitespace = False
 
@@ -94,7 +98,6 @@ class FanglessIndentationManager:
 
         if len(levels) > 1:
             assert token is not None
-
             new_token_list.extend(
                 create_dedent(token.lineno)
                 for _ in range(
@@ -117,6 +120,9 @@ def check_for_indentation(
             print(f"Indentation Error on must indent in line no {token.lineno}")
             raise ValueError
 
+        if VERBOSE_INDENTATION:
+            print(f"---Token must indent: {token}---")
+
         levels.append(depth)
         new_token_list.append(create_indent(token.lineno))
 
@@ -129,18 +135,24 @@ def check_for_indentation(
                 f"Indentation Error on line start in line no {token.lineno}"
                 " with depth greater than levels",
             )
+            raise ValueError
 
-        else:
-            try:
-                i = levels.index(depth)
-            except ValueError:
-                print(f"Indentation Error on line start in line no {token.lineno}")
-                raise
+        # if token depth is less that levels[-1] i dedented
+        try:
+            i = levels.index(depth)
+        except ValueError:
+            print(f"Indentation Error on line start in line no {token.lineno}")
+            raise
 
-            for _ in range(i + 1, len(levels)):
-                new_token_list.append(create_dedent(token.lineno))
-                levels.pop()
+        for _ in range(i + 1, len(levels)):
+            temp = new_token_list.pop()
+            new_token_list.extend((create_dedent(token.lineno - 1), temp))
+            levels.pop()
+
     new_token_list.append(token)
+
+    if VERBOSE_INDENTATION:
+        print(new_token_list[-1])
 
 
 def create_indent(line_number: int) -> LexToken:

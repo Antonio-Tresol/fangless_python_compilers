@@ -24,7 +24,6 @@ class FanglessCompiler:
             content = source_file.read()
 
             self.lexer.lex_stream(content)
-            self.lexer.print_token_stream()
 
 
 def main() -> None:

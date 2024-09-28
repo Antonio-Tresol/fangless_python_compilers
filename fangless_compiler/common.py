@@ -16,7 +16,10 @@ def new_token(
     return tok
 
 
-DEBUG_MODE = True
+VERBOSE_INDENTATION = False
+VERBOSE_LEXER = False
+VERBOSE_PARSER = True
+
 # ========TOKENS AND RESERVED WORDS=======
 TOKENS = (
         ###
@@ -119,6 +122,7 @@ TOKENS = (
         "PRINT",
         "WHITESPACE",
         "NEWLINE",
+        "NONE",
         "START_TOKEN",
         "END_TOKEN",
     )
@@ -154,4 +158,5 @@ RESERVED_WORDS = {
         "is": "IS",
         "print": "PRINT",
         "len": "LEN",
+        "None": "NONE",
     }

@@ -3,3 +3,4 @@
 +"string"
 +[]
 +{"joe": 1, "kenneth": "hola"}
+~3

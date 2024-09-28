@@ -4,7 +4,7 @@
 import errors
 from indentation_manager import FanglessIndentationManager
 from ply import lex
-from common import new_token, TOKENS, RESERVED_WORDS, DEBUG_MODE
+from common import new_token, TOKENS, RESERVED_WORDS, VERBOSE_LEXER
 
 
 class FanglessLexer:
@@ -92,7 +92,7 @@ class FanglessLexer:
         lex_tokens.append(new_token("END_TOKEN", line_number, 0))
         lex_tokens.insert(0, new_token("START_TOKEN", 1, 0))
         self.token_stream = lex_tokens
-        if DEBUG_MODE:
+        if VERBOSE_LEXER:
             self.print_token_stream()
 
     def token(self) -> lex.LexToken | None:
