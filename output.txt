@@ -1,1 +1,0 @@
-[LexToken(START_TOKEN,None,1,0), LexToken(END_TOKEN,None,1,0)]
