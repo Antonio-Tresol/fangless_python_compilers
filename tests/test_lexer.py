@@ -192,7 +192,6 @@ def test_complex_case(lexer: FanglessLexer) -> None:
     code = "def my_function(arg1, arg2):\n  if arg1 > arg2: \n    return arg1 \n  else:\n    return arg2\nmy_function(10, 5)"  # noqa: E501
     lexer.lex_stream(code)
     tokens = lexer.token_stream
-    [print(token) for token in tokens]
     index = 0
     # Check for expected tokens
     assert tokens[index].type == "START_TOKEN"
