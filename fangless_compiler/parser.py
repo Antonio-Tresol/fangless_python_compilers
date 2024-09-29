@@ -240,6 +240,7 @@ def p_asignation_value(token_list: yacc.YaccProduction) -> None:
 def p_statement(token_list: yacc.YaccProduction) -> None:
     """statement    :   if_block
                     |   assignation
+                    |   while
                     |   binary_operation
                     |   unary_operation
                     |   literal
@@ -277,6 +278,7 @@ def p_condition(token_list: yacc.YaccProduction) -> None:
 
 # if block is if with the body and elifs and elses with their bodies to the end.
 # it doesn't hold the newline token so that we can use it to group statements
+# TODO: ambiguous grammar, different parse trees are available.
 def p_if_block(token_list: yacc.YaccProduction) -> None:
     """if_block     :   if NEWLINE elif_block NEWLINE else
                     |   if NEWLINE elif_block
@@ -320,9 +322,9 @@ def p_else(token_list: yacc.YaccProduction) -> None:
 
 # =============================== LOOPS =======================================
 # TODO: repair whiles
-# def p_while(token_list: yacc.YaccProduction) -> None:
-#     """while   :   WHILE condition COLON NEWLINE body"""
-#     _ = token_list
+def p_while(token_list: yacc.YaccProduction) -> None:
+    """while   :   WHILE condition COLON NEWLINE body"""
+    _ = token_list
 
 # =============================== FUNCTIONS ===================================
 

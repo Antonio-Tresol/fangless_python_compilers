@@ -1,7 +1,6 @@
-def my_function(arg1, arg2):
-    if arg1 > arg2:
-        return arg1
-    else:
-        return arg2
+if (3, 4) == ():
+    b = 4
+    if b:
+        3 + 4
 
-    my_function(10, 5)
+3
