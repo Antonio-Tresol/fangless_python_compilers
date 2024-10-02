@@ -280,9 +280,9 @@ def p_condition(token_list: yacc.YaccProduction) -> None:
 # it doesn't hold the newline token so that we can use it to group statements
 # TODO: ambiguous grammar, different parse trees are available.
 def p_if_block(token_list: yacc.YaccProduction) -> None:
-    """if_block     :   if NEWLINE elif_block NEWLINE else
-                    |   if NEWLINE elif_block
-                    |   if NEWLINE else
+    """if_block     :   if elif_block else
+                    |   if elif_block
+                    |   if else
                     |   if
     """
     _ = token_list
@@ -298,7 +298,7 @@ def p_if(token_list: yacc.YaccProduction) -> None:
 
 
 def p_elif_block(token_list: yacc.YaccProduction) -> None:
-    """elif_block   :   elif_block NEWLINE elif
+    """elif_block   :   elif_block elif
                     |   elif
     """
     _ = token_list

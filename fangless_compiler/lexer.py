@@ -3,6 +3,7 @@
 
 import errors
 from indentation_manager import FanglessIndentationManager
+from collections.abc import Iterable
 from ply import lex
 from common import new_token, TOKENS, RESERVED_WORDS, VERBOSE_LEXER
 
@@ -86,6 +87,9 @@ class FanglessLexer:
             lex_tokens,
             self.lexer,
         )
+
+        lex_tokens = self.remove_redundant_newlines(lex_tokens)
+
         line_number = 1
         if len(lex_tokens) != 0:
             line_number = lex_tokens[-1].lineno
@@ -94,6 +98,20 @@ class FanglessLexer:
         self.token_stream = lex_tokens
         if VERBOSE_LEXER:
             self.print_token_stream()
+
+    def remove_redundant_newlines(self, tokens: Iterable) -> None:
+        n = len(tokens)
+        new_full_quality_tokens = []
+        for pos, token in enumerate(tokens):
+            if (
+                token.type == "NEWLINE"
+                and pos < n
+                and tokens[pos + 1].type in {"ELIF", "ELSE"}
+            ):
+                continue
+
+            new_full_quality_tokens.append(token)
+        return new_full_quality_tokens
 
     def token(self) -> lex.LexToken | None:
         if self.token_stream and len(self.token_stream) > 0:
