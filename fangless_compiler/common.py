@@ -17,7 +17,7 @@ def new_token(
 
 
 VERBOSE_INDENTATION = False
-VERBOSE_LEXER = False
+VERBOSE_LEXER = True
 VERBOSE_PARSER = True
 
 # ========TOKENS AND RESERVED WORDS=======
@@ -119,6 +119,7 @@ TOKENS = (
         ###
         # Others
         "PASS",
+        "IS",
         "PRINT",
         "WHITESPACE",
         "NEWLINE",

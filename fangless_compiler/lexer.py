@@ -105,7 +105,7 @@ class FanglessLexer:
         for pos, token in enumerate(tokens):
             if (
                 token.type == "NEWLINE"
-                and pos < n
+                and pos + 1 < n
                 and tokens[pos + 1].type in {"ELIF", "ELSE"}
             ):
                 continue
@@ -120,31 +120,31 @@ class FanglessLexer:
 
     # ============================== literal Rules ============================
     def t_FLOATING_NUMBER(self, token: lex.LexToken) -> lex.LexToken:
-        r"""(\d+\.\d*)|(\.\d+)"""
+        r"""(\d+(_\d+)*\.(\d+(_\d+)*)*)|(\.\d+(_\d+)*)"""
         token.value = float(token.value)
 
         return token
 
     def t_BINARY_NUMBER(self, token: lex.LexToken) -> lex.LexToken:
-        r"""0[bB][01]+"""
+        r"""0[bB][01]+(_[01]+)*"""
         token.value = int(token.value, 2)
 
         return token
 
     def t_OCTAL_NUMBER(self, token: lex.LexToken) -> lex.LexToken:
-        r"""0[oO][0-7]+"""
+        r"""0[oO][0-7]+(_[0-7]+)*"""
         token.value = int(token.value, 8)
 
         return token
 
     def t_HEXADECIMAL_NUMBER(self, token: lex.LexToken) -> lex.LexToken:
-        r"""0[xX][0-9a-fA-F]+"""
+        r"""0[xX][0-9a-fA-F]+(_[0-9a-fA-F]+)*"""
         token.value = int(token.value, 16)
 
         return token
 
     def t_INTEGER_NUMBER(self, token: lex.LexToken) -> lex.LexToken:
-        r"""\d+"""
+        r"""\d+(_\d+)*"""
         token.value = int(token.value)
 
         return token
