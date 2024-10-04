@@ -7,6 +7,23 @@ from typing import Any
 # ================================ NEEDED OBJECTS =============================
 tokens = TOKENS
 
+precedence = (
+    ("left", "PLUS", "MINUS"),
+    ("left", "STAR", "SLASH"),
+    ("left", "DOUBLE_STAR"),
+    ("left", "STAR_EQUAL", "SLASH_EQUAL", "DOUBLE_SLASH_EQUAL", "MOD_EQUAL",
+     "PLUS_EQUAL", "MINUS_EQUAL", "DOUBLE_STAR_EQUAL", "AMPERSAND_EQUAL",
+     "BAR_EQUAL", "HAT_EQUAL", "LEFT_SHIFT_EQUAL", "RIGHT_SHIFT_EQUAL"),
+    ("left", "LEFT_SHIFT", "RIGHT_SHIFT"),
+    ("left", "AMPERSAND"),
+    ("left", "HAT"),
+    ("left", "BAR"),
+    ("left", "EQUAL_EQUAL", "NOT_EQUAL", "LESS_THAN", "LESS_EQUAL",
+     "GREATER_THAN", "GREATER_EQUAL"),
+    ("left", "NOT"),
+    ("left", "AND"),
+    ("left", "OR"),
+)
 
 symbol_table: defaultdict[str, Any] = defaultdict(lambda: None)
 
@@ -140,29 +157,34 @@ def p_tuple(token_list: yacc.YaccProduction) -> None:
 # is not a syntax error to use an unary operator agains any literal
 def p_unary_operation(token_list: yacc.YaccProduction) -> None:
     """unary_operation  :   L_PARENTHESIS unary_operation R_PARENTHESIS
-                        |   PLUS operand
-                        |   MINUS operand
-                        |   NOT operand
-                        |   TILDE operand
-                        |   operand LEFT_SHIFT
-                        |   operand RIGHT_SHIFT
+                        |   PLUS unary_operand
+                        |   MINUS unary_operand
+                        |   NOT unary_operand
+                        |   TILDE unary_operand
     """
     _ = token_list
 
 
-def p_operand(token_list: yacc.YaccProduction) -> None:
-    """operand   :   L_PARENTHESIS operand R_PARENTHESIS
+def p_unary_operand(token_list: yacc.YaccProduction) -> None:
+    """unary_operand    :   L_PARENTHESIS unary_operand R_PARENTHESIS
                         |   unary_operation
                         |   scalar_statement
     """
     _ = token_list
 
+
 # ========================= BINARY OPERATIONS =================================
 # TODO: binary parations are not passing all tests
 def p_binary_operation(token_list: yacc.YaccProduction) -> None:
-    """binary_operation     :   operand binary_operator binary_operation
-                            |   L_PARENTHESIS binary_operation R_PARENTHESIS
-                            |   operand binary_operator operand
+    """binary_operation     :   L_PARENTHESIS binary_operation R_PARENTHESIS
+                            |   binary_operand binary_operator binary_operand
+    """
+    _ = token_list
+
+
+def p_binary_operand(token_list: yacc.YaccProduction) -> None:
+    """binary_operand   :   unary_operand
+                        |   binary_operation
     """
     _ = token_list
 
@@ -180,6 +202,8 @@ def p_binary_operator(token_list: yacc.YaccProduction) -> None:
                         |   AMPERSAND
                         |   BAR
                         |   HAT
+                        |   LEFT_SHIFT
+                        |   RIGHT_SHIFT
                         |   EQUAL_EQUAL
                         |   NOT_EQUAL
                         |   LESS_THAN
