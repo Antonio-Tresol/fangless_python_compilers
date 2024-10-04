@@ -8,6 +8,7 @@ from typing import Any
 tokens = TOKENS
 
 precedence = (
+    ("right", "EQUAL"),
     ("left", "PLUS", "MINUS"),
     ("left", "STAR", "SLASH"),
     ("left", "DOUBLE_STAR"),
@@ -51,6 +52,7 @@ def p_literal(token_list: yacc.YaccProduction) -> None:
         and symbol_table[token_list[1]] is None):
         msg = f"Name: {token_list[1]} not defined"
         raise SyntaxError(msg)
+    _ = token_list
 
 
 def p_string(token_list: yacc.YaccProduction) -> None:
@@ -70,13 +72,11 @@ def p_number(token_list: yacc.YaccProduction) -> None:
     """
     _ = token_list
 
-
 def p_bool(token_list: yacc.YaccProduction) -> None:
     """bool     :   TRUE
                 |   FALSE
     """
     _ = token_list
-
 
 # =============================== STRUCTURES ===================================
 def p_structure(token_list: yacc.YaccProduction) -> None:
@@ -180,6 +180,7 @@ def p_binary_operation(token_list: yacc.YaccProduction) -> None:
                             |   binary_operand binary_operator binary_operand
     """
     _ = token_list
+    token_list[0] = token_list[1]
 
 
 def p_binary_operand(token_list: yacc.YaccProduction) -> None:
@@ -219,46 +220,83 @@ def p_binary_operator(token_list: yacc.YaccProduction) -> None:
 
 
 # ========================= ASSIGNATIONS ======================================
-# One can have many asignation following themselves
-# TODO: has problems with chained asignations
 def p_assignation(token_list: yacc.YaccProduction) -> None:
-    """assignation  :   assignation assignation_operator asignation_value
-                    |   NAME assignation_operator asignation_value
+    """assignation  :   name_assignation
+                    |   index_assignation
     """
-    symbol_table[token_list[1]] = str(token_list[3])
+    _ = token_list
+    token_list[0] = token_list[1]
 
 
-def p_assignation_operator(token_list: yacc.YaccProduction) -> None:
-    """assignation_operator :   EQUAL
-                            |   PLUS_EQUAL
-                            |   MINUS_EQUAL
-                            |   STAR_EQUAL
-                            |   SLASH_EQUAL
-                            |   DOUBLE_SLASH_EQUAL
-                            |   MOD_EQUAL
-                            |   DOUBLE_STAR_EQUAL
-                            |   AMPERSAND_EQUAL
-                            |   BAR_EQUAL
-                            |   HAT_EQUAL
-                            |   LEFT_SHIFT_EQUAL
-                            |   RIGHT_SHIFT_EQUAL
+def p_name_assignation(token_list: yacc.YaccProduction) -> None:
+    """name_assignation :   NAME EQUAL assignation_value"""
+    if token_list.slice[1].type == "NAME":
+        print(f"\n--- new symbol to add '{token_list[1]}' ---\n ")
+        symbol_table[token_list[1]] = 1
+    else:
+        print("\n---adios---\n")
+
+
+def p_index_assignation(token_list: yacc.YaccProduction) -> None:
+    """index_assignation    :   index_literal EQUAL assignation_value"""
+    _ = token_list
+
+
+def p_index_literal(token_list: yacc.YaccProduction) -> None:
+    """index_literal    :   index_literal L_BRACKET key_value_pair R_BRACKET
+                        |   index_literal L_BRACKET literal R_BRACKET
+                        |   literal L_BRACKET key_value_pair R_BRACKET
+                        |   literal L_BRACKET literal R_BRACKET
     """
     _ = token_list
 
 
-def p_asignation_value(token_list: yacc.YaccProduction) -> None:
-    """asignation_value     :   binary_operation
+def p_assignation_value(token_list: yacc.YaccProduction) -> None:
+    """assignation_value    :   binary_operation
                             |   unary_operation
-                            |   literal
+                            |   scalar_statement
+                            |   assignation
     """
     _ = token_list
 
+
+def p_op_assignation(token_list: yacc.YaccProduction) -> None:
+    """op_assignation   :   op_assignation_operand op_assignation_operator assignation_value"""
+    # TODO: Check if the operand uses a NAME and if so add it to the dictionary
+    _ = token_list
+    # TODO: Add match to reupdate name´s value
+
+
+def p_op_assignation_operand(token_list: yacc.YaccProduction) -> None:
+    """op_assignation_operand  :  index_literal
+                               |  literal
+    """
+    _ = token_list
+    # TODO: actually, it shouldn't be a literal. (e.g. None += something)
+
+
+def p_op_assignation_operator(token_list: yacc.YaccProduction) -> None:
+    """op_assignation_operator  :   PLUS_EQUAL
+                                |   MINUS_EQUAL
+                                |   STAR_EQUAL
+                                |   SLASH_EQUAL
+                                |   DOUBLE_SLASH_EQUAL
+                                |   MOD_EQUAL
+                                |   DOUBLE_STAR_EQUAL
+                                |   AMPERSAND_EQUAL
+                                |   BAR_EQUAL
+                                |   HAT_EQUAL
+                                |   LEFT_SHIFT_EQUAL
+                                |   RIGHT_SHIFT_EQUAL
+    """
+    _ = token_list
 
 # ========================= STATEMENTS ========================================
 
 def p_scalar_statement(token_list: yacc.YaccProduction) -> None:
-    """scalar_statement   : literal
+    """scalar_statement   : index_literal
                           | ternary
+                          | literal
     """
     _ = token_list
 
@@ -268,6 +306,7 @@ def p_complex_statement(token_list: yacc.YaccProduction) -> None:
                             |   while_block
                             |   for
                             |   assignation
+                            |   op_assignation
                             |   binary_operation
                             |   unary_operation
                             |   scalar_statement
