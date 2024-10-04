@@ -59,6 +59,7 @@ class FanglessLexer:
     t_COLON = r":"
     t_COMMA = r","
     t_SEMICOLON = r";"
+    t_ARROW = r"->"
     # Others
 
     # ============================== Methods ==================================

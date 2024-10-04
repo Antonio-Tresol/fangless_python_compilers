@@ -126,6 +126,15 @@ TOKENS = (
         "NONE",
         "START_TOKEN",
         "END_TOKEN",
+        "ARROW",
+        "INT",
+        "FLOAT",
+        "LIST",
+        "SET",
+        "TUPLE",
+        "DICT",
+        "STR",
+        "BOOL",
     )
 
 RESERVED_WORDS = {
@@ -160,4 +169,18 @@ RESERVED_WORDS = {
         "print": "PRINT",
         "len": "LEN",
         "None": "NONE",
+        "int": "INT",
+        "float": "FLOAT",
+        "list": "LIST",
+        "set": "SET",
+        "tuple": "TUPLE",
+        "dict": "DICT",
+        "str": "STR",
+        "bool": "BOOL",
+
     }
+
+
+OBJECT = 3
+FUNCTION = 2
+VARIABLE = 1

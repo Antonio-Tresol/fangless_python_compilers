@@ -1,6 +1,6 @@
 from ply import yacc
 from lexer import FanglessLexer
-from common import VERBOSE_PARSER, TOKENS
+from common import VERBOSE_PARSER, TOKENS, OBJECT, FUNCTION, VARIABLE
 from collections import defaultdict
 from typing import Any
 
@@ -29,6 +29,27 @@ precedence = (
 symbol_table: defaultdict[str, Any] = defaultdict(lambda: None)
 
 
+def does_name_exist(token_list: yacc.YaccProduction) -> None:
+    if (token_list.slice[1].type == "NAME"
+        and symbol_table[token_list[1]] is None):
+        msg = f"Name: {token_list[1]} not defined"
+        raise SyntaxError(msg)
+
+
+def is_name_function(token_list: yacc.YaccProduction) -> None:
+    if (token_list.slice[1].type != "NAME"
+        or symbol_table[token_list[1]] != FUNCTION):
+        msg = f"Name: {token_list[1]} is not a function"
+        raise SyntaxError(msg)
+
+
+def is_name_callable(token_list: yacc.YaccProduction) -> None:
+    if (token_list.slice[1].type == "NAME"
+        and (symbol_table[token_list[1]] != OBJECT or
+            symbol_table[token_list[1]] != VARIABLE)):
+        msg = f"Name: {token_list[1]} is not a callable"
+        raise SyntaxError(msg)
+
 # =================================== BASIC ===================================
 def p_all(token_list: yacc.YaccProduction) -> None:
     """all    :   START_TOKEN statement_group END_TOKEN"""
@@ -47,10 +68,7 @@ def p_literal(token_list: yacc.YaccProduction) -> None:
                 |   NONE
                 |   NAME
     """
-    if (token_list.slice[1].type == "NAME"
-        and symbol_table[token_list[1]] is None):
-        msg = f"Name: {token_list[1]} not defined"
-        raise SyntaxError(msg)
+    does_name_exist(token_list)
 
 
 def p_number(token_list: yacc.YaccProduction) -> None:
@@ -175,12 +193,10 @@ def p_unary_operand(token_list: yacc.YaccProduction) -> None:
 
 
 # ========================= BINARY OPERATIONS =================================
-# TODO: binary operations are not passing all tests
 def p_binary_operation(token_list: yacc.YaccProduction) -> None:
     """binary_operation     :   L_PARENTHESIS binary_operation R_PARENTHESIS
                             |   binary_operand binary_operator binary_operand
     """
-    _ = token_list
     token_list[0] = token_list[1]
 
 
@@ -234,7 +250,7 @@ def p_comma_assignation(token_list: yacc.YaccProduction) -> None:
     """comma_assignation :   completed_name_comma_series EQUAL assignation_value"""
     names = token_list[1]
     for name in names:
-        symbol_table[name] = 1
+        symbol_table[name] = VARIABLE
 
 
 def p_completed_name_comma_series(token_list: yacc.YaccProduction) -> None:
@@ -271,11 +287,11 @@ def p_name_assignation(token_list: yacc.YaccProduction) -> None:
     """
     if token_list.slice[1].type == "NAME":
         name = token_list[1]
-        symbol_table[token_list[1]] = 1
+        symbol_table[token_list[1]] = VARIABLE
     else:
         names = token_list[1]
         for name in names:
-            symbol_table[name] = 1
+            symbol_table[name] = VARIABLE
 
 
 def p_name_equal_series(token_list: yacc.YaccProduction) -> None:
@@ -303,10 +319,7 @@ def p_index_literal(token_list: yacc.YaccProduction) -> None:
                         |   NAME L_BRACKET key_value_pair R_BRACKET
                         |   NAME L_BRACKET literal R_BRACKET
     """
-    if (token_list.slice[1].type == "NAME"
-        and symbol_table[token_list[1]] is None):
-        msg = f"Name: {token_list[1]} not defined"
-        raise SyntaxError(msg)
+    does_name_exist(token_list)
 
 
 def p_op_assignation(token_list: yacc.YaccProduction) -> None:
@@ -318,10 +331,7 @@ def p_op_assignation_operand(token_list: yacc.YaccProduction) -> None:
     """op_assignation_operand  :  index_literal
                                |  NAME
     """
-    if (token_list.slice[1].type == "NAME"
-        and symbol_table[token_list[1]] is None):
-        msg = f"Name: {token_list[1]} not defined"
-        raise SyntaxError(msg)
+    does_name_exist(token_list)
 
 
 def p_op_assignation_operator(token_list: yacc.YaccProduction) -> None:
@@ -375,6 +385,7 @@ def p_statement_group(token_list: yacc.YaccProduction) -> None:
     _ = token_list
 
 
+# TODO: check variables for scope using maybe a rule each time there is an indent
 def p_body(token_list: yacc.YaccProduction) -> None:
     """body     :   NEWLINE INDENT statement_group DEDENT"""
     _ = token_list
@@ -446,7 +457,6 @@ def p_while(token_list: yacc.YaccProduction) -> None:
     _ = token_list
 
 
-# TODO: Repair for
 def p_for_block(token_list: yacc.YaccProduction) -> None:
     """for_block    :   for else
                     |   for
@@ -454,18 +464,129 @@ def p_for_block(token_list: yacc.YaccProduction) -> None:
     _ = token_list
 
 
+def p_for_symbols(token_list: yacc.YaccProduction) -> None:
+    """for_symbols  :   for_symbols COMMA NAME
+                    |   NAME
+    """
+    if token_list.slice[1].type == "NAME":
+        symbol_table[token_list[1]] = VARIABLE
+        token_list[0] = [token_list[1]]
+    else:
+        symbol_table[token_list[3]] = VARIABLE
+        names = token_list[1]
+        names.append(token_list[3])
+        token_list[0] = names
+
+
 def p_for(token_list: yacc.YaccProduction) -> None:
-    """for :   FOR completed_name_comma_series IN for_literal COLON body"""
-    _ = token_list
+    """for :   FOR for_symbols IN for_literal COLON body"""
+    names = token_list[2]
+    for name in names:
+        symbol_table[name] = None
 
 
 def p_for_literal(token_list: yacc.YaccProduction) -> None:
-    """for_literal :   epsilon"""
-    _ = token_list
-
+    """for_literal  :   structure
+                    |   function_call
+                    |   NAME
+    """
+    does_name_exist(token_list)
 
 
 # =============================== FUNCTIONS ===================================
+def p_fuction_definition(token_list: yacc.YaccProduction) -> None:
+    """function_definition  :   DEF NAME complete_argument_list COLON body
+                            |   DEF NAME complete_argument_list ARROW or_type COLON body
+    """
+    arguments = token_list[3]
+    for argument in arguments:
+        symbol_table[argument] = None
+    symbol_table[token_list[2]] = FUNCTION
+
+
+def p_complete_argument_list(token_list: yacc.YaccProduction) -> None:
+    """complete_argument_list   :   L_PARENTHESIS argument_list COMMA R_PARENTHESIS
+                                |   L_PARENTHESIS argument_list R_PARENTHESIS
+    """
+    arguments = token_list[2]
+    for argument in arguments:
+        symbol_table[argument] = VARIABLE
+
+
+def p_argument_list(token_list: yacc.YaccProduction) -> None:
+    """argument_list    :   argument_list argument
+                        |   argument
+    """
+    if len(token_list) == 2:
+        token_list[0] = [token_list[1]]
+    else:
+        arguments = token_list[1]
+        arguments.append(token_list[3])
+        token_list[0] = arguments
+
+
+def p_argument(token_list: yacc.YaccProduction) -> None:
+    """argument :   NAME COLON or_type
+                |   NAME
+    """
+    token_list[0] = token_list[1]
+
+
+def p_or_type(token_list: yacc.YaccProduction) -> None:
+    """"or_type : or_type BAR type
+                | type
+    """
+    _ = token_list
+
+
+def p_type(token_list: yacc.YaccProduction) -> None:
+    """type :   NONE
+            |   INT
+            |   FLOAT
+            |   LIST
+            |   SET
+            |   TUPLE
+            |   DICT
+            |   STR
+            |   BOOL
+    """
+    _ = token_list
+
+
+def p_fuction_call(token_list: yacc.YaccProduction) -> None:
+    """fuction_call :   NAME complete_parameter_list"""
+    is_name_function(token_list)
+
+
+def p_complete_parameter_list(token_list: yacc.YaccProduction) -> None:
+    """complete_parameter_list  :   L_PARENTHESIS parameter_list R_PARENTHESIS
+                                |   L_PARENTHESIS R_PARENTHESIS
+    """
+    is_name_function(token_list)
+
+
+def p_parameter_list(token_list: yacc.YaccProduction) -> None:
+    """parameter_list   :   parameter_list COMA NAME
+                        |   NAME
+    """
+    is_name_function(token_list)
+
+
+def p_method_call(token_list: yacc.YaccProduction) -> None:
+    """method_call  :   callable DOT function_call"""
+    _ = token_list
+
+
+def p_callable(token_list: yacc.YaccProduction) -> None:
+    """callable :   structure
+                |   bool
+                |   FLOATING_NUMBER
+                |   BINARY_NUMBER
+                |   OCTAL_NUMBER
+                |   HEXADECIMAL_NUMBER
+                |   NAME
+    """
+    is_name_callable(token_list)
 
 
 # =============================== OTHER =======================================
