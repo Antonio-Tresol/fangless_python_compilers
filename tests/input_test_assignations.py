@@ -28,7 +28,7 @@ if a in 7:
     g = a*b*c*b
 
 x = y = [1, 2, 3]
-# a, b = c, d = (1, 2, 3) 
+ 
 # a, b = b, a
 a = b = c = [1, 2, 3]
 a[0] = 42
@@ -46,3 +46,4 @@ a[1:3] = [9, 8]
 None[None] = None
 
 a = None or 5
+a, b, c = (3, 2, {3:"a"})

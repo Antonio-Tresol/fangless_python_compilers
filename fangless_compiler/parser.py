@@ -72,11 +72,13 @@ def p_number(token_list: yacc.YaccProduction) -> None:
     """
     _ = token_list
 
+
 def p_bool(token_list: yacc.YaccProduction) -> None:
     """bool     :   TRUE
                 |   FALSE
     """
     _ = token_list
+
 
 # =============================== STRUCTURES ===================================
 def p_structure(token_list: yacc.YaccProduction) -> None:
@@ -220,21 +222,72 @@ def p_binary_operator(token_list: yacc.YaccProduction) -> None:
 
 
 # ========================= ASSIGNATIONS ======================================
+def p_name_comma_series(token_list: yacc.YaccProduction) -> None:
+    """name_comma_series   : NAME COMMA NAME
+                           | name_comma_series COMMA NAME
+    """
+    _ = token_list
+
+
+def p_comma_assignation(token_list: yacc.YaccProduction) -> None:
+    """comma_assignation :   name_comma_series EQUAL assignation_value"""
+    _ = token_list
+
+
 def p_assignation(token_list: yacc.YaccProduction) -> None:
     """assignation  :   name_assignation
                     |   index_assignation
+                    |   comma_assignation
     """
     _ = token_list
     token_list[0] = token_list[1]
 
 
-def p_name_assignation(token_list: yacc.YaccProduction) -> None:
-    """name_assignation :   NAME EQUAL assignation_value"""
+def p_name_equal_series(token_list: yacc.YaccProduction) -> None:
+    """name_equal_series   : NAME EQUAL NAME
+                           | name_equal_series EQUAL NAME
+    """
+    _ = token_list
     if token_list.slice[1].type == "NAME":
-        print(f"\n--- new symbol to add '{token_list[1]}' ---\n ")
+        token_list[0] = [token_list[1], token_list[3]]
+    else:
+        names = token_list[1]
+        n = len(names)
+        print(f"Chained assignation of names: {names} (size {n}) and {token_list[3]}")
+        names.append(token_list[3])
+        token_list[0] = names
+
+
+def p_name_assignation(token_list: yacc.YaccProduction) -> None:
+    """name_assignation :   name_equal_series EQUAL assignation_value
+                        |   NAME EQUAL assignation_value
+    """
+    # TODO: for now we are not pushing up assignation values, so value is none
+    value = token_list[3]
+    if token_list.slice[1].type == "NAME":
+        name = token_list[1]
+        if symbol_table[name] is None:
+            print(f"\n--- New symbol '{name}' ---\n ")
+        else:
+            print(f"\n--- Updating symbol '{name}' ---\n ")
         symbol_table[token_list[1]] = 1
     else:
-        print("\n---adios---\n")
+        names = token_list[1]
+        for name in names:
+            if symbol_table[name] is None:
+                print(f"\n--- New symbol '{name}' ---\n ")
+            else:
+                print(f"\n--- Updating symbol '{name}' ---\n ")
+            symbol_table[name] = 1
+
+
+def p_assignation_value(token_list: yacc.YaccProduction) -> None:
+    """assignation_value    :   binary_operation
+                            |   unary_operation
+                            |   scalar_statement
+                            |   completed_general_series
+    """
+    _ = token_list
 
 
 def p_index_assignation(token_list: yacc.YaccProduction) -> None:
@@ -247,15 +300,6 @@ def p_index_literal(token_list: yacc.YaccProduction) -> None:
                         |   index_literal L_BRACKET literal R_BRACKET
                         |   literal L_BRACKET key_value_pair R_BRACKET
                         |   literal L_BRACKET literal R_BRACKET
-    """
-    _ = token_list
-
-
-def p_assignation_value(token_list: yacc.YaccProduction) -> None:
-    """assignation_value    :   binary_operation
-                            |   unary_operation
-                            |   scalar_statement
-                            |   assignation
     """
     _ = token_list
 
@@ -291,8 +335,8 @@ def p_op_assignation_operator(token_list: yacc.YaccProduction) -> None:
     """
     _ = token_list
 
-# ========================= STATEMENTS ========================================
 
+# ========================= STATEMENTS ========================================
 def p_scalar_statement(token_list: yacc.YaccProduction) -> None:
     """scalar_statement   : index_literal
                           | ternary
