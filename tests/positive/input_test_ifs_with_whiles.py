@@ -55,7 +55,7 @@ elif a == 8:
     a = 4
 else:
     a = "perrito"
-while a == "perrito":
+while a == "perrit":
     a = "gatito"
     if a == 6:
         a = 3

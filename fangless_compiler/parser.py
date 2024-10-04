@@ -42,7 +42,6 @@ def p_error(token_list: yacc.YaccProduction) -> None:
 # ================================== LITERALS =================================
 def p_literal(token_list: yacc.YaccProduction) -> None:
     """literal  :   structure
-                |   string
                 |   number
                 |   bool
                 |   NONE
@@ -52,14 +51,6 @@ def p_literal(token_list: yacc.YaccProduction) -> None:
         and symbol_table[token_list[1]] is None):
         msg = f"Name: {token_list[1]} not defined"
         raise SyntaxError(msg)
-
-
-def p_string(token_list: yacc.YaccProduction) -> None:
-    """string   :   STRING
-                |   UNICODE_STRING
-                |   RAW_STRING
-    """
-    _ = token_list
 
 
 def p_number(token_list: yacc.YaccProduction) -> None:
@@ -85,6 +76,15 @@ def p_structure(token_list: yacc.YaccProduction) -> None:
                     |   list
                     |   tuple
                     |   set
+                    |   string
+    """
+    _ = token_list
+
+
+def p_string(token_list: yacc.YaccProduction) -> None:
+    """string   :   STRING
+                |   UNICODE_STRING
+                |   RAW_STRING
     """
     _ = token_list
 
@@ -231,10 +231,17 @@ def p_assignation(token_list: yacc.YaccProduction) -> None:
 
 
 def p_comma_assignation(token_list: yacc.YaccProduction) -> None:
-    """comma_assignation :   name_comma_series EQUAL assignation_value"""
+    """comma_assignation :   completed_name_comma_series EQUAL assignation_value"""
     names = token_list[1]
     for name in names:
         symbol_table[name] = 1
+
+
+def p_completed_name_comma_series(token_list: yacc.YaccProduction) -> None:
+    """completed_name_comma_series  : name_comma_series COMMA
+                                    | name_comma_series
+    """
+    token_list[0] = token_list[1]
 
 
 def p_name_comma_series(token_list: yacc.YaccProduction) -> None:
@@ -269,7 +276,7 @@ def p_name_assignation(token_list: yacc.YaccProduction) -> None:
         names = token_list[1]
         for name in names:
             symbol_table[name] = 1
-    
+
 
 def p_name_equal_series(token_list: yacc.YaccProduction) -> None:
     """name_equal_series   : name_equal_series EQUAL NAME
@@ -291,10 +298,15 @@ def p_index_assignation(token_list: yacc.YaccProduction) -> None:
 def p_index_literal(token_list: yacc.YaccProduction) -> None:
     """index_literal    :   index_literal L_BRACKET key_value_pair R_BRACKET
                         |   index_literal L_BRACKET literal R_BRACKET
-                        |   literal L_BRACKET key_value_pair R_BRACKET
-                        |   literal L_BRACKET literal R_BRACKET
+                        |   structure L_BRACKET key_value_pair R_BRACKET
+                        |   structure L_BRACKET literal R_BRACKET
+                        |   NAME L_BRACKET key_value_pair R_BRACKET
+                        |   NAME L_BRACKET literal R_BRACKET
     """
-    _ = token_list
+    if (token_list.slice[1].type == "NAME"
+        and symbol_table[token_list[1]] is None):
+        msg = f"Name: {token_list[1]} not defined"
+        raise SyntaxError(msg)
 
 
 def p_op_assignation(token_list: yacc.YaccProduction) -> None:
@@ -341,7 +353,7 @@ def p_scalar_statement(token_list: yacc.YaccProduction) -> None:
 def p_complex_statement(token_list: yacc.YaccProduction) -> None:
     """complex_statement    :   if_block
                             |   while_block
-                            |   for
+                            |   for_block
                             |   assignation
                             |   op_assignation
                             |   binary_operation
@@ -435,25 +447,22 @@ def p_while(token_list: yacc.YaccProduction) -> None:
 
 
 # TODO: Repair for
+def p_for_block(token_list: yacc.YaccProduction) -> None:
+    """for_block    :   for else
+                    |   for
+    """
+    _ = token_list
+
+
 def p_for(token_list: yacc.YaccProduction) -> None:
-    """for :   FOR name_series IN literal COLON body"""
+    """for :   FOR completed_name_comma_series IN for_literal COLON body"""
     _ = token_list
 
 
-# TODO: Repair for
-def p_completed_name_series(token_list: yacc.YaccProduction) -> None:
-    """completed_name_series    :   name_series COMMA
-                                |   name_series
-    """
+def p_for_literal(token_list: yacc.YaccProduction) -> None:
+    """for_literal :   epsilon"""
     _ = token_list
 
-
-# TODO: Repair for
-def p_name_series(token_list: yacc.YaccProduction) -> None:
-    """name_series  :   name_series COMMA NAME
-                    |   NAME
-    """
-    _ = token_list
 
 
 # =============================== FUNCTIONS ===================================

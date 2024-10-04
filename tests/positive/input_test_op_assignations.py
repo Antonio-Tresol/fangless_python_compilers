@@ -1,10 +1,9 @@
-# passing all but with TODO: index literal
+# passing all but with 
 a = 3
 a += a + (2 // (6 + 7))
-(3, 2)[3] += (3, 2)
+[3, 2][1] += (3, 2)
 a = 3
 a += a + (2 // (6 + 7))
-(3, 2)[3] += (3, 2)
 
 # More examples of augmented assignments
 b = 5
@@ -40,5 +39,4 @@ p = 5
 p += 2 * 3
 q = 10
 q /= 2 + 3
-# TODO: this one shouldn't pass
-# 3 +=4
+#[3, 2][2] += (3, 2)

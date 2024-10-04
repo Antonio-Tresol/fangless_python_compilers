@@ -24,7 +24,7 @@ g = [1, 2, 3]
 if a in g:
     g = i
 
-if a in 7:
+if a in (3, 4):
     g = a*b*c*b
 
 x = y = [1, 2, 3]
@@ -38,16 +38,12 @@ a = a + a
 a[1:3] = [9, 8]
 
 
-[1,4,5][1:"a"] = 9
-(1,4,)[1] = 4
+[1,4,5][1:2] = 9,2
 {5:5, 8:5}[6] = 5
-6[7] = 9
-
-None[None] = None
 
 a = None or 5
 a, b, c = (3, 2, {3:"a"})
 
-pedro, andrea = 4
+pedro = andrea = joseph = 4
 
-hola, adios = pedro, andrea, {5, 7, 7}
+hola, adios, gato = pedro, andrea, 3
