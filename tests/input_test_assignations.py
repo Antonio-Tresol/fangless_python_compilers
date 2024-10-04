@@ -47,3 +47,7 @@ None[None] = None
 
 a = None or 5
 a, b, c = (3, 2, {3:"a"})
+
+pedro, andrea = 4
+
+hola, adios = pedro, andrea, {5, 7, 7}

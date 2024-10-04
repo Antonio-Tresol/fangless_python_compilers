@@ -52,7 +52,6 @@ def p_literal(token_list: yacc.YaccProduction) -> None:
         and symbol_table[token_list[1]] is None):
         msg = f"Name: {token_list[1]} not defined"
         raise SyntaxError(msg)
-    _ = token_list
 
 
 def p_string(token_list: yacc.YaccProduction) -> None:
@@ -176,7 +175,7 @@ def p_unary_operand(token_list: yacc.YaccProduction) -> None:
 
 
 # ========================= BINARY OPERATIONS =================================
-# TODO: binary parations are not passing all tests
+# TODO: binary operations are not passing all tests
 def p_binary_operation(token_list: yacc.YaccProduction) -> None:
     """binary_operation     :   L_PARENTHESIS binary_operation R_PARENTHESIS
                             |   binary_operand binary_operator binary_operand
@@ -222,63 +221,32 @@ def p_binary_operator(token_list: yacc.YaccProduction) -> None:
 
 
 # ========================= ASSIGNATIONS ======================================
-def p_name_comma_series(token_list: yacc.YaccProduction) -> None:
-    """name_comma_series   : NAME COMMA NAME
-                           | name_comma_series COMMA NAME
+# TODO(Kenneth): Ask if we want to add symbols here
+def p_assignation(token_list: yacc.YaccProduction) -> None:
+    """assignation  :   comma_assignation
+                    |   name_assignation
+                    |   index_assignation
     """
     _ = token_list
 
 
 def p_comma_assignation(token_list: yacc.YaccProduction) -> None:
     """comma_assignation :   name_comma_series EQUAL assignation_value"""
-    _ = token_list
+    names = token_list[1]
+    for name in names:
+        symbol_table[name] = 1
 
 
-def p_assignation(token_list: yacc.YaccProduction) -> None:
-    """assignation  :   name_assignation
-                    |   index_assignation
-                    |   comma_assignation
+def p_name_comma_series(token_list: yacc.YaccProduction) -> None:
+    """name_comma_series    : name_comma_series COMMA NAME
+                            | NAME COMMA NAME
     """
-    _ = token_list
-    token_list[0] = token_list[1]
-
-
-def p_name_equal_series(token_list: yacc.YaccProduction) -> None:
-    """name_equal_series   : NAME EQUAL NAME
-                           | name_equal_series EQUAL NAME
-    """
-    _ = token_list
     if token_list.slice[1].type == "NAME":
         token_list[0] = [token_list[1], token_list[3]]
     else:
         names = token_list[1]
-        n = len(names)
-        print(f"Chained assignation of names: {names} (size {n}) and {token_list[3]}")
         names.append(token_list[3])
         token_list[0] = names
-
-
-def p_name_assignation(token_list: yacc.YaccProduction) -> None:
-    """name_assignation :   name_equal_series EQUAL assignation_value
-                        |   NAME EQUAL assignation_value
-    """
-    # TODO: for now we are not pushing up assignation values, so value is none
-    value = token_list[3]
-    if token_list.slice[1].type == "NAME":
-        name = token_list[1]
-        if symbol_table[name] is None:
-            print(f"\n--- New symbol '{name}' ---\n ")
-        else:
-            print(f"\n--- Updating symbol '{name}' ---\n ")
-        symbol_table[token_list[1]] = 1
-    else:
-        names = token_list[1]
-        for name in names:
-            if symbol_table[name] is None:
-                print(f"\n--- New symbol '{name}' ---\n ")
-            else:
-                print(f"\n--- Updating symbol '{name}' ---\n ")
-            symbol_table[name] = 1
 
 
 def p_assignation_value(token_list: yacc.YaccProduction) -> None:
@@ -288,6 +256,31 @@ def p_assignation_value(token_list: yacc.YaccProduction) -> None:
                             |   completed_general_series
     """
     _ = token_list
+
+
+def p_name_assignation(token_list: yacc.YaccProduction) -> None:
+    """name_assignation :   name_equal_series EQUAL assignation_value
+                        |   NAME EQUAL assignation_value
+    """
+    if token_list.slice[1].type == "NAME":
+        name = token_list[1]
+        symbol_table[token_list[1]] = 1
+    else:
+        names = token_list[1]
+        for name in names:
+            symbol_table[name] = 1
+    
+
+def p_name_equal_series(token_list: yacc.YaccProduction) -> None:
+    """name_equal_series   : name_equal_series EQUAL NAME
+                           | NAME EQUAL NAME
+    """
+    if token_list.slice[1].type == "NAME":
+        token_list[0] = [token_list[1], token_list[3]]
+    else:
+        names = token_list[1]
+        names.append(token_list[3])
+        token_list[0] = names
 
 
 def p_index_assignation(token_list: yacc.YaccProduction) -> None:
@@ -306,17 +299,17 @@ def p_index_literal(token_list: yacc.YaccProduction) -> None:
 
 def p_op_assignation(token_list: yacc.YaccProduction) -> None:
     """op_assignation   :   op_assignation_operand op_assignation_operator assignation_value"""
-    # TODO: Check if the operand uses a NAME and if so add it to the dictionary
     _ = token_list
-    # TODO: Add match to reupdate name´s value
 
 
 def p_op_assignation_operand(token_list: yacc.YaccProduction) -> None:
     """op_assignation_operand  :  index_literal
-                               |  literal
+                               |  NAME
     """
-    _ = token_list
-    # TODO: actually, it shouldn't be a literal. (e.g. None += something)
+    if (token_list.slice[1].type == "NAME"
+        and symbol_table[token_list[1]] is None):
+        msg = f"Name: {token_list[1]} not defined"
+        raise SyntaxError(msg)
 
 
 def p_op_assignation_operator(token_list: yacc.YaccProduction) -> None:
@@ -439,6 +432,7 @@ def p_while_block(token_list: yacc.YaccProduction) -> None:
 def p_while(token_list: yacc.YaccProduction) -> None:
     """while   :   WHILE condition COLON body"""
     _ = token_list
+
 
 # TODO: Repair for
 def p_for(token_list: yacc.YaccProduction) -> None:
