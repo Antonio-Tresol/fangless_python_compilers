@@ -16,6 +16,10 @@ def new_token(
     return tok
 
 
+def fill_symbol_table_with_builtin_functions(symbol_table: dict) -> None:
+    for func in BUILTIN_FUNCTIONS:
+        symbol_table[func] = FUNCTION
+
 VERBOSE_INDENTATION = False
 VERBOSE_LEXER = True
 VERBOSE_PARSER = True
@@ -127,14 +131,7 @@ TOKENS = (
         "START_TOKEN",
         "END_TOKEN",
         "ARROW",
-        "INT",
-        "FLOAT",
-        "LIST",
-        "SET",
-        "TUPLE",
-        "DICT",
-        "STR",
-        "BOOL",
+        "NONE"
     )
 
 RESERVED_WORDS = {
@@ -157,7 +154,6 @@ RESERVED_WORDS = {
         "continue": "CONTINUE",
         "break": "BREAK",
         "in": "IN",
-        "range": "RANGE",
         # Classes
         "class": "CLASS",
         # Others
@@ -166,21 +162,93 @@ RESERVED_WORDS = {
         "assert": "ASSERT",
         "del": "DEL",
         "is": "IS",
-        "print": "PRINT",
-        "len": "LEN",
         "None": "NONE",
-        "int": "INT",
-        "float": "FLOAT",
-        "list": "LIST",
-        "set": "SET",
-        "tuple": "TUPLE",
-        "dict": "DICT",
-        "str": "STR",
-        "bool": "BOOL",
-
     }
 
+TYPES = {
+    "int",
+    "float",
+    "list",
+    "set",
+    "tuple",
+    "dict",
+    "str",
+    "bool",
+    "None",
+}
 
 OBJECT = 3
 FUNCTION = 2
 VARIABLE = 1
+
+BUILTIN_FUNCTIONS = (
+    "abs",
+    "all",
+    "any",
+    "ascii",
+    "bin",
+    "bool",
+    "breakpoint",
+    "bytearray",
+    "bytes",
+    "callable",
+    "chr",
+    "classmethod",
+    "compile",
+    "complex",
+    "delattr",
+    "dict",
+    "dir",
+    "divmod",
+    "enumerate",
+    "eval",
+    "exec",
+    "filter",
+    "float",
+    "format",
+    "frozenset",
+    "getattr",
+    "globals",
+    "hasattr",
+    "hash",
+    "help",
+    "hex",
+    "id",
+    "input",
+    "int",
+    "isinstance",
+    "issubclass",
+    "iter",
+    "len",
+    "list",
+    "locals",
+    "map",
+    "max",
+    "memoryview",
+    "min",
+    "next",
+    "object",
+    "oct",
+    "open",
+    "ord",
+    "pow",
+    "print",
+    "property",
+    "range",
+    "repr",
+    "reversed",
+    "round",
+    "set",
+    "setattr",
+    "slice",
+    "sorted",
+    "staticmethod",
+    "str",
+    "sum",
+    "super",
+    "tuple",
+    "type",
+    "vars",
+    "zip",
+    "__import__",
+)

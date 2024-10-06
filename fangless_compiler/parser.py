@@ -1,6 +1,14 @@
 from ply import yacc
 from lexer import FanglessLexer
-from common import VERBOSE_PARSER, TOKENS, OBJECT, FUNCTION, VARIABLE
+from common import (
+    VERBOSE_PARSER,
+    TOKENS,
+    OBJECT,
+    FUNCTION,
+    VARIABLE,
+    TYPES,
+    fill_symbol_table_with_builtin_functions,
+)
 from collections import defaultdict
 from typing import Any
 
@@ -49,6 +57,7 @@ def is_name_callable(token_list: yacc.YaccProduction) -> None:
             symbol_table[token_list[1]] != VARIABLE)):
         msg = f"Name: {token_list[1]} is not a callable"
         raise SyntaxError(msg)
+
 
 # =================================== BASIC ===================================
 def p_all(token_list: yacc.YaccProduction) -> None:
@@ -356,6 +365,8 @@ def p_scalar_statement(token_list: yacc.YaccProduction) -> None:
     """scalar_statement   : index_literal
                           | ternary
                           | literal
+                          | function_call
+                          | method_call
     """
     _ = token_list
 
@@ -365,11 +376,12 @@ def p_complex_statement(token_list: yacc.YaccProduction) -> None:
                             |   while_block
                             |   for_block
                             |   assignation
+                            |   function_definition
                             |   op_assignation
                             |   binary_operation
                             |   unary_operation
                             |   scalar_statement
-                            |   RETURN
+                            |   return_statement
                             |   CONTINUE
                             |   BREAK
                             |   PASS
@@ -494,9 +506,16 @@ def p_for_literal(token_list: yacc.YaccProduction) -> None:
 
 
 # =============================== FUNCTIONS ===================================
+def p_return_statement(token_list: yacc.YaccProduction) -> None:
+    """return_statement : RETURN general_series
+                        | RETURN
+    """
+    _ = token_list
+
+
 def p_fuction_definition(token_list: yacc.YaccProduction) -> None:
     """function_definition  :   DEF NAME complete_argument_list COLON body
-                            |   DEF NAME complete_argument_list ARROW or_type COLON body
+                            |   DEF NAME complete_argument_list ARROW hints COLON body
     """
     arguments = token_list[3]
     for argument in arguments:
@@ -511,10 +530,11 @@ def p_complete_argument_list(token_list: yacc.YaccProduction) -> None:
     arguments = token_list[2]
     for argument in arguments:
         symbol_table[argument] = VARIABLE
+    token_list[0] = arguments
 
 
 def p_argument_list(token_list: yacc.YaccProduction) -> None:
-    """argument_list    :   argument_list argument
+    """argument_list    :   argument_list COMMA argument
                         |   argument
     """
     if len(token_list) == 2:
@@ -526,35 +546,45 @@ def p_argument_list(token_list: yacc.YaccProduction) -> None:
 
 
 def p_argument(token_list: yacc.YaccProduction) -> None:
-    """argument :   NAME COLON or_type
+    """argument :   NAME COLON hints
                 |   NAME
     """
     token_list[0] = token_list[1]
 
 
-def p_or_type(token_list: yacc.YaccProduction) -> None:
-    """"or_type : or_type BAR type
-                | type
+def p_type_series(token_list: yacc.YaccProduction) -> None:
+    """type_series : type_series COMMA NAME
+                   | NAME
+    """
+    if token_list.slice[1].type == "NAME" and token_list[1] not in TYPES:
+        error_msg = f"TYPE HINTS: '{token_list[1]}' is not a valid type"
+        raise SyntaxError(error_msg)
+    if len(token_list) == 4 and token_list[3] not in TYPES:
+        error_msg = f"TYPE HINTS: '{token_list[3]}' is not a valid type"
+        raise SyntaxError(error_msg)
+
+    _ = token_list
+
+
+def p_hint(token_list: yacc.YaccProduction) -> None:
+    """hint  : NAME L_BRACKET type_series R_BRACKET
+             | NAME
+    """
+    if len(token_list) == 2 and token_list[1] not in TYPES:
+        error_msg = f"TYPE HINTS: '{token_list[1]}' is not a valid type"
+        raise SyntaxError(error_msg)
+    _ = token_list
+
+
+def p_hints(token_list: yacc.YaccProduction) -> None:
+    """hints : hints BAR hint
+              | hint
     """
     _ = token_list
 
 
-def p_type(token_list: yacc.YaccProduction) -> None:
-    """type :   NONE
-            |   INT
-            |   FLOAT
-            |   LIST
-            |   SET
-            |   TUPLE
-            |   DICT
-            |   STR
-            |   BOOL
-    """
-    _ = token_list
-
-
-def p_fuction_call(token_list: yacc.YaccProduction) -> None:
-    """fuction_call :   NAME complete_parameter_list"""
+def p_function_call(token_list: yacc.YaccProduction) -> None:
+    """function_call :   NAME complete_parameter_list"""
     is_name_function(token_list)
 
 
@@ -562,14 +592,14 @@ def p_complete_parameter_list(token_list: yacc.YaccProduction) -> None:
     """complete_parameter_list  :   L_PARENTHESIS parameter_list R_PARENTHESIS
                                 |   L_PARENTHESIS R_PARENTHESIS
     """
-    is_name_function(token_list)
+    _ = token_list
 
 
 def p_parameter_list(token_list: yacc.YaccProduction) -> None:
-    """parameter_list   :   parameter_list COMA NAME
-                        |   NAME
+    """parameter_list   :   parameter_list COMMA scalar_statement
+                        |   scalar_statement
     """
-    is_name_function(token_list)
+    _ = token_list
 
 
 def p_method_call(token_list: yacc.YaccProduction) -> None:
@@ -601,6 +631,7 @@ class FanglessParser:
             lexer = FanglessLexer()
         self.lexer = lexer
         self.parser = yacc.yacc(start="all", debug=VERBOSE_PARSER)
+        fill_symbol_table_with_builtin_functions(symbol_table)
 
     def parse(self, source_code: str) -> Any:
         self.lexer.lex_stream(source_code)

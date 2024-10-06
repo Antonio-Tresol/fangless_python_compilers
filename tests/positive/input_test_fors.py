@@ -4,3 +4,6 @@ for i in g:
 
 for a in [2,3]:
     g = a
+
+for i in range(1, 4):
+    print(len([i]))
