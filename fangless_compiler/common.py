@@ -177,6 +177,8 @@ TYPES = {
     "None",
 }
 
+SCOPE_OPENED = "OPENED"
+
 OBJECT = 3
 FUNCTION = 2
 VARIABLE = 1

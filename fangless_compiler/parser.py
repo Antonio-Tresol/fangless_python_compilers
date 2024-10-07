@@ -6,6 +6,7 @@ from common import (
     OBJECT,
     FUNCTION,
     VARIABLE,
+    SCOPE_OPENED,
     TYPES,
     fill_symbol_table_with_builtin_functions,
 )
@@ -35,6 +36,7 @@ precedence = (
 )
 
 symbol_table: defaultdict[str, Any] = defaultdict(lambda: None)
+stack: list[str] = []
 
 
 def does_name_exist(token_list: yacc.YaccProduction) -> None:
@@ -246,7 +248,6 @@ def p_binary_operator(token_list: yacc.YaccProduction) -> None:
 
 
 # ========================= ASSIGNATIONS ======================================
-# TODO(Kenneth): Ask if we want to add symbols here
 def p_assignation(token_list: yacc.YaccProduction) -> None:
     """assignation  :   comma_assignation
                     |   name_assignation
@@ -259,6 +260,8 @@ def p_comma_assignation(token_list: yacc.YaccProduction) -> None:
     """comma_assignation :   completed_name_comma_series EQUAL assignation_value"""
     names = token_list[1]
     for name in names:
+        if symbol_table[name] is None:
+            stack.append(name)
         symbol_table[name] = VARIABLE
 
 
@@ -295,11 +298,14 @@ def p_name_assignation(token_list: yacc.YaccProduction) -> None:
                         |   NAME EQUAL assignation_value
     """
     if token_list.slice[1].type == "NAME":
-        name = token_list[1]
+        if symbol_table[token_list[1]] is None:
+            stack.append(token_list[1])
         symbol_table[token_list[1]] = VARIABLE
     else:
         names = token_list[1]
         for name in names:
+            if symbol_table[name] is None:
+                stack.append(name)
             symbol_table[name] = VARIABLE
 
 
@@ -399,7 +405,17 @@ def p_statement_group(token_list: yacc.YaccProduction) -> None:
 
 # TODO: check variables for scope using maybe a rule each time there is an indent
 def p_body(token_list: yacc.YaccProduction) -> None:
-    """body     :   NEWLINE INDENT statement_group DEDENT"""
+    """body     :   NEWLINE open_scope statement_group DEDENT"""
+    local_var = stack.pop()
+    while local_var != SCOPE_OPENED:
+        symbol_table[local_var] = None
+        local_var = stack.pop()
+    _ = token_list
+
+
+def p_open_scope(token_list: yacc.YaccProduction) -> None:
+    """open_scope     :   INDENT"""
+    stack.append(SCOPE_OPENED)
     _ = token_list
 
 
@@ -513,7 +529,7 @@ def p_return_statement(token_list: yacc.YaccProduction) -> None:
     _ = token_list
 
 
-def p_fuction_definition(token_list: yacc.YaccProduction) -> None:
+def p_function_definition(token_list: yacc.YaccProduction) -> None:
     """function_definition  :   DEF NAME complete_argument_list COLON body
                             |   DEF NAME complete_argument_list ARROW hints COLON body
     """
@@ -552,17 +568,10 @@ def p_argument(token_list: yacc.YaccProduction) -> None:
     token_list[0] = token_list[1]
 
 
-def p_type_series(token_list: yacc.YaccProduction) -> None:
-    """type_series : type_series COMMA NAME
-                   | NAME
+def p_hints(token_list: yacc.YaccProduction) -> None:
+    """hints  : hints BAR hint
+              | hint
     """
-    if token_list.slice[1].type == "NAME" and token_list[1] not in TYPES:
-        error_msg = f"TYPE HINTS: '{token_list[1]}' is not a valid type"
-        raise SyntaxError(error_msg)
-    if len(token_list) == 4 and token_list[3] not in TYPES:
-        error_msg = f"TYPE HINTS: '{token_list[3]}' is not a valid type"
-        raise SyntaxError(error_msg)
-
     _ = token_list
 
 
@@ -573,14 +582,18 @@ def p_hint(token_list: yacc.YaccProduction) -> None:
     if len(token_list) == 2 and token_list[1] not in TYPES:
         error_msg = f"TYPE HINTS: '{token_list[1]}' is not a valid type"
         raise SyntaxError(error_msg)
-    _ = token_list
 
 
-def p_hints(token_list: yacc.YaccProduction) -> None:
-    """hints : hints BAR hint
-              | hint
+def p_type_series(token_list: yacc.YaccProduction) -> None:
+    """type_series : type_series COMMA NAME
+                   | NAME
     """
-    _ = token_list
+    if token_list.slice[1].type == "NAME" and token_list[1] not in TYPES:
+        error_msg = f"TYPE HINTS: '{token_list[1]}' is not a valid type"
+        raise SyntaxError(error_msg)
+    if len(token_list) == 4 and token_list[3] not in TYPES:
+        error_msg = f"TYPE HINTS: '{token_list[3]}' is not a valid type"
+        raise SyntaxError(error_msg)
 
 
 def p_function_call(token_list: yacc.YaccProduction) -> None:
