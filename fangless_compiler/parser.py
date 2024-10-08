@@ -37,6 +37,8 @@ precedence = (
 
 symbol_table: defaultdict[str, Any] = defaultdict(lambda: None)
 stack: list[str] = []
+loop_counter: int = 0
+funct_counter: int = 0
 
 
 def does_name_exist(token_list: yacc.YaccProduction) -> None:
@@ -391,8 +393,35 @@ def p_complex_statement(token_list: yacc.YaccProduction) -> None:
                             |   CONTINUE
                             |   BREAK
                             |   PASS
+                            |   dot_pass
                             |   epsilon
     """
+    if (
+        (
+            token_list.slice[1].type == "CONTINUE" or
+            token_list.slice[1].type == "BREAK"
+        ) and
+        loop_counter <= 0
+    ):
+        msg = f"Cant call {token_list[1]} on this context"
+        raise SyntaxError(msg)
+
+    elif (
+        token_list.slice[1].type == "PASS" and
+        (
+            loop_counter <= 0 and
+            funct_counter <= 0
+        )
+    ):
+        msg = "Cant call PASS on this context"
+        raise SyntaxError(msg)
+
+
+def p_dot_pass(token_list: yacc.YaccProduction) -> None:
+    """dot_pass    :   DOT DOT DOT"""
+    if funct_counter <= 0:
+        msg = "Cant call TRIPLE DOT on this context"
+        raise SyntaxError(msg)
     _ = token_list
 
 
@@ -481,7 +510,14 @@ def p_while_block(token_list: yacc.YaccProduction) -> None:
 
 
 def p_while(token_list: yacc.YaccProduction) -> None:
-    """while   :   WHILE condition COLON body"""
+    """while   :   while_open condition COLON body"""
+    loop_counter -= 1
+    _ = token_list
+
+
+def p_while_open(token_list: yacc.YaccProduction) -> None:
+    """while_open   :   WHILE"""
+    loop_counter += 1
     _ = token_list
 
 
@@ -489,6 +525,20 @@ def p_for_block(token_list: yacc.YaccProduction) -> None:
     """for_block    :   for else
                     |   for
     """
+    _ = token_list
+
+
+def p_for(token_list: yacc.YaccProduction) -> None:
+    """for :   for_open for_symbols IN for_literal COLON body"""
+    loop_counter -= 1
+    names = token_list[2]
+    for name in names:
+        symbol_table[name] = None
+
+
+def p_for_open(token_list: yacc.YaccProduction) -> None:
+    """for_open :   FOR"""
+    loop_counter += 1
     _ = token_list
 
 
@@ -506,13 +556,6 @@ def p_for_symbols(token_list: yacc.YaccProduction) -> None:
         token_list[0] = names
 
 
-def p_for(token_list: yacc.YaccProduction) -> None:
-    """for :   FOR for_symbols IN for_literal COLON body"""
-    names = token_list[2]
-    for name in names:
-        symbol_table[name] = None
-
-
 def p_for_literal(token_list: yacc.YaccProduction) -> None:
     """for_literal  :   structure
                     |   function_call
@@ -526,17 +569,27 @@ def p_return_statement(token_list: yacc.YaccProduction) -> None:
     """return_statement : RETURN general_series
                         | RETURN
     """
+    if funct_counter <= 0:
+        msg = "Cant call RETURN on this context"
+        raise SyntaxError(msg)
     _ = token_list
 
 
 def p_function_definition(token_list: yacc.YaccProduction) -> None:
-    """function_definition  :   DEF NAME complete_argument_list COLON body
-                            |   DEF NAME complete_argument_list ARROW hints COLON body
+    """function_definition  :   def_open NAME complete_argument_list COLON body
+                            |   def_open NAME complete_argument_list ARROW hints COLON body
     """
+    funct_counter -= 1
     arguments = token_list[3]
     for argument in arguments:
         symbol_table[argument] = None
     symbol_table[token_list[2]] = FUNCTION
+
+
+def p_def_open(token_list: yacc.YaccProduction) -> None:
+    """def_open :   DEF"""
+    funct_counter += 1
+    _ = token_list
 
 
 def p_complete_argument_list(token_list: yacc.YaccProduction) -> None:
