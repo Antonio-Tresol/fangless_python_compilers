@@ -37,6 +37,7 @@ precedence = (
 
 symbol_table: defaultdict[str, Any] = defaultdict(lambda: None)
 stack: list[str] = []
+undefined_functions: set[str] = set()
 loop_counter: int = 0
 funct_counter: int = 0
 
@@ -45,13 +46,6 @@ def does_name_exist(token_list: yacc.YaccProduction) -> None:
     if (token_list.slice[1].type == "NAME"
         and symbol_table[token_list[1]] is None):
         msg = f"Name: {token_list[1]} not defined"
-        raise SyntaxError(msg)
-
-
-def is_name_function(token_list: yacc.YaccProduction) -> None:
-    if (token_list.slice[1].type != "NAME"
-        or symbol_table[token_list[1]] != FUNCTION):
-        msg = f"Name: {token_list[1]} is not a function"
         raise SyntaxError(msg)
 
 
@@ -66,6 +60,10 @@ def is_name_callable(token_list: yacc.YaccProduction) -> None:
 # =================================== BASIC ===================================
 def p_all(token_list: yacc.YaccProduction) -> None:
     """all    :   START_TOKEN statement_group END_TOKEN"""
+    if len(undefined_functions) > 0:
+        for function in undefined_functions:
+        msg = f"Name: {token_list[1]} is not a callable"
+        raise SyntaxError(msg)
     _ = token_list
 
 
@@ -584,6 +582,7 @@ def p_function_definition(token_list: yacc.YaccProduction) -> None:
     for argument in arguments:
         symbol_table[argument] = None
     symbol_table[token_list[2]] = FUNCTION
+    undefined_functions.discard(token_list[2])
 
 
 def p_def_open(token_list: yacc.YaccProduction) -> None:
@@ -615,7 +614,8 @@ def p_argument_list(token_list: yacc.YaccProduction) -> None:
 
 
 def p_argument(token_list: yacc.YaccProduction) -> None:
-    """argument :   NAME COLON hints
+    """argument :   argument EQUAL assignation_value
+                |   NAME COLON hints
                 |   NAME
     """
     token_list[0] = token_list[1]
@@ -651,7 +651,8 @@ def p_type_series(token_list: yacc.YaccProduction) -> None:
 
 def p_function_call(token_list: yacc.YaccProduction) -> None:
     """function_call :   NAME complete_parameter_list"""
-    is_name_function(token_list)
+    if symbol_table[token_list[1]] != FUNCTION:
+        undefined_functions.add(token_list[1])
 
 
 def p_complete_parameter_list(token_list: yacc.YaccProduction) -> None:
