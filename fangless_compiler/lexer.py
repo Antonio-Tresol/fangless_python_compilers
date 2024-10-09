@@ -83,7 +83,6 @@ class FanglessLexer:
         self.lexer.input(data)
 
         lex_tokens = iter(self.lexer.token, None)
-        
         lex_tokens = FanglessIndentationManager.add_indentations(
             lex_tokens,
             self.lexer,

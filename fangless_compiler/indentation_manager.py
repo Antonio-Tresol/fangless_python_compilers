@@ -37,7 +37,8 @@ class FanglessIndentationManager:
             print("--ORIGINAL TOKEN LIST--\n")
         for token in token_stream:
             token.atLineStart = at_line_start
-            print(token)
+            if VERBOSE_INDENTATION:
+                print(token)
 
             match token.type:
                 case "COLON":
