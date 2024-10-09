@@ -33,9 +33,11 @@ class FanglessIndentationManager:
         indent = NO_INDENT
 
         new_token_list = []
-
+        if VERBOSE_INDENTATION:
+            print("--ORIGINAL TOKEN LIST--\n")
         for token in token_stream:
             token.atLineStart = at_line_start
+            print(token)
 
             match token.type:
                 case "COLON":
@@ -72,7 +74,8 @@ class FanglessIndentationManager:
 
             new_token_list.append(token)
             lexer.atLineStart = at_line_start
-
+        if VERBOSE_INDENTATION:
+            print("\n--ORIGINAL TOKEN LIST END--")
         return new_token_list
 
     @staticmethod
@@ -84,7 +87,6 @@ class FanglessIndentationManager:
         last_seen_whitespace = False
 
         new_token_list = []
-
         for token in token_stream:
             match token.type:
                 case "WHITESPACE":
@@ -115,7 +117,6 @@ class FanglessIndentationManager:
                     new_token_list,
                 )
             except ValueError:
-                print(f"tokens so far{new_token_list}")
                 print(f"failed on token: {token}")
                 sys.exit()
 

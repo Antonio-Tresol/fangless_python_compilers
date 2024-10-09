@@ -1,7 +1,7 @@
 # Copyright 2024, ode adapted from Garden Snake by A. Badilla Olivas, Joseph
 # Valverde Kong and Kenneth Villalobos Solis
 
-import errors
+import colors
 from indentation_manager import FanglessIndentationManager
 from collections.abc import Iterable
 from ply import lex
@@ -83,7 +83,7 @@ class FanglessLexer:
         self.lexer.input(data)
 
         lex_tokens = iter(self.lexer.token, None)
-
+        
         lex_tokens = FanglessIndentationManager.add_indentations(
             lex_tokens,
             self.lexer,
@@ -228,7 +228,7 @@ class FanglessLexer:
         if (
             self.parenthesis_count == 0
             and self.bracket_count == 0
-            and self.curly_braces_count == 0
+            and self.curly_brace_count == 0
         ):
             return token
         return None
@@ -251,7 +251,7 @@ class FanglessLexer:
             self.lexer.atLineStart
             and self.parenthesis_count == 0
             and self.bracket_count == 0
-            and self.curly_braces_count == 0
+            and self.curly_brace_count == 0
         ):
             return token
         return None
@@ -262,7 +262,7 @@ class FanglessLexer:
         print("Skipping", repr(token.value[0]))
         token.lexer.skip(1)
         error = (
-            f"{errors.TOKEN_NOT_FOUND}: {token.value[0]}, "
+            f"{colors.TOKEN_NOT_FOUND}: {token.value[0]}, "
             f"at line number {token.lexer.lineno}"
         )
         raise SyntaxError(error)

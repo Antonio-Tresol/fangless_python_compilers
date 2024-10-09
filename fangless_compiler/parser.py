@@ -9,9 +9,13 @@ from common import (
     SCOPE_OPENED,
     TYPES,
     fill_symbol_table_with_builtin_functions,
+    RAINBOW_ERRORS,
+    AMOONGUS,
 )
+import colors
 from collections import defaultdict
 from typing import Any
+from random import choice
 
 # ================================ NEEDED OBJECTS =============================
 tokens = TOKENS
@@ -36,24 +40,35 @@ precedence = (
 )
 
 symbol_table: defaultdict[str, Any] = defaultdict(lambda: None)
+object_symbols: defaultdict[str, defaultdict[str, Any]] = defaultdict(lambda: defaultdict(lambda: None))
+
 stack: list[str] = []
 undefined_functions: set[str] = set()
-loop_counter: int = 0
-funct_counter: int = 0
+parser_state_info: defaultdict[str, int] = defaultdict(lambda: None)
+parser_state_info["loops"] = 0
+parser_state_info["functions"] = 0
+parser_state_info["classes"] = 0
+errors: list[str] = []
+
+
+def color_msg(msg: str, rainbow: bool = True) -> str:
+    new_msg = ""
+    if rainbow:
+        for letter in msg: 
+            color_code = choice(colors.COLORS)
+            new_msg += f"{color_code}{letter}{colors.RESET}"
+    else:
+        color_code = choice(colors.COLORS)
+        new_msg = f"{color_code}{msg}{colors.RESET}"
+
+    return new_msg
 
 
 def does_name_exist(token_list: yacc.YaccProduction) -> None:
     if (token_list.slice[1].type == "NAME"
         and symbol_table[token_list[1]] is None):
-        msg = f"Name: {token_list[1]} not defined"
-        raise SyntaxError(msg)
-
-
-def is_name_callable(token_list: yacc.YaccProduction) -> None:
-    if (token_list.slice[1].type == "NAME"
-        and (symbol_table[token_list[1]] != OBJECT or
-            symbol_table[token_list[1]] != VARIABLE)):
-        msg = f"Name: {token_list[1]} is not a callable"
+        msg = f"Name: '{token_list[1]}' is not defined at {token_list.lineno}"
+        errors.append(msg)
         raise SyntaxError(msg)
 
 
@@ -61,8 +76,11 @@ def is_name_callable(token_list: yacc.YaccProduction) -> None:
 def p_all(token_list: yacc.YaccProduction) -> None:
     """all    :   START_TOKEN statement_group END_TOKEN"""
     if len(undefined_functions) > 0:
+        msg = "Names:"
         for function in undefined_functions:
-        msg = f"Name: {token_list[1]} is not a callable"
+            msg += f"\n'{function}'"
+        msg += "\nWere not defined"
+        errors.append(msg)
         raise SyntaxError(msg)
     _ = token_list
 
@@ -250,6 +268,7 @@ def p_binary_operator(token_list: yacc.YaccProduction) -> None:
 # ========================= ASSIGNATIONS ======================================
 def p_assignation(token_list: yacc.YaccProduction) -> None:
     """assignation  :   comma_assignation
+                    |   dot_assignation
                     |   name_assignation
                     |   index_assignation
     """
@@ -291,6 +310,25 @@ def p_assignation_value(token_list: yacc.YaccProduction) -> None:
                             |   completed_general_series
     """
     _ = token_list
+
+
+def p_dot_assignation(token_list: yacc.YaccProduction) -> None:
+    """dot_assignation :   name_dot_series EQUAL assignation_value"""
+    _ = token_list
+
+
+def p_name_dot_series(token_list: yacc.YaccProduction) -> None:
+    """name_dot_series  :   name_dot_series DOT NAME
+                        |   NAME DOT NAME
+    """
+    if (
+        token_list.slice[1].type == "NAME"
+        and symbol_table[token_list[1]] is None
+        and (token_list[1] != "self" or parser_state_info["classes"] <= 0)
+    ):
+        msg = f"Name: '{token_list[1]}' is not defined at line {token_list.lineno}"
+        errors.append(msg)
+        raise SyntaxError(msg)
 
 
 def p_name_assignation(token_list: yacc.YaccProduction) -> None:
@@ -343,10 +381,18 @@ def p_op_assignation(token_list: yacc.YaccProduction) -> None:
 
 
 def p_op_assignation_operand(token_list: yacc.YaccProduction) -> None:
-    """op_assignation_operand  :  index_literal
-                               |  NAME
+    """op_assignation_operand   :   name_dot_series
+                                |   index_literal
+                                |   NAME
     """
-    does_name_exist(token_list)
+    name = token_list[1]
+    if isinstance(name, list):
+        if symbol_table[name[1]] is None:
+            msg = f"Name: '{name[1]}' is not defined at line {token_list.lineno}"
+            errors.append(msg)
+            raise SyntaxError(msg)
+    else:
+        does_name_exist(token_list)
 
 
 def p_op_assignation_operator(token_list: yacc.YaccProduction) -> None:
@@ -368,17 +414,19 @@ def p_op_assignation_operator(token_list: yacc.YaccProduction) -> None:
 
 # ========================= STATEMENTS ========================================
 def p_scalar_statement(token_list: yacc.YaccProduction) -> None:
-    """scalar_statement   : index_literal
-                          | ternary
-                          | literal
-                          | function_call
-                          | method_call
+    """scalar_statement :   name_dot_series
+                        |   index_literal
+                        |   ternary
+                        |   literal
+                        |   function_call
+                        |   method_call
     """
     _ = token_list
 
 
 def p_complex_statement(token_list: yacc.YaccProduction) -> None:
-    """complex_statement    :   if_block
+    """complex_statement    :   class_definition
+                            |   if_block
                             |   while_block
                             |   for_block
                             |   assignation
@@ -399,26 +447,29 @@ def p_complex_statement(token_list: yacc.YaccProduction) -> None:
             token_list.slice[1].type == "CONTINUE" or
             token_list.slice[1].type == "BREAK"
         ) and
-        loop_counter <= 0
+        parser_state_info["loops"] <= 0
     ):
-        msg = f"Cant call {token_list[1]} on this context"
+        msg = f"Cant call '{token_list[1]}' on this context on line {token_list.lineno}"
+        errors.append(msg)
         raise SyntaxError(msg)
 
     elif (
         token_list.slice[1].type == "PASS" and
         (
-            loop_counter <= 0 and
-            funct_counter <= 0
+            parser_state_info["loops"] <= 0 and
+            parser_state_info["functions"] <= 0
         )
     ):
-        msg = "Cant call PASS on this context"
+        msg = f"Cant call 'PASS' on this context on line {token_list.lineno}"
+        errors.append(msg)
         raise SyntaxError(msg)
 
 
 def p_dot_pass(token_list: yacc.YaccProduction) -> None:
     """dot_pass    :   DOT DOT DOT"""
-    if funct_counter <= 0:
-        msg = "Cant call TRIPLE DOT on this context"
+    if parser_state_info["functions"] <= 0:
+        msg = f"Cant call 'TRIPLE DOT' on this context on line {token_list.lineno}"
+        errors.append(msg)
         raise SyntaxError(msg)
     _ = token_list
 
@@ -509,13 +560,13 @@ def p_while_block(token_list: yacc.YaccProduction) -> None:
 
 def p_while(token_list: yacc.YaccProduction) -> None:
     """while   :   while_open condition COLON body"""
-    loop_counter -= 1
+    parser_state_info["loops"] -= 1
     _ = token_list
 
 
 def p_while_open(token_list: yacc.YaccProduction) -> None:
     """while_open   :   WHILE"""
-    loop_counter += 1
+    parser_state_info["loops"] += 1
     _ = token_list
 
 
@@ -528,7 +579,7 @@ def p_for_block(token_list: yacc.YaccProduction) -> None:
 
 def p_for(token_list: yacc.YaccProduction) -> None:
     """for :   for_open for_symbols IN for_literal COLON body"""
-    loop_counter -= 1
+    parser_state_info["loops"] -= 1
     names = token_list[2]
     for name in names:
         symbol_table[name] = None
@@ -536,7 +587,7 @@ def p_for(token_list: yacc.YaccProduction) -> None:
 
 def p_for_open(token_list: yacc.YaccProduction) -> None:
     """for_open :   FOR"""
-    loop_counter += 1
+    parser_state_info["loops"] += 1
     _ = token_list
 
 
@@ -564,12 +615,28 @@ def p_for_literal(token_list: yacc.YaccProduction) -> None:
 
 # =============================== FUNCTIONS ===================================
 def p_return_statement(token_list: yacc.YaccProduction) -> None:
-    """return_statement : RETURN general_series
-                        | RETURN
+    """return_statement :   RETURN return_value_list
+                        |   RETURN
     """
-    if funct_counter <= 0:
-        msg = "Cant call RETURN on this context"
+    if parser_state_info["functions"] <= 0:
+        msg = f"Cant call RETURN 'on this context on line {token_list.lineno}"
+        errors.append(msg)
         raise SyntaxError(msg)
+    _ = token_list
+
+
+def p_return_value_list(token_list: yacc.YaccProduction) -> None:
+    """return_value_list    :   return_value_list COMMA return_value
+                            |   return_value
+    """
+    _ = token_list
+
+
+def p_return_value(token_list: yacc.YaccProduction) -> None:
+    """return_value :   binary_operation
+                    |   unary_operation
+                    |   scalar_statement
+    """
     _ = token_list
 
 
@@ -577,7 +644,7 @@ def p_function_definition(token_list: yacc.YaccProduction) -> None:
     """function_definition  :   def_open NAME complete_argument_list COLON body
                             |   def_open NAME complete_argument_list ARROW hints COLON body
     """
-    funct_counter -= 1
+    parser_state_info["loops"] -= 1
     arguments = token_list[3]
     for argument in arguments:
         symbol_table[argument] = None
@@ -587,15 +654,21 @@ def p_function_definition(token_list: yacc.YaccProduction) -> None:
 
 def p_def_open(token_list: yacc.YaccProduction) -> None:
     """def_open :   DEF"""
-    funct_counter += 1
+    parser_state_info["functions"] += 1
     _ = token_list
 
 
 def p_complete_argument_list(token_list: yacc.YaccProduction) -> None:
     """complete_argument_list   :   L_PARENTHESIS argument_list COMMA R_PARENTHESIS
                                 |   L_PARENTHESIS argument_list R_PARENTHESIS
+                                |   L_PARENTHESIS default_argument_list R_PARENTHESIS
+                                |   L_PARENTHESIS argument_list COMMA default_argument_list R_PARENTHESIS
+                                |   L_PARENTHESIS R_PARENTHESIS
     """
     arguments = token_list[2]
+    if len(token_list) == 6:
+        default_arguments = token_list[4]
+        arguments.extend(default_arguments)
     for argument in arguments:
         symbol_table[argument] = VARIABLE
     token_list[0] = arguments
@@ -613,9 +686,25 @@ def p_argument_list(token_list: yacc.YaccProduction) -> None:
         token_list[0] = arguments
 
 
+def p_default_argument_list(token_list: yacc.YaccProduction) -> None:
+    """default_argument_list    :   default_argument_list COMMA default_argument
+                                |   default_argument
+    """
+    if len(token_list) == 2:
+        token_list[0] = [token_list[1]]
+    else:
+        arguments = token_list[1]
+        arguments.append(token_list[3])
+        token_list[0] = arguments
+
+
+def p_default_argument(token_list: yacc.YaccProduction) -> None:
+    """default_argument :   argument EQUAL literal"""
+    token_list[0] = token_list[1]
+
+
 def p_argument(token_list: yacc.YaccProduction) -> None:
-    """argument :   argument EQUAL assignation_value
-                |   NAME COLON hints
+    """argument :   NAME COLON hints
                 |   NAME
     """
     token_list[0] = token_list[1]
@@ -631,10 +720,12 @@ def p_hints(token_list: yacc.YaccProduction) -> None:
 def p_hint(token_list: yacc.YaccProduction) -> None:
     """hint  : NAME L_BRACKET type_series R_BRACKET
              | NAME
+             | NONE
     """
     if len(token_list) == 2 and token_list[1] not in TYPES:
-        error_msg = f"TYPE HINTS: '{token_list[1]}' is not a valid type"
-        raise SyntaxError(error_msg)
+        msg = f"TYPE HINTS: '{token_list[1]}' is not a valid type on line {token_list.lineno}"
+        errors.append(msg)
+        raise SyntaxError(msg)
 
 
 def p_type_series(token_list: yacc.YaccProduction) -> None:
@@ -642,16 +733,18 @@ def p_type_series(token_list: yacc.YaccProduction) -> None:
                    | NAME
     """
     if token_list.slice[1].type == "NAME" and token_list[1] not in TYPES:
-        error_msg = f"TYPE HINTS: '{token_list[1]}' is not a valid type"
-        raise SyntaxError(error_msg)
+        msg = f"TYPE HINTS: '{token_list[1]}' is not a valid type"
+        errors.append(msg)
+        raise SyntaxError(msg)
     if len(token_list) == 4 and token_list[3] not in TYPES:
-        error_msg = f"TYPE HINTS: '{token_list[3]}' is not a valid type"
-        raise SyntaxError(error_msg)
+        msg = f"TYPE HINTS: '{token_list[3]}' is not a valid type"
+        errors.append(msg)
+        raise SyntaxError(msg)
 
 
 def p_function_call(token_list: yacc.YaccProduction) -> None:
-    """function_call :   NAME complete_parameter_list"""
-    if symbol_table[token_list[1]] != FUNCTION:
+    """function_call    :   NAME complete_parameter_list"""
+    if symbol_table[token_list[1]] != FUNCTION and symbol_table[token_list[1]] != OBJECT:
         undefined_functions.add(token_list[1])
 
 
@@ -663,14 +756,24 @@ def p_complete_parameter_list(token_list: yacc.YaccProduction) -> None:
 
 
 def p_parameter_list(token_list: yacc.YaccProduction) -> None:
-    """parameter_list   :   parameter_list COMMA scalar_statement
-                        |   scalar_statement
+    """parameter_list   :   parameter_list COMMA parameter
+                        |   parameter
+    """
+    _ = token_list
+
+
+def p_parameter(token_list: yacc.YaccProduction) -> None:
+    """parameter    :   scalar_statement
+                    |   binary_operation
+                    |   unary_operation
     """
     _ = token_list
 
 
 def p_method_call(token_list: yacc.YaccProduction) -> None:
-    """method_call  :   callable DOT function_call"""
+    """method_call  :   callable DOT function_call
+                    |   name_dot_series DOT function_call
+    """
     _ = token_list
 
 
@@ -683,7 +786,23 @@ def p_callable(token_list: yacc.YaccProduction) -> None:
                 |   HEXADECIMAL_NUMBER
                 |   NAME
     """
-    is_name_callable(token_list)
+    does_name_exist(token_list)
+
+
+# =============================== CLASSES =====================================
+# TODO: Check inheritence
+def p_class_definition(token_list: yacc.YaccProduction) -> None:
+    """class_definition :   class_header COLON body
+                        |   class_header L_PARENTHESIS NAME R_PARENTHESIS COLON body
+    """
+    parser_state_info["classes"] -= 1
+    _ = token_list
+
+
+def p_class_header(token_list: yacc.YaccProduction) -> None:
+    """class_header :   CLASS NAME"""
+    symbol_table[token_list[2]] = OBJECT
+    parser_state_info["classes"] += 1
 
 
 # =============================== OTHER =======================================
@@ -702,4 +821,14 @@ class FanglessParser:
 
     def parse(self, source_code: str) -> Any:
         self.lexer.lex_stream(source_code)
-        return self.parser.parse(lexer=self.lexer, debug=VERBOSE_PARSER)
+        parsed_source_code = self.parser.parse(lexer=self.lexer, debug=VERBOSE_PARSER)
+        self.print_errors()
+        return parsed_source_code
+
+    def print_errors(self) -> None:
+        if len(errors) > 0:
+            print("\n\n=================================================")
+            print(f"Your program is {color_msg("horseshit")}, here is why:")
+            [print(color_msg(error, RAINBOW_ERRORS)) for error in errors]
+            print(color_msg(AMOONGUS))
+            print("=================================================\n\n")
