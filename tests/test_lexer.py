@@ -1,10 +1,8 @@
 # test_lexer.py
-import sys
 import pytest
-from pathlib import Path
+from utils import add_package_from_parent_to_context
+add_package_from_parent_to_context("fangless_compiler")
 
-# Add the fangless_compiler directory to the system path
-sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "fangless_compiler"))
 
 from lexer import FanglessLexer
 import ply
@@ -35,7 +33,6 @@ reserved_words_cases = [
     ("continue", "CONTINUE"),
     ("break", "BREAK"),
     ("in", "IN"),
-    ("range", "RANGE"),
     ("class", "CLASS"),
     ("pass", "PASS"),
 ]
@@ -120,7 +117,6 @@ def lexer() -> FanglessLexer:
 
 
 # Test functions for each case
-
 
 def test_literals(lexer: FanglessLexer) -> None:
     for case in literals_cases:
@@ -235,8 +231,6 @@ def test_complex_case(lexer: FanglessLexer) -> None:
     assert tokens[index].type == "NAME"
     index += 1
     assert tokens[index].type == "DEDENT"
-    index += 1
-    assert tokens[index].type == "NEWLINE"
     index += 1
     assert tokens[index].type == "ELSE"
     index += 1
