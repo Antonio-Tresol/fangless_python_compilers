@@ -1,6 +1,6 @@
-# Compiler constants
-
+from random import choice
 from ply.lex import LexToken
+import colors
 
 
 def new_token(
@@ -21,6 +21,20 @@ def fill_symbol_table_with_builtin_functions(symbol_table: dict) -> None:
         symbol_table[func] = FUNCTION
 
 
+def color_msg(msg: str, rainbow: bool = True) -> str:
+    new_msg = ""
+    if rainbow:
+        for letter in msg: 
+            color_code = choice(colors.COLORS)
+            new_msg += f"{color_code}{letter}{colors.RESET}"
+    else:
+        color_code = choice(colors.COLORS)
+        new_msg = f"{color_code}{msg}{colors.RESET}"
+
+    return new_msg
+
+
+# ===== Compiler constants ==============
 VERBOSE_INDENTATION = False
 VERBOSE_LEXER = False
 VERBOSE_PARSER = True

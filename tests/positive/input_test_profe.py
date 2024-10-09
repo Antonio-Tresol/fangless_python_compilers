@@ -57,43 +57,43 @@ b = {
 }
 
 
-# def while_func(n):
-#     while n > 0:
-#         print(n)
-#         n -= 1
-#         if n == 10:
-#             break
-#         if n == 7:
-#             continue
-#         if n >= 50000:
-#             return "Hola"
-#         elif n > 1000:
-#             return 1
+def while_func(n):
+    while n > 0:
+        print(n)
+        n -= 1
+        if n == 10:
+            break
+        if n == 7:
+            continue
+        if n >= 50000:
+            return "Hola"
+        elif n > 1000:
+            return 1
 
 
-# def ifs(a, b, c, d):
-#     if a or b:
-#         print(a)
-#     elif c:
-#         if a and b:
-#             if d:
-#                 print(d)
-#         elif a:
-#             if d:
-#                 print(c)
-#         else:
-#             print(a)
+def ifs(a, b, c, d):
+    if a or b:
+        print(a)
+    elif c:
+        if a and b:
+            if d:
+                print(d)
+        elif a:
+            if d:
+                print(c)
+        else:
+            print(a)
 
 
-# hi = hola = "hola" + " mundo" + "!"
-# print(hi)
-# print(hola)
+hi = hola = "hola" + " mundo" + "!"
+print(hi)
+print(hola)
 
 
-# def hello():
-#     print("hello")
-#     mundo()
+def hello():
+    print("hello")
+    mundo()
 
 
-# def mundo():
-#     print("mundo")
+def mundo():
+    print("mundo")

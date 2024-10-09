@@ -9,13 +9,12 @@ from common import (
     SCOPE_OPENED,
     TYPES,
     fill_symbol_table_with_builtin_functions,
+    color_msg,
     RAINBOW_ERRORS,
     AMOONGUS,
 )
-import colors
 from collections import defaultdict
 from typing import Any
-from random import choice
 
 # ================================ NEEDED OBJECTS =============================
 tokens = TOKENS
@@ -40,7 +39,9 @@ precedence = (
 )
 
 symbol_table: defaultdict[str, Any] = defaultdict(lambda: None)
-object_symbols: defaultdict[str, defaultdict[str, Any]] = defaultdict(lambda: defaultdict(lambda: None))
+object_symbols: defaultdict[str, defaultdict[str, Any]] = defaultdict(
+    lambda: defaultdict(lambda: None),
+)
 
 stack: list[str] = []
 undefined_functions: set[str] = set()
@@ -51,25 +52,17 @@ parser_state_info["classes"] = 0
 errors: list[str] = []
 
 
-def color_msg(msg: str, rainbow: bool = True) -> str:
-    new_msg = ""
-    if rainbow:
-        for letter in msg: 
-            color_code = choice(colors.COLORS)
-            new_msg += f"{color_code}{letter}{colors.RESET}"
-    else:
-        color_code = choice(colors.COLORS)
-        new_msg = f"{color_code}{msg}{colors.RESET}"
-
-    return new_msg
-
-
+# =============================ERROR CHECKING==================================
 def does_name_exist(token_list: yacc.YaccProduction) -> None:
     if (token_list.slice[1].type == "NAME"
         and symbol_table[token_list[1]] is None):
-        msg = f"Name: '{token_list[1]}' is not defined at {token_list.lineno}"
+        msg = f"Name: '{token_list[1]}' is not defined at {token_list.lineno(1)}"
         errors.append(msg)
         raise SyntaxError(msg)
+
+
+def p_error(token_list: yacc.YaccProduction) -> None:
+    print(f"Parser Error near '{token_list}' in line {token_list.lineno}")
 
 
 # =================================== BASIC ===================================
@@ -83,10 +76,6 @@ def p_all(token_list: yacc.YaccProduction) -> None:
         errors.append(msg)
         raise SyntaxError(msg)
     _ = token_list
-
-
-def p_error(token_list: yacc.YaccProduction) -> None:
-    print(f"Parser Error near '{token_list}' in line {token_list.lineno}")
 
 
 # ================================== LITERALS =================================
@@ -139,7 +128,7 @@ def p_string(token_list: yacc.YaccProduction) -> None:
 # ============= DICTIONARY ===========================
 def p_dict(token_list: yacc.YaccProduction) -> None:
     """dict :   L_CURLY_BRACE completed_key_value_series R_CURLY_BRACE
-            |   L_CURLY_BRACE epsilon R_CURLY_BRACE
+            |   L_CURLY_BRACE R_CURLY_BRACE
     """
     _ = token_list
 
@@ -159,7 +148,18 @@ def p_key_value_series(token_list: yacc.YaccProduction) -> None:
 
 
 def p_key_value_pair(token_list: yacc.YaccProduction) -> None:
-    """key_value_pair   :   literal COLON literal"""
+    """key_value_pair   :   non_mutable_literal COLON scalar_statement"""
+    _ = token_list
+
+
+def p_non_mutable_literal(token_list: yacc.YaccProduction) -> None:
+    """non_mutable_literal  :   tuple
+                            |   string
+                            |   number
+                            |   bool
+                            |   NONE
+                            |   NAME
+    """
     _ = token_list
 
 
@@ -168,7 +168,7 @@ def p_key_value_pair(token_list: yacc.YaccProduction) -> None:
 # series of literals (general series) or empty called epsilon
 def p_list(token_list: yacc.YaccProduction) -> None:
     """list :   L_BRACKET completed_general_series R_BRACKET
-            |   L_BRACKET epsilon R_BRACKET
+            |   L_BRACKET R_BRACKET
     """
     _ = token_list
 
@@ -326,7 +326,7 @@ def p_name_dot_series(token_list: yacc.YaccProduction) -> None:
         and symbol_table[token_list[1]] is None
         and (token_list[1] != "self" or parser_state_info["classes"] <= 0)
     ):
-        msg = f"Name: '{token_list[1]}' is not defined at line {token_list.lineno}"
+        msg = f"Name: '{token_list[1]}' is not defined at line {token_list.lineno(1)}"
         errors.append(msg)
         raise SyntaxError(msg)
 
@@ -388,7 +388,7 @@ def p_op_assignation_operand(token_list: yacc.YaccProduction) -> None:
     name = token_list[1]
     if isinstance(name, list):
         if symbol_table[name[1]] is None:
-            msg = f"Name: '{name[1]}' is not defined at line {token_list.lineno}"
+            msg = f"Name: '{name[1]}' is not defined at line {token_list.lineno(1)}"
             errors.append(msg)
             raise SyntaxError(msg)
     else:
@@ -449,7 +449,8 @@ def p_complex_statement(token_list: yacc.YaccProduction) -> None:
         ) and
         parser_state_info["loops"] <= 0
     ):
-        msg = f"Cant call '{token_list[1]}' on this context on line {token_list.lineno}"
+        line_number = token_list.lineno(1)
+        msg = f"Cant call '{token_list[1]}' on this context on line {line_number}"
         errors.append(msg)
         raise SyntaxError(msg)
 
@@ -460,7 +461,7 @@ def p_complex_statement(token_list: yacc.YaccProduction) -> None:
             parser_state_info["functions"] <= 0
         )
     ):
-        msg = f"Cant call 'PASS' on this context on line {token_list.lineno}"
+        msg = f"Cant call 'PASS' on this context on line {token_list.lineno(1)}"
         errors.append(msg)
         raise SyntaxError(msg)
 
@@ -468,7 +469,7 @@ def p_complex_statement(token_list: yacc.YaccProduction) -> None:
 def p_dot_pass(token_list: yacc.YaccProduction) -> None:
     """dot_pass    :   DOT DOT DOT"""
     if parser_state_info["functions"] <= 0:
-        msg = f"Cant call 'TRIPLE DOT' on this context on line {token_list.lineno}"
+        msg = f"Cant call 'TRIPLE DOT' on this context on line {token_list.lineno(1)}"
         errors.append(msg)
         raise SyntaxError(msg)
     _ = token_list
@@ -567,6 +568,9 @@ def p_while(token_list: yacc.YaccProduction) -> None:
 def p_while_open(token_list: yacc.YaccProduction) -> None:
     """while_open   :   WHILE"""
     parser_state_info["loops"] += 1
+    print("\n\n=================================================")
+    print(f"starting loop: {parser_state_info["loops"]}")
+    print("\n\n=================================================")
     _ = token_list
 
 
@@ -619,7 +623,7 @@ def p_return_statement(token_list: yacc.YaccProduction) -> None:
                         |   RETURN
     """
     if parser_state_info["functions"] <= 0:
-        msg = f"Cant call RETURN 'on this context on line {token_list.lineno}"
+        msg = f"Cant call RETURN 'on this context on line {token_list.lineno(1)}"
         errors.append(msg)
         raise SyntaxError(msg)
     _ = token_list
@@ -644,7 +648,7 @@ def p_function_definition(token_list: yacc.YaccProduction) -> None:
     """function_definition  :   def_open NAME complete_argument_list COLON body
                             |   def_open NAME complete_argument_list ARROW hints COLON body
     """
-    parser_state_info["loops"] -= 1
+    parser_state_info["functions"] -= 1
     arguments = token_list[3]
     for argument in arguments:
         symbol_table[argument] = None
@@ -723,7 +727,7 @@ def p_hint(token_list: yacc.YaccProduction) -> None:
              | NONE
     """
     if len(token_list) == 2 and token_list[1] not in TYPES:
-        msg = f"TYPE HINTS: '{token_list[1]}' is not a valid type on line {token_list.lineno}"
+        msg = f"TYPE HINTS: '{token_list[1]}' is not a valid type on line {token_list.lineno(1)}"
         errors.append(msg)
         raise SyntaxError(msg)
 
@@ -733,11 +737,11 @@ def p_type_series(token_list: yacc.YaccProduction) -> None:
                    | NAME
     """
     if token_list.slice[1].type == "NAME" and token_list[1] not in TYPES:
-        msg = f"TYPE HINTS: '{token_list[1]}' is not a valid type"
+        msg = f"TYPE HINTS: '{token_list[1]}' is not a valid type on line {token_list.lineno(1)}"
         errors.append(msg)
         raise SyntaxError(msg)
     if len(token_list) == 4 and token_list[3] not in TYPES:
-        msg = f"TYPE HINTS: '{token_list[3]}' is not a valid type"
+        msg = f"TYPE HINTS: '{token_list[3]}' is not a valid type on line {token_list.lineno(3)}"
         errors.append(msg)
         raise SyntaxError(msg)
 
@@ -772,7 +776,7 @@ def p_parameter(token_list: yacc.YaccProduction) -> None:
 
 def p_method_call(token_list: yacc.YaccProduction) -> None:
     """method_call  :   callable DOT function_call
-                    |   name_dot_series DOT function_call
+                    |   name_dot_series complete_parameter_list
     """
     _ = token_list
 
@@ -784,9 +788,8 @@ def p_callable(token_list: yacc.YaccProduction) -> None:
                 |   BINARY_NUMBER
                 |   OCTAL_NUMBER
                 |   HEXADECIMAL_NUMBER
-                |   NAME
     """
-    does_name_exist(token_list)
+    _ = token_list
 
 
 # =============================== CLASSES =====================================
