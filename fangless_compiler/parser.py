@@ -65,7 +65,7 @@ def does_name_exist(token_list: yacc.YaccProduction) -> None:
 
 
 def p_error(token_list: yacc.YaccProduction) -> None:
-    print(f"Parser Error near '{token_list}' in line {token_list.lineno}{add_remark()}")
+    print(f"Parser Error near '{token_list}' in line {token_list.lineno}")
 
 
 # =================================== BASIC ===================================

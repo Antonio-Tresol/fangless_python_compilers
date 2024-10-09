@@ -95,17 +95,7 @@ parentheses_cases = [
 # Comments
 comments_cases = [
     ("# This is a comment", None),
-    ("# This is another comment\n", None),
-    (
-        '"""hello world 4793@\n#$%^& asdfad f &#^&&       \n 979bmario pikachu'
-        ' \n \t are you here? for i am schizophrenic in range """',
-        None,
-    ),
-    (
-        "'''hello world 4793@\n#$%^& asdfad f &#^&&      \n 979bmario pikachu"
-        " \n \t are you here? def i am schizophrenic return '''",
-        None,
-    ),
+    ("# This is another comment", None),
 ]
 
 

@@ -44,12 +44,14 @@ def be_artistic() -> str:
     return choice(error_messages.masterpiece_tuple)
 
 
-# ===== Compiler constants ==============
+# ===== COMPILER CONSTANTS ==============
+
+# ===== COMPILER FLAGS ==================
 VERBOSE_INDENTATION = False
-VERBOSE_LEXER = False
-VERBOSE_PARSER = False
+VERBOSE_LEXER = True
+VERBOSE_PARSER = True
 RAINBOW_ERRORS = False
-SENSITIVE_PROGRAMMER = False
+SENSITIVE_PROGRAMMER = True
 
 # ========TOKENS AND RESERVED WORDS=======
 TOKENS = (

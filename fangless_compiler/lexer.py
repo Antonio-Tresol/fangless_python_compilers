@@ -150,9 +150,8 @@ class FanglessLexer:
         return token
 
     def t_comment(self, token: lex.LexToken) -> None:
-        r"""([ ]*\043[^\n]*)|([ ]*\"\"\"[^\"]*\"\"\")|([ ]*\'\'\'[^\"]*\'\'\')"""  # noqa: E501
+        r"""([ ]*\043[^\n]*)"""
         token.lexer.lineno += 1
-        token.lexer.skip(1)
 
     def t_TRIPLESTRING(self, token: lex.LexToken) -> lex.LexToken:
         r'"{3}([\s\S]*?"{3}) | \'{3}([\s\S]*?\'{3})'
