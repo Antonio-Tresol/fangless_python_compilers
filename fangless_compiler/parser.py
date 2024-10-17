@@ -9,6 +9,7 @@ from common import (
     VARIABLE,
     SCOPE_OPENED,
     TYPES,
+    CONTAINER_TYPES,
     fill_symbol_table_with_builtin_functions,
     color_msg,
     add_remark,
@@ -59,7 +60,10 @@ errors: list[str] = []
 def does_name_exist(token_list: yacc.YaccProduction) -> None:
     if (token_list.slice[1].type == "NAME"
         and symbol_table[token_list[1]] is None):
-        msg = f"--Name: '{token_list[1]}' is not defined at {token_list.lineno(1)}--{add_remark()}"
+        msg = (
+               f"--Name: '{token_list[1]}' is not defined "
+               f"at {token_list.lineno(1)}--{add_remark()}"
+              )
         errors.append(msg)
         raise SyntaxError(msg)
 
@@ -339,35 +343,39 @@ def p_name_dot_series(token_list: yacc.YaccProduction) -> None:
         and symbol_table[token_list[1]] is None
         and (token_list[1] != "self" or parser_state_info["classes"] <= 0)
     ):
-        msg = f"--Name: '{token_list[1]}' is not defined at line {token_list.lineno(1)}--{add_remark()}"
+        msg = (
+               f"--Name: '{token_list[1]}' is not defined at line {token_list.lineno(1)}"
+               f"--{add_remark()}"
+              )
         errors.append(msg)
         raise SyntaxError(msg)
 
 
 def p_name_assignation(token_list: yacc.YaccProduction) -> None:
     """name_assignation :   name_equal_series EQUAL assignation_value
+                        |   var_declaration EQUAL assignation_value
                         |   NAME EQUAL assignation_value
     """
-    if token_list.slice[1].type == "NAME":
+    names = token_list[1]
+    if not isinstance(names, list):
         if symbol_table[token_list[1]] is None:
             stack.append(token_list[1])
         symbol_table[token_list[1]] = VARIABLE
     else:
-        names = token_list[1]
         for name in names:
             if symbol_table[name] is None:
                 stack.append(name)
             symbol_table[name] = VARIABLE
 
-
+a = 6
 def p_name_equal_series(token_list: yacc.YaccProduction) -> None:
     """name_equal_series   : name_equal_series EQUAL NAME
                            | NAME EQUAL NAME
     """
-    if token_list.slice[1].type == "NAME":
+    names = token_list[1]
+    if not isinstance(names, list):
         token_list[0] = [token_list[1], token_list[3]]
     else:
-        names = token_list[1]
         names.append(token_list[3])
         token_list[0] = names
 
@@ -401,7 +409,10 @@ def p_op_assignation_operand(token_list: yacc.YaccProduction) -> None:
     name = token_list[1]
     if isinstance(name, list):
         if symbol_table[name[1]] is None:
-            msg = f"--Name: '{name[1]}' is not defined at line {token_list.lineno(1)}--{add_remark()}"
+            msg = (
+                f"--Name: '{name[1]}' is not defined at line {token_list.lineno(1)}--"
+                f"{add_remark()}"
+            )
             errors.append(msg)
             raise SyntaxError(msg)
     else:
@@ -423,6 +434,68 @@ def p_op_assignation_operator(token_list: yacc.YaccProduction) -> None:
                                 |   RIGHT_SHIFT_EQUAL
     """
     _ = token_list
+
+
+# ========================= VARIABLES & HINTS =================================
+def p_var_declaration(token_list: yacc.YaccProduction) -> None:
+    """var_declaration  :   NAME COLON hints
+    """
+    token_list[0] = token_list[1]
+
+
+def p_hints(token_list: yacc.YaccProduction) -> None:
+    """hints  : hints BAR hint
+              | hint
+    """
+    _ = token_list
+
+
+def p_hint(token_list: yacc.YaccProduction) -> None:
+    """hint  : container_type
+             | NAME
+             | NONE
+    """
+    hint = token_list[1]
+    if token_list.slice[1].type == "NAME" and token_list[1] not in TYPES:
+        msg = (
+               f"--TYPE HINTS: '{token_list[1]}' is not a valid type "
+               f"on line {token_list.lineno(1)}--{add_remark()}"
+               )
+        errors.append(msg)
+        raise SyntaxError(msg)
+    elif isinstance(hint, list):
+        for type in hint:
+            if type not in TYPES:
+                msg = (
+                       f"--TYPE HINTS: '{token_list[1]}' is not a "
+                       f"valid type on line {token_list.lineno(1)}--{add_remark()}"
+                       )
+                errors.append(msg)
+                raise SyntaxError(msg)
+
+
+def p_container_type(token_list: yacc.YaccProduction) -> None:
+    """container_type  : NAME L_BRACKET type_series R_BRACKET"""
+    if token_list[1] not in CONTAINER_TYPES:
+        msg = (
+                f"--TYPE HINTS: '{token_list[1]}' is not a valid "
+                f"container type on line {token_list.lineno(1)}--{add_remark()}"
+                )
+        errors.append(msg)
+        raise SyntaxError(msg)
+    token_list[0] = token_list[3]
+
+
+def p_type_series(token_list: yacc.YaccProduction) -> None:
+    """type_series  : type_series COMMA NAME
+                    | NAME
+    """
+    if token_list.slice[1].type == "NAME":
+        token_list[0] = [token_list[1]]
+    else:
+        types = token_list[1]
+        types.append(token_list[3])
+        token_list[0] = types
 
 
 # ========================= STATEMENTS ========================================
@@ -474,7 +547,10 @@ def p_complex_statement(token_list: yacc.YaccProduction) -> None:
             parser_state_info["functions"] <= 0
         )
     ):
-        msg = f"--Cant call 'pass' on this context on line {token_list.lineno(1)}--{add_remark()}"
+        msg = (
+               f"--Cant call 'pass' on this" 
+               f" context on line {token_list.lineno(1)}--{add_remark()}"
+              )
         errors.append(msg)
         raise SyntaxError(msg)
 
@@ -482,7 +558,10 @@ def p_complex_statement(token_list: yacc.YaccProduction) -> None:
 def p_dot_pass(token_list: yacc.YaccProduction) -> None:
     """dot_pass    :   DOT DOT DOT"""
     if parser_state_info["functions"] <= 0:
-        msg = f"--Cant call 'TRIPLE DOT' on this context on line {token_list.lineno(1)}--{add_remark()}"
+        msg = (
+               f"--Cant call 'TRIPLE DOT' on this "
+               f"context on line {token_list.lineno(1)}--{add_remark()}"
+              )
         errors.append(msg)
         raise SyntaxError(msg)
     _ = token_list
@@ -495,7 +574,6 @@ def p_statement_group(token_list: yacc.YaccProduction) -> None:
     _ = token_list
 
 
-# TODO: check variables for scope using maybe a rule each time there is an indent
 def p_body(token_list: yacc.YaccProduction) -> None:
     """body     :   NEWLINE open_scope statement_group DEDENT"""
     local_var = stack.pop()
@@ -633,7 +711,10 @@ def p_return_statement(token_list: yacc.YaccProduction) -> None:
                         |   RETURN
     """
     if parser_state_info["functions"] <= 0:
-        msg = f"--Cant call RETURN 'on this context on line {token_list.lineno(1)}--{add_remark()}"
+        msg = (
+               f"--Cant call RETURN 'on this context "
+               f"on line {token_list.lineno(1)}--{add_remark()}"
+              )
         errors.append(msg)
         raise SyntaxError(msg)
     _ = token_list
@@ -718,42 +799,10 @@ def p_default_argument(token_list: yacc.YaccProduction) -> None:
 
 
 def p_argument(token_list: yacc.YaccProduction) -> None:
-    """argument :   NAME COLON hints
-                |   NAME
+    """argument   :   NAME COLON hints
+                  |   NAME
     """
     token_list[0] = token_list[1]
-
-
-def p_hints(token_list: yacc.YaccProduction) -> None:
-    """hints  : hints BAR hint
-              | hint
-    """
-    _ = token_list
-
-
-def p_hint(token_list: yacc.YaccProduction) -> None:
-    """hint  : NAME L_BRACKET type_series R_BRACKET
-             | NAME
-             | NONE
-    """
-    if len(token_list) == 2 and token_list[1] not in TYPES:
-        msg = f"--TYPE HINTS: '{token_list[1]}' is not a valid type on line {token_list.lineno(1)}--{add_remark()}"
-        errors.append(msg)
-        raise SyntaxError(msg)
-
-
-def p_type_series(token_list: yacc.YaccProduction) -> None:
-    """type_series : type_series COMMA NAME
-                   | NAME
-    """
-    if token_list.slice[1].type == "NAME" and token_list[1] not in TYPES:
-        msg = f"--TYPE HINTS: '{token_list[1]}' is not a valid type on line {token_list.lineno(1)}--{add_remark()}"
-        errors.append(msg)
-        raise SyntaxError(msg)
-    if len(token_list) == 4 and token_list[3] not in TYPES:
-        msg = f"--TYPE HINTS: '{token_list[3]}' is not a valid type on line {token_list.lineno(3)}--{add_remark()}"
-        errors.append(msg)
-        raise SyntaxError(msg)
 
 
 def p_function_call(token_list: yacc.YaccProduction) -> None:
@@ -803,7 +852,6 @@ def p_callable(token_list: yacc.YaccProduction) -> None:
 
 
 # =============================== CLASSES =====================================
-# TODO: Check inheritence
 def p_class_definition(token_list: yacc.YaccProduction) -> None:
     """class_definition :   class_header COLON body
                         |   class_header L_PARENTHESIS NAME R_PARENTHESIS COLON body
@@ -811,7 +859,10 @@ def p_class_definition(token_list: yacc.YaccProduction) -> None:
     parser_state_info["classes"] -= 1
     if len(token_list) == 7:
         if token_list[1] == token_list[3]:
-            msg = f"--Class: '{token_list[1]}' cannot inherit from themselves on line {token_list.lineno(1)}--"f"{add_remark()}"
+            msg = (
+                    f"--Class: '{token_list[1]}' cannot inherit "
+                    f"from themselves on line {token_list.lineno(1)}--"f"{add_remark()}"
+                  )
             errors.append(msg)
             raise SyntaxError(msg)
 
@@ -855,10 +906,10 @@ class FanglessParser:
     def print_errors(self) -> None:
         if len(errors) > 0:
             print("\n\n=================================================")
-            print(f"Your program is {color_msg("horseshit") if not SENSITIVE_PROGRAMMER else "not working"}, here is why:")
+            remark = color_msg("horseshit") if not SENSITIVE_PROGRAMMER else "not working"
+            print(f"Your program is {remark}, here is why:")
             while len(errors) > 0:
                 print(color_msg(errors.pop(), RAINBOW_ERRORS))
             if not SENSITIVE_PROGRAMMER:
                 print(color_msg(be_artistic()))
-
             print("=================================================\n\n")

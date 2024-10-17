@@ -194,6 +194,7 @@ RESERVED_WORDS = {
     }
 
 TYPES = {
+    "union",
     "int",
     "float",
     "list",
@@ -203,6 +204,14 @@ TYPES = {
     "str",
     "bool",
     "None",
+}
+
+CONTAINER_TYPES = {
+    "union",
+    "list",
+    "set",
+    "tuple",
+    "dict",
 }
 
 SCOPE_OPENED = "OPENED"
