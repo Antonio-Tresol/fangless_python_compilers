@@ -45,7 +45,7 @@
 
 If the virtual enviroment is active the dependencies will be install there and not in your root python enviroment.
 
-## Install Dependencies:
+## Install Dependencies
 
    To install the required project dependencies from requirements.txt:
 
@@ -67,16 +67,22 @@ or to execute all tests from the root of the repository
  ```bash
    pytest
  ```
- For the parser there are many test cases in dir tests. All named input_test_n.py
- All of them should end properly by executing the following command 
+
+ For the parser there are many test cases in dir tests. All named input_test_something.py
+ All of them should end properly by executing the following command
+
  ```bash
-   python fangless_compiler/compiler.py input_test_n.py
+   python fangless_compiler/compiler.py input_test_something.py
  ```
 
-
 ## Run the compiler
+
 To run the compiler over a .py file use the followin command
 
  ```bash
    python fangless_compiler/compiler.py <program.py>
  ```
+
+## Unsupported grammar
+
+Due to time and complexity limitations, not all valid Python grammar is supported by this transpiler. As a result, certain features and functionalities have been excluded and will not work as expected. A comprehensive list of these unsupported features, along with examples, can be found in the [unsupported_cases.md](./unsupported_casses.md) file.
