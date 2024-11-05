@@ -48,8 +48,8 @@ def be_artistic() -> str:
 
 # ===== COMPILER FLAGS ==================
 VERBOSE_INDENTATION = False
-VERBOSE_LEXER = True
-VERBOSE_PARSER = True
+VERBOSE_LEXER = False
+VERBOSE_PARSER = False
 RAINBOW_ERRORS = False
 SENSITIVE_PROGRAMMER = True
 

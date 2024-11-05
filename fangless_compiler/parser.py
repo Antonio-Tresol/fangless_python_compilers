@@ -18,6 +18,7 @@ from common import (
 )
 from collections import defaultdict
 from typing import Any
+import pprint
 
 # ================================ NEEDED OBJECTS =============================
 tokens = TOKENS
@@ -104,6 +105,13 @@ def p_literal(token_list: yacc.YaccProduction) -> None:
                 |   NAME
     """
     does_name_exist(token_list)
+    match token_list.slice[1].type:
+        case "NAME":
+            token_list[0] = str(token_list[1])
+        case "NONE":
+            token_list[0] = None
+        case _:
+            token_list[0] = token_list[1]
 
 
 def p_number(token_list: yacc.YaccProduction) -> None:
@@ -113,14 +121,14 @@ def p_number(token_list: yacc.YaccProduction) -> None:
                 |   OCTAL_NUMBER
                 |   HEXADECIMAL_NUMBER
     """
-    _ = token_list
+    token_list[0] = token_list[1]
 
 
 def p_bool(token_list: yacc.YaccProduction) -> None:
     """bool     :   TRUE
                 |   FALSE
     """
-    _ = token_list
+    token_list[0] = True if token_list[1] == "True" else False
 
 
 # =============================== STRUCTURES ===================================
@@ -131,7 +139,7 @@ def p_structure(token_list: yacc.YaccProduction) -> None:
                     |   set
                     |   string
     """
-    _ = token_list
+    token_list[0] = token_list[1]
 
 
 def p_string(token_list: yacc.YaccProduction) -> None:
@@ -139,7 +147,16 @@ def p_string(token_list: yacc.YaccProduction) -> None:
                 |   UNICODE_STRING
                 |   RAW_STRING
     """
-    _ = token_list
+    match token_list.slice[1].type:
+        case "STRING":
+            token_list[0] = token_list[1]
+        case "UNICODE_STRING":
+            token_list[0] = str(token_list[1])
+        case "RAW_STRING": 
+            if isinstance(token_list[1], bytes):
+                token_list[0] = token_list[1].decode('utf-8', errors='replace')
+            else:
+                token_list[0] = str(token_list[1])
 
 
 # ============= DICTIONARY ===========================
@@ -147,26 +164,50 @@ def p_dict(token_list: yacc.YaccProduction) -> None:
     """dict :   L_CURLY_BRACE completed_key_value_series R_CURLY_BRACE
             |   L_CURLY_BRACE R_CURLY_BRACE
     """
-    _ = token_list
+    if len(token_list) == 3:
+        token_list[0] = dict()
+        pprint.pprint(dict())
+    else:
+        key_values = token_list[2]
+        keys = key_values[0]
+        values = key_values[1]
+
+        dictionnary = {key:value for key, value in zip(keys, values)}
+        token_list[0] = dictionnary
+        pprint.pprint(dictionnary)
 
 
 def p_completed_key_value_series(token_list: yacc.YaccProduction) -> None:
     """completed_key_value_series   :   key_value_series COMMA
                                     |   key_value_series
     """
-    _ = token_list
-
+    token_list[0] = token_list[1]
+    
 
 def p_key_value_series(token_list: yacc.YaccProduction) -> None:
     """key_value_series     :   key_value_series COMMA key_value_pair
                             |   key_value_pair
     """
-    _ = token_list
+    if len(token_list) == 2:
+        token_list[0] = token_list[1]
+    else:
+        key_values = token_list[1]
+        keys = key_values[0]
+        values = key_values[1]
+
+        new = token_list[3]
+        new_key = new[0][0]
+        new_value = new[1][0]
+        
+        keys.append(new_key)
+        values.append(new_value)
+        token_list[0] = [keys, values]
 
 
 def p_key_value_pair(token_list: yacc.YaccProduction) -> None:
     """key_value_pair   :   non_mutable_literal COLON scalar_statement"""
-    _ = token_list
+    # first list are the keys and the second list are the values
+    token_list[0] = [[token_list[1]], [token_list[3]]]
 
 
 def p_non_mutable_literal(token_list: yacc.YaccProduction) -> None:
@@ -177,7 +218,14 @@ def p_non_mutable_literal(token_list: yacc.YaccProduction) -> None:
                             |   NONE
                             |   NAME
     """
-    _ = token_list
+    # Names are passed up as strings
+    match token_list.slice[1].type:
+        case "NAME":
+            token_list[0] = str(token_list[1])
+        case "NONE":
+            token_list[0] = None
+        case _:
+            token_list[0] = token_list[1]
 
 
 # ================================= LIST, SET, TUPLE ==========================
@@ -187,27 +235,40 @@ def p_list(token_list: yacc.YaccProduction) -> None:
     """list :   L_BRACKET completed_general_series R_BRACKET
             |   L_BRACKET R_BRACKET
     """
-    _ = token_list
+    if len(token_list) == 3:
+        token_list[0] = []
+        pprint.pprint([])
+    else:
+        series = token_list[2]
+        token_list[0] = series
+        pprint.pprint(series)
 
 
 # sets can not be declared empty so they can only have a general series inside
 def p_set(token_list: yacc.YaccProduction) -> None:
     """set  :   L_CURLY_BRACE completed_general_series R_CURLY_BRACE"""
-    _ = token_list
+    series = token_list[2]
+    token_list[0] = set(series)
+    pprint.pprint(set(series))
 
 
 def p_completed_general_series(token_list: yacc.YaccProduction) -> None:
     """completed_general_series :   general_series COMMA
                                 |   general_series
     """
-    _ = token_list
+    token_list[0] = token_list[1]
 
 
 def p_general_series(token_list: yacc.YaccProduction) -> None:
     """general_series   :   general_series COMMA literal
                         |   literal
     """
-    _ = token_list
+    if len(token_list) == 2:
+        token_list[0] = [token_list[1]]
+    else:
+        series = token_list[1]
+        series.append(token_list[3])
+        token_list[0] = series
 
 
 def p_tuple(token_list: yacc.YaccProduction) -> None:
@@ -215,7 +276,14 @@ def p_tuple(token_list: yacc.YaccProduction) -> None:
                 |   L_PARENTHESIS general_series COMMA R_PARENTHESIS
                 |   L_PARENTHESIS R_PARENTHESIS
     """
-    _ = token_list
+    series = list()
+    if len(token_list) > 3:
+        series = token_list[2]
+        if len(token_list) == 6:
+            series.append(token_list[4])
+    
+    token_list[0] = tuple(series)
+    pprint.pprint(tuple(series))
 
 
 # ================================ UNARY OPERATIONS ===========================
@@ -279,7 +347,7 @@ def p_binary_operator(token_list: yacc.YaccProduction) -> None:
                         |   NOT IN
                         |   IN
     """
-    _ = token_list
+    token_list[0] = token_list[1]
 
 
 # ========================= ASSIGNATIONS ======================================
@@ -326,7 +394,7 @@ def p_assignation_value(token_list: yacc.YaccProduction) -> None:
                             |   scalar_statement
                             |   completed_general_series
     """
-    _ = token_list
+    token_list[0] = token_list[1]
 
 
 def p_dot_assignation(token_list: yacc.YaccProduction) -> None:
@@ -338,6 +406,7 @@ def p_name_dot_series(token_list: yacc.YaccProduction) -> None:
     """name_dot_series  :   name_dot_series DOT NAME
                         |   NAME DOT NAME
     """
+
     if (
         token_list.slice[1].type == "NAME"
         and symbol_table[token_list[1]] is None
@@ -349,6 +418,14 @@ def p_name_dot_series(token_list: yacc.YaccProduction) -> None:
               )
         errors.append(msg)
         raise SyntaxError(msg)
+
+    dot_series = token_list[1]
+
+    if isinstance(dot_series, list):
+        dot_series.append(token_list[3])
+        token_list[0] = dot_series
+    else:
+        token_list[0] = [token_list[0], token_list[3]]
 
 
 def p_name_assignation(token_list: yacc.YaccProduction) -> None:
@@ -367,7 +444,7 @@ def p_name_assignation(token_list: yacc.YaccProduction) -> None:
                 stack.append(name)
             symbol_table[name] = VARIABLE
 
-a = 6
+
 def p_name_equal_series(token_list: yacc.YaccProduction) -> None:
     """name_equal_series   : name_equal_series EQUAL NAME
                            | NAME EQUAL NAME
@@ -507,7 +584,7 @@ def p_scalar_statement(token_list: yacc.YaccProduction) -> None:
                         |   function_call
                         |   method_call
     """
-    _ = token_list
+    token_list[0] = token_list[1]
 
 
 def p_complex_statement(token_list: yacc.YaccProduction) -> None:
@@ -810,19 +887,32 @@ def p_function_call(token_list: yacc.YaccProduction) -> None:
     if symbol_table[token_list[1]] != FUNCTION and symbol_table[token_list[1]] != CLASS:
         undefined_functions.add(token_list[1])
 
+    token_list[0] = [token_list[1], token_list[2]]
+
+
 
 def p_complete_parameter_list(token_list: yacc.YaccProduction) -> None:
     """complete_parameter_list  :   L_PARENTHESIS parameter_list R_PARENTHESIS
                                 |   L_PARENTHESIS R_PARENTHESIS
     """
-    _ = token_list
+    
+    param_list = token_list[1]
+
+    if isinstance(param_list, list):
+        token_list[0] = param_list
 
 
 def p_parameter_list(token_list: yacc.YaccProduction) -> None:
     """parameter_list   :   parameter_list COMMA parameter
                         |   parameter
     """
-    _ = token_list
+    
+    parameters = token_list[1]
+    if isinstance(parameters, list):
+        parameters.append(token_list[3])
+        token_list[0] = parameters
+    else:
+        token_list[0] = [parameters]
 
 
 def p_parameter(token_list: yacc.YaccProduction) -> None:
@@ -830,14 +920,15 @@ def p_parameter(token_list: yacc.YaccProduction) -> None:
                     |   binary_operation
                     |   unary_operation
     """
-    _ = token_list
+    token_list[0] = token_list[1]
 
 
 def p_method_call(token_list: yacc.YaccProduction) -> None:
     """method_call  :   callable DOT function_call
                     |   name_dot_series complete_parameter_list
     """
-    _ = token_list
+
+    token_list[0] = [token_list[1], token_list[3]]
 
 
 def p_callable(token_list: yacc.YaccProduction) -> None:
@@ -848,7 +939,7 @@ def p_callable(token_list: yacc.YaccProduction) -> None:
                 |   OCTAL_NUMBER
                 |   HEXADECIMAL_NUMBER
     """
-    _ = token_list
+    token_list[0] = token_list[1]
 
 
 # =============================== CLASSES =====================================
