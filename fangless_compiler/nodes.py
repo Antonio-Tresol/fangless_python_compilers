@@ -29,14 +29,14 @@ class Node:
 
 
 class OperatorNode(Node):
-    def __init__(self, operator: str, parenthesis : bool, node_type: str) -> None:
+    def __init__(self, operator: str, parenthesis: bool, node_type: str) -> None:
         super().__init__(node_type)
         self.operator = operator
         self.parenthesis = parenthesis
         self.max_adjacent = 2
         # mis adjacentes son mis operandos
 
-    # TODO (Caenid (Mamón))
+    # TODO (Anto (Mamón))
     def try_evaluate(self) -> bool: ...
 
 
@@ -48,5 +48,5 @@ class NameNode(Node):
         self.max_adjacent = 0
         # No tiene adyacentes
 
-    def __repr__(self)-> str:
+    def __repr__(self) -> str:
         return f"({self.name} with id: {self.id})"
