@@ -1,11 +1,11 @@
 class Node:
     def __init__(self, node_type: str) -> None:
         self.node_type = node_type
-        self.name = "base"
+        self.name = "base node"
         self.adjacents = []
         self.max_adjacent = 0
 
-    def add_adjecent(self, adj: "Node") -> int:
+    def add_adjacent(self, adj: "Node") -> int:
         pos = len(self.adjacents)
         if pos >= self.max_adjacent:
             error = (
@@ -15,35 +15,36 @@ class Node:
         self.adjacents.append(adj)
         return pos
 
-    def locate_adjecent(self, adj: "Node") -> int:
+    def locate_adjacent(self, adj: "Node") -> int:
         return self.adjacents.index(adj)
 
-    def change_adjecent(self, pos: int, adj: "Node") -> None:
+    def change_adjacent(self, pos: int, adj: "Node") -> None:
         if pos >= len(self.adjacents):
             error = "Tried to change unexistent adjacent node"
             raise IndexError(error)
-        self.add_adjecent[pos] = adj
+        self.add_adjacent[pos] = adj
 
     def __repr__(self):
         return f"{self.__class__}, max_adjacents {self.max_adjacent}, adjacents {self.adjacents}"
 
 
 class OperatorNode(Node):
-    def __init__(self, operator: str, parenthesis: bool, node_type: str) -> None:
-        super().__init__(node_type)
+    def __init__(self, operator: str) -> None:
+        super().__init__("operator")
+        self.name = "operator node"
         self.operator = operator
-        self.parenthesis = parenthesis
+        self.parenthesis = False
         self.max_adjacent = 2
         # mis adjacentes son mis operandos
 
-    # TODO (Anto (Mamón))
+    # TODO
     def try_evaluate(self) -> bool: ...
 
 
 class NameNode(Node):
     def __init__(self, identifier: str) -> None:
-        super().__init__("Variable")
-        self.name = "NameNode"
+        super().__init__("name")
+        self.name = "name node"
         self.id = identifier
         self.max_adjacent = 0
         # No tiene adyacentes

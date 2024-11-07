@@ -310,9 +310,14 @@ def p_binary_operation(token_list: yacc.YaccProduction) -> None:
     """binary_operation     :   L_PARENTHESIS binary_operation R_PARENTHESIS
                             |   binary_operand binary_operator binary_operand
     """
-    uses_parenthesis = token_list.slice[1].type == "L_PARENTHESIS"
-    token_list[0] = OperatorNode(token_list[2], uses_parenthesis)
-    # TODO: Unfuck Joe
+    if token_list.slice[1].type == "L_PARENTHESIS":
+        node = token_list[2]
+        node.parenthesis = True
+        token_list[2] = node
+
+    else:
+        token_list[0] = OperatorNode(token_list[2])
+        
 
 
 def p_binary_operand(token_list: yacc.YaccProduction) -> None:
@@ -598,6 +603,9 @@ def p_scalar_statement(token_list: yacc.YaccProduction) -> None:
                         |   NAME
     """
     does_name_exist(token_list)
+    if token_list.slice[1].type == "NAME":
+        token_list[0] = NameNode(token_list[1])
+      
     token_list[0] = token_list[1]
 
 
@@ -915,7 +923,11 @@ def p_function_call(token_list: yacc.YaccProduction) -> None:
     if symbol_table[token_list[1]] != FUNCTION and symbol_table[token_list[1]] != CLASS:
         undefined_functions.add(token_list[1])
 
-    token_list[0] = [token_list[1], token_list[2]]
+    function_node = OperatorNode("function_call")
+    function_node.add_adjacent(token_list[1])
+    parameter_list : list = token_list[2]
+    function_node.add_adjacent(parameter_list)
+    token_list[0] = function_node
 
 
 def p_complete_parameter_list(token_list: yacc.YaccProduction) -> None:
@@ -952,7 +964,22 @@ def p_method_call(token_list: yacc.YaccProduction) -> None:
     """method_call  :   callable DOT function_call
                     |   name_dot_series complete_parameter_list
     """
-    token_list[0] = [token_list[1], token_list[3]]  # might be treeable
+
+    8.7 . conjugate
+    if token_list.slice[2].type == "DOT":
+        method_node = OperatorNode("constant_method_call")
+
+        method_node.add_adjacent(token_list[1])
+        function_node : OperatorNode = token_list[3]
+        method_node.add_adjacent(function_node)
+        token_list[0] = method_node
+    else:
+        method_node = OperatorNode("attribute_method_call")
+
+        method_node.add_adjacent(token_list[1])
+        function_node : OperatorNode = token_list[3]
+        method_node.add_adjacent(function_node)
+        token_list[0] = method_node
 
 
 def p_callable(token_list: yacc.YaccProduction) -> None:
@@ -964,6 +991,7 @@ def p_callable(token_list: yacc.YaccProduction) -> None:
                 |   HEXADECIMAL_NUMBER
     """
     token_list[0] = token_list[1]
+    # TODO(Joe) : Fix ints callables
 
 
 # =============================== CLASSES =====================================
