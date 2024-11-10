@@ -37,15 +37,11 @@ class Node:
         return self.adjacents.index(adj)
 
     def change_adjacent(self, pos: int, adj: "Node") -> None:
-        if pos > self.max_adjacents:
+        if pos > self.max_adjacents or pos >= len(self.adjacents):
             error = (
-                f"Node {self.node_type} can't have more than {self.max_adjacents}"
-                " adjacents"
+                f"Node {self.node_type} tried to change unexistent adjacents"
             )
             raise IndexError(error)
-
-        while pos >= len(self.adjacents):
-            self.adjacents.append([])
 
         self.adjacents[pos] = adj
 

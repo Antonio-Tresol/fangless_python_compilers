@@ -407,7 +407,7 @@ def p_comma_assignation(token_list: yacc.YaccProduction) -> None:
     for name in names:
         if symbol_table[name] is None:
             stack.append(name)
-        symbol_table[name] = VARIABLE        
+        symbol_table[name] = VARIABLE
 
 
 def p_completed_name_comma_series(token_list: yacc.YaccProduction) -> None:
@@ -478,6 +478,7 @@ def p_name_assignation(token_list: yacc.YaccProduction) -> None:
                         |   NAME EQUAL assignation_value
     """
     names = token_list[1]
+    # print(names)
     assignation = OperatorNode(OperatorType.ASSIGNATION)
     if not isinstance(names, OperatorNode):
         if symbol_table[token_list[1]] is None:
@@ -498,7 +499,7 @@ def p_name_assignation(token_list: yacc.YaccProduction) -> None:
         names.change_adjacent(1, assignation)
         token_list[0] = names
 
-    print(token_list[0])
+    # print(token_list[0])
 
 
 def p_name_equal_series(token_list: yacc.YaccProduction) -> None:
@@ -517,6 +518,7 @@ def p_name_equal_series(token_list: yacc.YaccProduction) -> None:
         new_tree.add_adjacent(NameNode(token_list[3]))
         last_tree.change_adjacent(1, new_tree)
         token_list[0] = last_tree
+        print(last_tree)
 
 
 def p_index_assignation(token_list: yacc.YaccProduction) -> None:
