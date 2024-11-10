@@ -116,6 +116,8 @@ def p_literal(token_list: yacc.YaccProduction) -> None:
     does_name_exist(token_list)
     match token_list.slice[1].type:
         case "NAME":
+            # for names we create a node so that
+            # we know we have to resolve it at some point.
             token_list[0] = NameNode(token_list[1])
         case "NONE":
             token_list[0] = None
@@ -130,6 +132,7 @@ def p_number(token_list: yacc.YaccProduction) -> None:
                 |   OCTAL_NUMBER
                 |   HEXADECIMAL_NUMBER
     """
+    # numbers just go up
     token_list[0] = token_list[1]
 
 
@@ -137,6 +140,7 @@ def p_bool(token_list: yacc.YaccProduction) -> None:
     """bool     :   TRUE
                 |   FALSE
     """
+    # convert to equivalent boolean value
     token_list[0] = token_list[1] == "True"
 
 
@@ -164,7 +168,7 @@ def p_string(token_list: yacc.YaccProduction) -> None:
             token_list[0] = token_list[1]
         case "UNICODE_STRING":
             token_list[0] = str(token_list[1])
-        case "RAW_STRING": 
+        case "RAW_STRING":
             if isinstance(token_list[1], bytes):
                 token_list[0] = token_list[1].decode("utf-8", errors="replace")
             else:
@@ -177,14 +181,17 @@ def p_dict(token_list: yacc.YaccProduction) -> None:
     """dict :   L_CURLY_BRACE completed_key_value_series R_CURLY_BRACE
             |   L_CURLY_BRACE R_CURLY_BRACE
     """
+    # if empty dictionary
     if len(token_list) == 3:
         token_list[0] = {}
-    else:
-        key_values = token_list[2]
-        keys = key_values[0]
-        values = key_values[1]
+        return
 
-        token_list[0] = dict(zip(keys, values))
+    # when the dictionary is not empty
+    key_values = token_list[2]
+    keys = key_values["keys"]
+    values = key_values["values"]
+
+    token_list[0] = dict(zip(keys, values))
 
 
 def p_completed_key_value_series(token_list: yacc.YaccProduction) -> None:
@@ -198,25 +205,31 @@ def p_key_value_series(token_list: yacc.YaccProduction) -> None:
     """key_value_series     :   key_value_series COMMA key_value_pair
                             |   key_value_pair
     """
+    # if we only have one key_value_pair
     if len(token_list) == 2:
-        token_list[0] = token_list[1]
-    else:
-        key_values = token_list[1]
-        keys = key_values[0]
-        values = key_values[1]
+        new_key_value = token_list[1]
+        key_values = {
+            "keys": [new_key_value["key"]],
+            "values": [
+                new_key_value["value"],
+            ],
+        }
+        token_list[0] = key_values
+        return
 
-        new = token_list[3]
-        new_key = new[0][0]
-        new_value = new[1][0]
-        keys.append(new_key)
-        values.append(new_value)
-        token_list[0] = [keys, values]
+    # if we have a series of them
+    key_values = token_list[1]
+    new_key_value = token_list[3]
+    # we add them to the new dictionary
+    key_values["keys"].append(new_key_value["key"])
+    key_values["values"].append(new_key_value["value"])
+
+    token_list[0] = key_values
 
 
 def p_key_value_pair(token_list: yacc.YaccProduction) -> None:
     """key_value_pair   :   non_mutable_literal COLON scalar_statement"""
-    # first list are the keys and the second list are the values
-    token_list[0] = [[token_list[1]], [token_list[3]]]
+    token_list[0] = {"key": token_list[1], "value": token_list[3]}
 
 
 def p_non_mutable_literal(token_list: yacc.YaccProduction) -> None:
@@ -269,9 +282,12 @@ def p_general_series(token_list: yacc.YaccProduction) -> None:
     """general_series   :   general_series COMMA literal
                         |   literal
     """
+    # if it is only a literal, make it a list and send it up
     if len(token_list) == 2:
         token_list[0] = [token_list[1]]
     else:
+        # when we already have a series
+        # add the literal to the list
         series = token_list[1]
         series.append(token_list[3])
         token_list[0] = series
@@ -283,8 +299,10 @@ def p_tuple(token_list: yacc.YaccProduction) -> None:
                 |   L_PARENTHESIS R_PARENTHESIS
     """
     series = []
+    # if we have a general series inside the tuple
     if len(token_list) > 3:
         series = token_list[2]
+        # if we have a literal to add to the series
         if len(token_list) == 6:
             series.append(token_list[4])
 
@@ -306,8 +324,8 @@ def p_unary_operation(token_list: yacc.YaccProduction) -> None:
         token_list[0] = node
 
     else:
-        unary_op_node = OperatorNode(token_list[1])
-        unary_op_node.add_adjacent(token_list[2])
+        unary_op_node = OperatorNode(operator=token_list[1])
+        unary_op_node.adjacents["left"] = token_list[2]
         token_list[0] = unary_op_node
     if VERBOSE_AST:
         print("\n\n==============================")
@@ -320,6 +338,7 @@ def p_unary_operand(token_list: yacc.YaccProduction) -> None:
                         |   unary_operation
                         |   scalar_statement
     """
+    # if the operand has parenthesis and is a node
     if token_list.slice[1].type == "L_PARENTHESIS":
         if isinstance(token_list[2], OperatorNode):
             node: OperatorNode = token_list[2]
@@ -341,9 +360,9 @@ def p_binary_operation(token_list: yacc.YaccProduction) -> None:
         token_list[0] = node
 
     else:
-        binary_op_node = OperatorNode(token_list[2])
-        binary_op_node.add_adjacent(token_list[1])
-        binary_op_node.add_adjacent(token_list[3])
+        binary_op_node = OperatorNode(operator=token_list[2])
+        binary_op_node.adjacents["left"] = token_list[1]
+        binary_op_node.adjacents["right"] = token_list[3]
         token_list[0] = binary_op_node
     if VERBOSE_AST:
         print("\n\n==============================")
@@ -351,7 +370,6 @@ def p_binary_operation(token_list: yacc.YaccProduction) -> None:
         print("==============================\n")
 
 
-   
 def p_binary_operand(token_list: yacc.YaccProduction) -> None:
     """binary_operand   :   unary_operand
                         |   binary_operation
@@ -403,7 +421,7 @@ def p_assignation(token_list: yacc.YaccProduction) -> None:
 
 def p_comma_assignation(token_list: yacc.YaccProduction) -> None:
     """comma_assignation :   completed_name_comma_series EQUAL assignation_value"""
-    names : list = token_list[1]
+    names: list = token_list[1]
     for name in names:
         if symbol_table[name] is None:
             stack.append(name)
@@ -460,11 +478,12 @@ def p_name_dot_series(token_list: yacc.YaccProduction) -> None:
         raise SyntaxError(msg)
 
     attribute_node = OperatorNode(OperatorType.ATTRIBUTE_CALL)
-
+    # adjacents = [name, attribute]
     if token_list.slice[1].type == "NAME":
         attribute_node.add_adjacent(NameNode(token_list[1]))
         attribute_node.add_adjacent(NameNode(token_list[3]))
     else:
+        # attribute subtree = node([name, attribute])
         attribute_subtree: OperatorNode = token_list[1]
         attribute_node.add_adjacent(attribute_subtree)
         attribute_node.add_adjacent(NameNode(token_list[3]))
