@@ -11,39 +11,43 @@ class OperatorType(Enum):
     SLICING = "slicing"
     INDEXING = "indexing"
     ASSIGNATION = "="
+    UNPACK_ASSIGNATION = "unpack_assign"
 
 
 class Operand(Enum):
-    LEFT = "Left"
-    RIGHT = "Right"
-    CENTER = "Center"
-    def __repr__(self):
-        return self.value
-    def __str__(self):
-        return self.value
+    # default
+    LEFT = 0
+    RIGHT = 1
+    CENTER = 2
+
+    INDEX = 3
+    INSTANCE = 4
+    SLICE = 5
+    START = 6
+    END = 7
+    CONDITION = 8
+    VALUES = 9
+    FUNCTION_NAME = 10
+    ARGUMENTS = 11
+    METHOD = 12
+
+    def __repr__(self) -> str:
+        return str(self.name).lower()
+
+    def __str__(self) -> str:
+        return str(self.name).lower()
 
 
 NIL_NODE = None
 
 AdjacentKey = int | float | str | tuple
 
+
 class Node:
     def __init__(self, node_type: str) -> None:
         self.node_type = node_type
         self.adjacents = {}
         self.max_adjacents = 0
-
-    def add_adjacent(self, adj: "Node") -> int:
-        pos = len(self.adjacents)
-        if pos >= self.max_adjacents:
-            error = (
-                f"Node {self.node_type} can't have more"
-                f" than {self.max_adjacents} adjacents"
-            )
-            raise IndexError(error)
-
-        self.adjacents[pos] = adj
-        return pos
 
     def add_named_adjacent(self, key: AdjacentKey, adj: "Node") -> AdjacentKey:
         length = len(self.adjacents)
@@ -164,6 +168,20 @@ class OperatorNode(Node):
         string += "}"
         return string
 
+    def add_named_adjacent(self, key: Operand, adj: "Node") -> Operand:
+        length = len(self.adjacents)
+        if length >= self.max_adjacents:
+            error = (
+                f"Node {self.node_type} can't have more"
+                f" than {self.max_adjacents} adjacents"
+            )
+            raise IndexError(error)
+        if key not in Operand:
+            error = f"\"{key}\" is not a valid key for Node: {self.node_type}"
+            raise ValueError(error)
+        self.adjacents[key] = adj
+        return key
+
     def to_string(self, level: str) -> str:
         string = f"{level}{{\n"
         string += f'{level}  "Node": "{self.node_type}",\n'
@@ -252,7 +270,6 @@ class OperatorNode(Node):
 
         left = parent.get_left_operand()
         grand_parent.set_left_operand(left)
-
 
     def set_leftmost(self, new: Node) -> None:
         parent = self
