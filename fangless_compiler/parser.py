@@ -20,14 +20,19 @@ from common import (
 from collections import defaultdict
 from typing import Any
 from pprint import pprint
-from nodes import (
-    OperatorType,
-    Operand,
-    NIL_NODE,
-    OperatorNode,
-    NameNode,
-    EpicNode,
-)
+# from nodes import (
+#     OperatorType,
+#     Operand,
+#     NIL_NODE,
+#     OperatorNode,
+#     NameNode,
+#     EpicNode,
+# )
+
+from abstract_syntax_tree.node import NIL_NODE
+from abstract_syntax_tree.operator_node import (OperatorType, OperatorNode, Operand)
+from abstract_syntax_tree.epic_node import EpicNode
+from abstract_syntax_tree.name_node import NameNode
 
 # ================================ NEEDED OBJECTS =============================
 tokens = TOKENS
@@ -616,7 +621,15 @@ def p_index(token_list: yacc.YaccProduction) -> None:
 
 def p_op_assignation(token_list: yacc.YaccProduction) -> None:
     """op_assignation   :   op_assignation_operand op_assignation_operator assignation_value"""
-    _ = token_list
+    operation = OperatorNode(token_list[2])
+    operation.set_left_operand(token_list[1])
+    operation.set_right_operand(token_list[3])
+
+    token_list[0] = operation
+    if VERBOSE_AST:
+        print("\n\n==============================")
+        print(token_list[0])
+        print("==============================\n")
 
 
 def p_op_assignation_operand(token_list: yacc.YaccProduction) -> None:
@@ -636,6 +649,11 @@ def p_op_assignation_operand(token_list: yacc.YaccProduction) -> None:
     else:
         does_name_exist(token_list)
 
+    if token_list.slice[1].type == "NAME":
+        token_list[0] = NameNode(token_list[1])
+    else:
+        token_list[0] = token_list[1]
+
 
 def p_op_assignation_operator(token_list: yacc.YaccProduction) -> None:
     """op_assignation_operator  :   PLUS_EQUAL
@@ -651,7 +669,7 @@ def p_op_assignation_operator(token_list: yacc.YaccProduction) -> None:
                                 |   LEFT_SHIFT_EQUAL
                                 |   RIGHT_SHIFT_EQUAL
     """
-    _ = token_list
+    token_list[0] = token_list[1]
 
 
 # ========================= VARIABLES & HINTS =================================
@@ -1016,8 +1034,6 @@ def p_function_definition(token_list: yacc.YaccProduction) -> None:
     symbol_table[token_list[2]] = FUNCTION
     undefined_functions.discard(token_list[2])
 
-    # treeable
-
 
 def p_def_open(token_list: yacc.YaccProduction) -> None:
     """def_open :   DEF"""
@@ -1156,9 +1172,12 @@ def p_callable(token_list: yacc.YaccProduction) -> None:
                 |   BINARY_NUMBER
                 |   OCTAL_NUMBER
                 |   HEXADECIMAL_NUMBER
+                |   L_PARENTHESIS INTEGER_NUMBER R_PARENTHESIS
     """
-    token_list[0] = token_list[1]
-    # TODO(Caenid) : Fix ints callables
+    if len(token_list) == 2:
+        token_list[0] = token_list[1]
+    else:
+        token_list[0] = token_list[2]
 
 
 # =============================== CLASSES =====================================

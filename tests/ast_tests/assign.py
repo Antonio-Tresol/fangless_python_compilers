@@ -21,5 +21,10 @@ joseph.antonio.lalo.sup = 1
 
 a, b, c = joseph.tpl
 
-
 joseph.antonio.lalo.bro[6:8] = joseph.antonio.lalo.bro[-2:-4]
+
+a += 1
+a -= 1
+a *= 1
+a **= 2
+a /= 1
