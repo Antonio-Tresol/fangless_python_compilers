@@ -325,7 +325,7 @@ def p_unary_operation(token_list: yacc.YaccProduction) -> None:
 
     else:
         unary_op_node = OperatorNode(operator=token_list[1])
-        unary_op_node.adjacents["left"] = token_list[2]
+        unary_op_node.set_center_operand(token_list[2])
         token_list[0] = unary_op_node
     if VERBOSE_AST:
         print("\n\n==============================")
@@ -358,11 +358,10 @@ def p_binary_operation(token_list: yacc.YaccProduction) -> None:
         node: OperatorNode = token_list[2]
         node.parenthesis = True
         token_list[0] = node
-
     else:
         binary_op_node = OperatorNode(operator=token_list[2])
-        binary_op_node.adjacents["left"] = token_list[1]
-        binary_op_node.adjacents["right"] = token_list[3]
+        binary_op_node.set_left_operand(token_list[1])
+        binary_op_node.set_right_operand(token_list[3])
         token_list[0] = binary_op_node
     if VERBOSE_AST:
         print("\n\n==============================")
@@ -477,18 +476,17 @@ def p_name_dot_series(token_list: yacc.YaccProduction) -> None:
         errors.append(msg)
         raise SyntaxError(msg)
 
-    attribute_node = OperatorNode(OperatorType.ATTRIBUTE_CALL)
-    # adjacents = [name, attribute]
+    new_node = OperatorNode(OperatorType.ATTRIBUTE_CALL)
     if token_list.slice[1].type == "NAME":
-        attribute_node.add_adjacent(NameNode(token_list[1]))
-        attribute_node.add_adjacent(NameNode(token_list[3]))
+        new_node.set_left_operand(NameNode(token_list[1]))
+        new_node.set_right_operand(NameNode(token_list[3]))
+        token_list[0] = new_node
     else:
-        # attribute subtree = node([name, attribute])
         attribute_subtree: OperatorNode = token_list[1]
-        attribute_node.add_adjacent(attribute_subtree)
-        attribute_node.add_adjacent(NameNode(token_list[3]))
-
-    token_list[0] = attribute_node
+        new_node.set_left_operand(attribute_subtree.get_rightmost())
+        new_node.set_right_operand(NameNode(token_list[3]))
+        attribute_subtree.set_rightmost(new_node)
+        token_list[0] = attribute_subtree
 
 
 def p_name_assignation(token_list: yacc.YaccProduction) -> None:
@@ -496,29 +494,26 @@ def p_name_assignation(token_list: yacc.YaccProduction) -> None:
                         |   var_declaration EQUAL assignation_value
                         |   NAME EQUAL assignation_value
     """
-    names = token_list[1]
-    # print(names)
+    name = token_list[1]
     assignation = OperatorNode(OperatorType.ASSIGNATION)
-    if not isinstance(names, OperatorNode):
+    if not isinstance(name, tuple):
         if symbol_table[token_list[1]] is None:
             stack.append(token_list[1])
         symbol_table[token_list[1]] = VARIABLE
 
-        assignation.add_adjacent(token_list[1])
-        assignation.add_adjacent(token_list[3])
+        assignation.set_left_operand(token_list[1])
+        assignation.set_right_operand(token_list[3])
         token_list[0] = assignation
-
     else:
-        for name_node in names.get_leaves():
+        root, last_tree = name
+        for name_node in last_tree.get_leaves():
             if symbol_table[name_node.id] is None:
                 stack.append(name_node.id)
             symbol_table[name_node.id] = VARIABLE
-        assignation.add_adjacent(names.get_adjacent(1))
-        assignation.add_adjacent(token_list[3])
-        names.change_adjacent(1, assignation)
-        token_list[0] = names
-
-    # print(token_list[0])
+        assignation.set_left_operand(last_tree.get_right_operand())
+        assignation.set_right_operand(token_list[3])
+        last_tree.set_right_operand(assignation)
+        token_list[0] = root
 
 
 def p_name_equal_series(token_list: yacc.YaccProduction) -> None:
@@ -528,16 +523,17 @@ def p_name_equal_series(token_list: yacc.YaccProduction) -> None:
     new_tree = OperatorNode(OperatorType.ASSIGNATION)
 
     if token_list.slice[1].type == "NAME":
-        new_tree.add_adjacent(NameNode(token_list[1]))
-        new_tree.add_adjacent(NameNode(token_list[3]))
-        token_list[0] = new_tree
+        new_tree.set_left_operand(NameNode(token_list[1]))
+        new_tree.set_right_operand(NameNode(token_list[3]))
+        token_list[0] = (new_tree, new_tree)
     else:
-        last_tree: OperatorNode = token_list[1]
-        new_tree.add_adjacent(last_tree.get_adjacent(1))
-        new_tree.add_adjacent(NameNode(token_list[3]))
-        last_tree.change_adjacent(1, new_tree)
-        token_list[0] = last_tree
-        print(last_tree)
+        tree = token_list[1]
+        root, last_tree = tree
+
+        new_tree.set_left_operand(last_tree.get_right_operand())
+        new_tree.set_right_operand(NameNode(token_list[3]))
+        last_tree.set_right_operand(new_tree)
+        token_list[0] = (root, new_tree)
 
 
 def p_index_assignation(token_list: yacc.YaccProduction) -> None:
@@ -560,19 +556,22 @@ def p_index_literal(token_list: yacc.YaccProduction) -> None:
     if isinstance(token_list[3], EpicNode):
         tree = OperatorNode(OperatorType.SLICING)
         temp_node: EpicNode = token_list[3]
-        tree.add_adjacent(NIL_NODE)
-        tree.add_adjacent({"start": temp_node.get_adjacent(0), "end": temp_node.get_adjacent(1)})
+        tree.set_right_operand(
+            {
+                "start": temp_node.get_adjacent("start"),
+                "end": temp_node.get_adjacent("end"),
+            },
+        )
 
     # Indexing
     else:
         tree = OperatorNode(OperatorType.INDEXING)
-        tree.add_adjacent(NIL_NODE)
-        tree.add_adjacent(token_list[3])
+        tree.set_right_operand(token_list[3])
 
     if token_list.slice[1].type == "NAME":
-        tree.change_adjacent(0, NameNode(token_list[1]))
+        tree.set_left_operand(NameNode(token_list[1]))
     else:
-        tree.change_adjacent(0, token_list[1])
+        tree.set_left_operand(token_list[1])
 
     token_list[0] = tree
 
@@ -583,8 +582,8 @@ def p_slice(token_list: yacc.YaccProduction) -> None:
     operand2 = token_list[3]
 
     temp_node = EpicNode(2)
-    temp_node.add_adjacent(operand1)
-    temp_node.add_adjacent(operand2)
+    temp_node.add_named_adjacent("start", operand1)
+    temp_node.add_named_adjacent("end", operand2)
     token_list[0] = temp_node
 
 
@@ -833,8 +832,8 @@ def p_if(token_list: yacc.YaccProduction) -> None:
             |   IF condition COLON complex_statement
     """
     if_node = OperatorNode(OperatorType.IF)
-    if_node.add_adjacent(token_list[2])
-    if_node.add_adjacent(token_list[4])
+    if_node.set_left_operand(token_list[2])
+    if_node.set_right_operand(token_list[4])
 
     token_list[0] = if_node
 
@@ -858,8 +857,8 @@ def p_elif(token_list: yacc.YaccProduction) -> None:
                 |   ELIF condition COLON complex_statement
     """
     if_node = OperatorNode(OperatorType.IF)
-    if_node.add_adjacent(token_list[2])
-    if_node.add_adjacent(token_list[4])
+    if_node.set_left_operand(token_list[2])
+    if_node.set_right_operand(token_list[4])
     token_list[0] = if_node
 
 
@@ -873,9 +872,9 @@ def p_else(token_list: yacc.YaccProduction) -> None:
 
 def p_ternary(token_list: yacc.YaccProduction) -> None:
     """ternary  :   literal IF condition ELSE scalar_statement"""
-    if_node = OperatorNode(OperatorType.IF)
-    if_node.add_adjacent(token_list[3])
-    if_node.add_adjacent({True: token_list[1], False: token_list[5]})
+    if_node = OperatorNode(OperatorType.TERNARY)
+    if_node.add_named_adjacent("condition", token_list[3])
+    if_node.add_named_adjacent("values", {True: token_list[1], False: token_list[5]})
     token_list[0] = if_node
 
 
@@ -1063,9 +1062,9 @@ def p_function_call(token_list: yacc.YaccProduction) -> None:
         undefined_functions.add(token_list[1])
 
     function_node = OperatorNode(OperatorType.FUNCTION_CALL)
-    function_node.add_adjacent(NameNode(token_list[1]))
+    function_node.add_named_adjacent("Function name", NameNode(token_list[1]))
     parameter_list: list = token_list[2]
-    function_node.add_adjacent(parameter_list)
+    function_node.add_named_adjacent("Arguments", parameter_list)
     token_list[0] = function_node
 
 
@@ -1073,10 +1072,12 @@ def p_complete_parameter_list(token_list: yacc.YaccProduction) -> None:
     """complete_parameter_list  :   L_PARENTHESIS parameter_list R_PARENTHESIS
                                 |   L_PARENTHESIS R_PARENTHESIS
     """
-    param_list = token_list[1]
+    param_list = token_list[2]
 
     if isinstance(param_list, list):
         token_list[0] = param_list
+    else:
+        token_list[0] = []
 
 
 def p_parameter_list(token_list: yacc.YaccProduction) -> None:
@@ -1104,30 +1105,28 @@ def p_method_call(token_list: yacc.YaccProduction) -> None:
                     |   name_dot_series complete_parameter_list
     """
     method_node = OperatorNode(OperatorType.METHOD_CALL)
+    function_node: OperatorNode = NIL_NODE
 
-    # Case: first rule (method call over directly over an instance)
     if token_list.slice[2].type == "DOT":
-        # instance
-        method_node.add_adjacent(token_list[1])
-        # function node is ready
         function_node: OperatorNode = token_list[3]
-        method_node.add_adjacent(function_node)
-
-    # Case: Second rule (method call over a name)
+        method_node.add_named_adjacent("Instance", token_list[1])
     else:
         names_subtree: OperatorNode = token_list[1]
-        method_node.add_adjacent(names_subtree.get_adjacent(0))
 
-        # Function node
         function_node = OperatorNode(OperatorType.FUNCTION_CALL)
-        function_node.add_adjacent(names_subtree.get_adjacent(1))
-        parameter_list: list = token_list[2]
-        function_node.add_adjacent(parameter_list)
+        function_node.add_named_adjacent(
+            "Function name",
+            names_subtree.get_rightmost(),
+        )
+        function_node.add_named_adjacent("Arguments", token_list[2])
 
-        method_node.add_adjacent(function_node)
+        names_subtree.promote_righmost_sibling()
+        method_node.add_named_adjacent("Instance", names_subtree)
 
-    # Send the resulting method node
+    method_node.add_named_adjacent("Method", function_node)
     token_list[0] = method_node
+
+    print(method_node)
 
 
 def p_callable(token_list: yacc.YaccProduction) -> None:

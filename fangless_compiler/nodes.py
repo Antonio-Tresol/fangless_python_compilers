@@ -3,6 +3,7 @@ from typing import Any
 
 
 class OperatorType(Enum):
+    TERNARY = "ternary_operation"
     IF = "if"
     FUNCTION_CALL = "function_call"
     METHOD_CALL = "method_call"
@@ -12,10 +13,19 @@ class OperatorType(Enum):
     ASSIGNATION = "="
 
 
+class Operand(Enum):
+    LEFT = "Left"
+    RIGHT = "Right"
+    CENTER = "Center"
+    def __repr__(self):
+        return self.value
+    def __str__(self):
+        return self.value
+
+
 NIL_NODE = None
 
 AdjacentKey = int | float | str | tuple
-
 
 class Node:
     def __init__(self, node_type: str) -> None:
@@ -35,54 +45,50 @@ class Node:
         self.adjacents[pos] = adj
         return pos
 
-    def locate_adjacent(self, adj: "Node") -> int:
-        for pos, node in self.adjacents.items():
+    def add_named_adjacent(self, key: AdjacentKey, adj: "Node") -> AdjacentKey:
+        length = len(self.adjacents)
+        if length >= self.max_adjacents:
+            error = (
+                f"Node {self.node_type} can't have more"
+                f" than {self.max_adjacents} adjacents"
+            )
+            raise IndexError(error)
+
+        self.adjacents[key] = adj
+        return key
+
+    def locate_adjacent(self, adj: "Node") -> AdjacentKey:
+        for key, node in self.adjacents.items():
             if node == adj:
-                return pos
+                return key
         msg = f"Adjacent node not found in {self.node_type}"
         raise ValueError(msg)
 
     def change_adjacent(self, key: AdjacentKey, adj: "Node") -> None:
-        if key >= self.max_adjacents or key not in self.adjacents:
+        if len(self.adjacents) >= self.max_adjacents or key not in self.adjacents:
             error = (
                 f"Node {self.node_type} tried to change"
-                f"nonexistent adjacent at position {key}"
+                f"nonexistent adjacent at key {key}"
             )
             raise IndexError(error)
 
         self.adjacents[key] = adj
 
     def get_adjacent(self, key: AdjacentKey) -> "Node":
-        if key >= self.max_adjacents:
-            error = (
-                f"Node {self.node_type} can't have more "
-                f"than {self.max_adjacents} adjacents"
-            )
-            raise IndexError(error)
-
-        if key not in self.adjacents:
-            error = f"Node {self.node_type} has no adjacent at position {key}"
-            raise IndexError(error)
-
-        return self.adjacents[key]
+        return self.adjacents.get(key, None)
 
     def __repr__(self) -> str:
-        string = (
-            "{\n"
-            f"Node: {self.node_type},\n"
-            "adjacents:\n"
-        )
+        string = "{\n"
+        string += f'Node: "{self.node_type}",\n'
+        string += "Adjacents:\n"
         for key, adjacent in self.adjacents.items():
-            if isinstance(adjacent, Node):
-                string += adjacent.to_string("\t")
-            else:
-                string += f"\t{key}: {adjacent}\n"
+            string = self.append_adjacent_nodes("", string, key, adjacent)
         string += "}"
         return string
 
     def to_string(self, level: str) -> str:
         string = f"{level}{{\n"
-        string += f"{level}Node: {self.node_type},\n"
+        string += f'{level}Node: "{self.node_type}",\n'
         string += f"{level}Adjacents:\n"
         for key, adjacent in self.adjacents.items():
             string = self.append_adjacent_nodes(level, string, key, adjacent)
@@ -97,24 +103,25 @@ class Node:
         adjacent: Any,
     ) -> str:
         if isinstance(adjacent, Node):
-            string += f"{level}\tKey: {key}\n"
+            string += f'{level}\t"{key}":\n'
             string += adjacent.to_string(level + "\t")
         elif isinstance(adjacent, dict):
-            string += f"{level}\tKey: {key}\n"
             for subkey, value in adjacent.items():
                 if isinstance(value, Node):
-                    string += f"{level}\t{subkey}: {value.to_string(level + '\t')}"
+                    string += f'{level}\t"{subkey}":\n'
+                    string += value.to_string(level + "\t")
                 else:
-                    string += f"{level}\t{subkey}: {value}\n"
+                    string += f'{level}\t"{subkey}": {value}\n'
         elif isinstance(adjacent, list):
-            string += f"{level}\tKey: {key}\n"
-            for a in adjacent:
-                if isinstance(a, Node):
-                    string += a.to_string(level + "\t")
+            string += f'{level}\t"{key}": [\n'
+            for item in adjacent:
+                if isinstance(item, Node):
+                    string += item.to_string(level + "\t")
                 else:
-                    string += f"{level}\t{a}\n"
+                    string += f"{level}\t{level}{item}\n"
+            string += f"{level}\t]\n"
         else:
-            string += f"{level}\t{key}: {adjacent}\n"
+            string += f'{level}\t"{key}": {adjacent}\n'
         return string
 
     def get_leaves(self) -> list["Node"]:
@@ -132,7 +139,10 @@ class Node:
 class OperatorNode(Node):
     def __init__(self, operator: OperatorType) -> None:
         super().__init__("operator")
-        self.operator = operator
+        if isinstance(operator, str):
+            self.operator = operator.strip()
+        else:
+            self.operator = operator.value
         self.parenthesis = False
         self.max_adjacents = 2
         # mis adjacentes son mis operandos
@@ -142,46 +152,119 @@ class OperatorNode(Node):
         ...
 
     def __repr__(self) -> str:
-        string = f"{"{"}\n"
-        string += f"Node: {self.node_type},\n"
-        string += f"Operator: {self.operator},\n"
+        string = "{\n"
+        string += f'  "Node": "{self.node_type}",\n'
+        string += f'  "Operator": "{self.operator}",\n'
         if self.parenthesis:
-            string += f"Parenthesis: {self.parenthesis},\n"
-        string += "Adjacents:\n"
+            string += f'  "Parenthesis": {self.parenthesis},\n'
+        string += '  "Adjacents": {\n'
         for key, adjacent in self.adjacents.items():
-            string = self.append_adjacent_nodes("", string, key, adjacent)
+            string = self.append_adjacent_nodes("    ", string, key, adjacent)
+        string += "  }\n"
         string += "}"
-
         return string
 
     def to_string(self, level: str) -> str:
         string = f"{level}{{\n"
-        string += f"{level}Node: {self.node_type},\n"
-        string += f"{level}Operator: {self.operator},\n"
+        string += f'{level}  "Node": "{self.node_type}",\n'
+        string += f'{level}  "Operator": "{self.operator}",\n'
         if self.parenthesis:
-            string += f"{level}Parenthesis: {self.parenthesis},\n"
-        string += f"{level}Adjacents:\n"
+            string += f'{level}  "Parenthesis": {self.parenthesis},\n'
+        string += f'{level}  "Adjacents": {{\n'
         for key, adjacent in self.adjacents.items():
-            string = self.append_adjacent_nodes(level, string, key, adjacent)
-
+            string = self.append_adjacent_nodes(level + "    ", string, key, adjacent,)
+        string += f"{level}  }}\n"
         string += f"{level}}}\n"
         return string
 
-    def add_left_child(self, value: Any) -> None:
-        self.adjacents["left"] = value
+    def set_left_operand(self, value: Any) -> None:
+        self.adjacents[Operand.LEFT] = value
 
-    def add_right_child(self, value: Any) -> None:
-        self.adjacents["right"] = value
+    def set_center_operand(self, value: Any) -> None:
+        self.adjacents[Operand.CENTER] = value
 
-    def add_left_child(self, value: Any) -> None:
-        self.adjacents["left"] = value
+    def set_right_operand(self, value: Any) -> None:
+        self.adjacents[Operand.RIGHT] = value
 
-    def add_right_child(self, value: Any) -> None:
-        self.adjacents["right"] = value
+    def get_left_operand(self) -> None:
+        if Operand.CENTER in self.adjacents:
+            return self.adjacents.get(Operand.CENTER, None)
+        return self.adjacents.get(Operand.LEFT, None)
+
+    def get_right_operand(self) -> Any:
+        if Operand.CENTER in self.adjacents:
+            return self.adjacents.get(Operand.CENTER, None)
+        return self.adjacents.get(Operand.RIGHT, None)
+
+    def get_leftmost(self) -> Any:
+        current = self
+        while isinstance(current, Node):
+            left = current.get_adjacent(Operand.LEFT)
+            if left is None:
+                return current
+            current = left
+        return current
+
+    def get_rightmost(self) -> Any:
+        current = self
+        while isinstance(current, Node):
+            right = current.get_adjacent(Operand.RIGHT)
+            if right is None:
+                return current
+            current = right
+        return current
+
+    def set_rightmost(self, new: Node) -> None:
+        parent = self
+        current = parent.get_right_operand()
+        while isinstance(current, Node):
+            right = current.get_adjacent(Operand.RIGHT)
+            if right is None:
+                parent.set_right_operand(new)
+                return
+            parent = current
+            current = right
+        parent.set_right_operand(new)
+
+    def promote_righmost_sibling(self) -> None:
+        grand_parent = self
+        parent = grand_parent.get_right_operand()
+
+        if not isinstance(parent, OperatorNode) or parent.get_right_operand() is None:
+            error = (
+                f"Node {self.node_type} tried to remove rightmost "
+                f"without having grand children"
+            )
+            raise IndexError(error)
+
+        current = parent.get_right_operand()
+        while isinstance(current, Node):
+            right = current.get_adjacent(Operand.RIGHT)
+            if right is None:
+                # move sibling up
+                left = parent.get_left_operand()
+                # move sibling up
+                grand_parent.set_left_operand(left)
+                return
+            grand_parent = parent
+            parent = current
+            current = right
+
+        left = parent.get_left_operand()
+        grand_parent.set_left_operand(left)
 
 
-
-
+    def set_leftmost(self, new: Node) -> None:
+        parent = self
+        current = parent.get_left_operand()
+        while isinstance(current, Node):
+            left = current.get_adjacent(Operand.LEFT)
+            if left is None:
+                parent.set_left_operand(new)
+                return
+            parent = current
+            current = left
+        parent.set_left_operand(new)
 
 class NameNode(Node):
     def __init__(self, identifier: str) -> None:
