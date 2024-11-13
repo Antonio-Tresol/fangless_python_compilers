@@ -56,6 +56,7 @@ class OperatorNode(Node):
         self.max_adjacents = max_adjacents
         # mis adjacentes son mis operandos
 
+
     # TODO
     def try_evaluate(self) -> bool:
         ...
@@ -151,16 +152,16 @@ class OperatorNode(Node):
             current = right
         parent.set_right_operand(new)
 
-    def promote_righmost_sibling(self) -> None:
+    def promote_righmost_sibling(self) -> Node:
         grand_parent = self
         parent = grand_parent.get_right_operand()
-
-        if not isinstance(parent, OperatorNode) or parent.get_right_operand() is None:
+        if parent is None:
             error = (
-                f"Node {self.node_type} tried to remove rightmost "
-                f"without having grand children"
+                f"Node {self.node_type} tried to promote a non existent child"
             )
             raise IndexError(error)
+        if not isinstance(parent, OperatorNode) or len(parent.adjacents) == 0:
+            return grand_parent.get_left_operand()
 
         current = parent.get_right_operand()
         while isinstance(current, Node):
@@ -170,13 +171,14 @@ class OperatorNode(Node):
                 left = parent.get_left_operand()
                 # move sibling up
                 grand_parent.set_left_operand(left)
-                return
+                return self
             grand_parent = parent
             parent = current
             current = right
 
         left = parent.get_left_operand()
         grand_parent.set_left_operand(left)
+        return self
 
     def set_leftmost(self, new: Node) -> None:
         parent = self

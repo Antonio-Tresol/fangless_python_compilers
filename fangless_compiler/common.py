@@ -50,7 +50,7 @@ def be_artistic() -> str:
 VERBOSE_INDENTATION = False
 VERBOSE_LEXER = False
 VERBOSE_PARSER = False
-VERBOSE_AST = True
+VERBOSE_AST = False
 RAINBOW_ERRORS = False
 SENSITIVE_PROGRAMMER = True
 

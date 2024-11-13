@@ -351,7 +351,7 @@ def p_unary_operand(token_list: yacc.YaccProduction) -> None:
 # ========================= BINARY OPERATIONS =================================
 def p_binary_operation(token_list: yacc.YaccProduction) -> None:
     """binary_operation     :   L_PARENTHESIS binary_operation R_PARENTHESIS
-                            |   left_binary_operand binary_operator left_binary_operand
+                            |   binary_operand binary_operator binary_operand
     """
     if token_list.slice[1].type == "L_PARENTHESIS":
         node: OperatorNode = token_list[2]
@@ -368,15 +368,8 @@ def p_binary_operation(token_list: yacc.YaccProduction) -> None:
         print("==============================\n")
 
 
-def p_right_binary_operand(token_list: yacc.YaccProduction) -> None:
-    """right_binary_operand :   unary_operand
-                            |   binary_operation
-    """
-    token_list[0] = token_list[1]
-
-
-def p_left_binary_operand(token_list: yacc.YaccProduction) -> None:
-    """left_binary_operand  :   unary_operand
+def p_binary_operand(token_list: yacc.YaccProduction) -> None:
+    """binary_operand  :   unary_operand
                             |   binary_operation
     """
     token_list[0] = token_list[1]
@@ -527,7 +520,7 @@ def p_name_assignation(token_list: yacc.YaccProduction) -> None:
         token_list[0] = assignation
     else:
         root, last_tree = name
-        for name_node in last_tree.get_leaves():
+        for name_node in root.get_leaves():
             if symbol_table[name_node.id] is None:
                 stack.append(name_node.id)
             symbol_table[name_node.id] = VARIABLE
@@ -616,7 +609,7 @@ def p_slice(token_list: yacc.YaccProduction) -> None:
 
 
 def p_index(token_list: yacc.YaccProduction) -> None:
-    """index    :   left_binary_operand"""
+    """index    :   binary_operand"""
     token_list[0] = token_list[1]
 
 
@@ -849,7 +842,8 @@ def p_if_block(token_list: yacc.YaccProduction) -> None:
     for i in range(2, token_amount):
         if_tree.add_deepest(Operand.ALTERNATIVE, token_list[i])
     token_list[0] = if_tree
-    print(if_tree)
+    if VERBOSE_AST:
+        print(if_tree)
 
 
 def p_if(token_list: yacc.YaccProduction) -> None:
@@ -1144,7 +1138,7 @@ def p_method_call(token_list: yacc.YaccProduction) -> None:
         )
         function_node.add_named_adjacent(Operand.ARGUMENTS, token_list[2])
 
-        names_subtree.promote_righmost_sibling()
+        names_subtree = names_subtree.promote_righmost_sibling()
         method_node.add_named_adjacent(Operand.INSTANCE, names_subtree)
 
     method_node.add_named_adjacent(Operand.METHOD, function_node)

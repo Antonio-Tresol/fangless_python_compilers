@@ -20,6 +20,13 @@ negative_tests = [
     negative_path.joinpath(Path(file.name)) for file in negative_path.glob("*.py")
 ]
 
+ast_path = Path("test/ast/")
+ast_tests = [
+    negative_path.joinpath(Path(file.name)) for file in negative_path.glob("*.py")
+]
+
+
+
 
 def test_positive_cases() -> None:
     for test in positive_tests:
@@ -38,3 +45,12 @@ def test_negative_cases() -> None:
             content = source.read()
             negative_parser.parse(content)
             assert negative_parser.error_count > 0
+
+
+def test_ast_cases() -> None:
+    for test in negative_tests:
+        negative_parser = FanglessParser()
+        with test.open("r", encoding="utf-8") as source:
+            content = source.read()
+            negative_parser.parse(content)
+            assert negative_parser.error_count == 0
