@@ -99,3 +99,13 @@ class Node:
             else:
                 nodes.append(adjacent)
         return nodes
+
+    def add_deepest(self, key: AdjacentKey, new: "Node") -> None:
+        """Supposes there is a path between the root and the deepest made of 'key'"""
+        current = self
+        while isinstance(current, Node):
+            right = current.get_adjacent(key)
+            if right is None:
+                current.add_named_adjacent(key, new)
+                break
+            current = right

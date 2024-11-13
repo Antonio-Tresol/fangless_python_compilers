@@ -7,6 +7,7 @@ from abstract_syntax_tree.node import Node
 class OperatorType(Enum):
     TERNARY = "ternary_operation"
     IF = "if"
+    ELIF = "elif"
     FUNCTION_CALL = "function_call"
     METHOD_CALL = "method_call"
     ATTRIBUTE_CALL = "attribute_call"
@@ -14,6 +15,7 @@ class OperatorType(Enum):
     INDEXING = "indexing"
     ASSIGNATION = "="
     UNPACK_ASSIGNATION = "unpack_assign"
+    RETURN = "return"
 
 
 class Operand(Enum):
@@ -32,6 +34,9 @@ class Operand(Enum):
     FUNCTION_NAME = 10
     ARGUMENTS = 11
     METHOD = 12
+    BODY = 13
+    ELIF = 14
+    ALTERNATIVE = 15
 
     def __repr__(self) -> str:
         return str(self.name).lower()
@@ -41,14 +46,14 @@ class Operand(Enum):
 
 
 class OperatorNode(Node):
-    def __init__(self, operator: OperatorType) -> None:
+    def __init__(self, operator: OperatorType, max_adjacents : int = 2) -> None:
         super().__init__("operator")
         if isinstance(operator, str):
             self.operator = operator.strip()
         else:
             self.operator = operator.value
         self.parenthesis = False
-        self.max_adjacents = 2
+        self.max_adjacents = max_adjacents
         # mis adjacentes son mis operandos
 
     # TODO

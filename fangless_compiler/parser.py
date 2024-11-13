@@ -20,14 +20,6 @@ from common import (
 from collections import defaultdict
 from typing import Any
 from pprint import pprint
-# from nodes import (
-#     OperatorType,
-#     Operand,
-#     NIL_NODE,
-#     OperatorNode,
-#     NameNode,
-#     EpicNode,
-# )
 
 from abstract_syntax_tree.node import NIL_NODE
 from abstract_syntax_tree.operator_node import (OperatorType, OperatorNode, Operand)
@@ -39,6 +31,8 @@ tokens = TOKENS
 
 precedence = (
     ("right", "EQUAL"),
+    ("left", "EQUAL_EQUAL", "NOT_EQUAL", "LESS_THAN", "LESS_EQUAL",
+     "GREATER_THAN", "GREATER_EQUAL"),
     ("left", "PLUS", "MINUS"),
     ("left", "STAR", "SLASH"),
     ("left", "DOUBLE_STAR"),
@@ -49,12 +43,11 @@ precedence = (
     ("left", "AMPERSAND"),
     ("left", "HAT"),
     ("left", "BAR"),
-    ("left", "EQUAL_EQUAL", "NOT_EQUAL", "LESS_THAN", "LESS_EQUAL",
-     "GREATER_THAN", "GREATER_EQUAL"),
     ("left", "NOT"),
     ("left", "AND"),
     ("left", "OR"),
 )
+
 
 symbol_table: defaultdict[str, Any] = defaultdict(lambda: None)
 object_symbols: defaultdict[str, defaultdict[str, Any]] = defaultdict(
@@ -358,7 +351,7 @@ def p_unary_operand(token_list: yacc.YaccProduction) -> None:
 # ========================= BINARY OPERATIONS =================================
 def p_binary_operation(token_list: yacc.YaccProduction) -> None:
     """binary_operation     :   L_PARENTHESIS binary_operation R_PARENTHESIS
-                            |   binary_operand binary_operator binary_operand
+                            |   left_binary_operand binary_operator left_binary_operand
     """
     if token_list.slice[1].type == "L_PARENTHESIS":
         node: OperatorNode = token_list[2]
@@ -375,9 +368,16 @@ def p_binary_operation(token_list: yacc.YaccProduction) -> None:
         print("==============================\n")
 
 
-def p_binary_operand(token_list: yacc.YaccProduction) -> None:
-    """binary_operand   :   unary_operand
-                        |   binary_operation
+def p_right_binary_operand(token_list: yacc.YaccProduction) -> None:
+    """right_binary_operand :   unary_operand
+                            |   binary_operation
+    """
+    token_list[0] = token_list[1]
+
+
+def p_left_binary_operand(token_list: yacc.YaccProduction) -> None:
+    """left_binary_operand  :   unary_operand
+                            |   binary_operation
     """
     token_list[0] = token_list[1]
 
@@ -490,7 +490,8 @@ def p_name_dot_series(token_list: yacc.YaccProduction) -> None:
         and (token_list[1] != "self" or parser_state_info["classes"] <= 0)
     ):
         msg = (
-               f"--Name: '{token_list[1]}' is not defined at line {token_list.lineno(1)}"
+               f"--Name: '{token_list[1]}' is not defined at "
+               f" line {token_list.lineno(1)}"
                f"--{add_remark()}"
               )
         errors.append(msg)
@@ -615,7 +616,7 @@ def p_slice(token_list: yacc.YaccProduction) -> None:
 
 
 def p_index(token_list: yacc.YaccProduction) -> None:
-    """index    :   binary_operand"""
+    """index    :   left_binary_operand"""
     token_list[0] = token_list[1]
 
 
@@ -805,7 +806,12 @@ def p_statement_group(token_list: yacc.YaccProduction) -> None:
     """statement_group    :   statement_group NEWLINE complex_statement
                           |   complex_statement
     """
-    _ = token_list
+    if len(token_list) == 2:
+        token_list[0] = [token_list[1]]
+    else:
+        group = token_list[1]
+        group.append(token_list[3])
+        token_list[0] = group
 
 
 def p_body(token_list: yacc.YaccProduction) -> None:
@@ -814,7 +820,7 @@ def p_body(token_list: yacc.YaccProduction) -> None:
     while local_var != SCOPE_OPENED:
         symbol_table[local_var] = None
         local_var = stack.pop()
-    _ = token_list
+    token_list = token_list[3]
 
 
 def p_open_scope(token_list: yacc.YaccProduction) -> None:
@@ -838,43 +844,21 @@ def p_if_block(token_list: yacc.YaccProduction) -> None:
                     |   if else
                     |   if
     """
-    token_amount = len(token_list) - 1
-
-    # fist element is always an if here
-    if_node: OperatorNode = token_list[1]
-
-    # if token_amount == 1:
-    #     # already added
-    #     pass
-    # elif token_amount == 2:
-    #     last_token = token_list[token_amount]
-    #     # adds the elif or elif at the end
-    #     if isinstance(token_list[token_amount], list):
-    #         if_node.get_adjacent(1).extend(last_token)
-    #     else:
-    #         if_node.get_adjacent(1).append(last_token)
-    # elif token_amount == 3:
-    #     elif_list = token_list[2]
-    #     # adds the elif first
-    #     if_node.get_adjacent(1).extend(elif_list)
-
-    #     # adds the else at the end
-    #     if_node.get_adjacent(1).append(token_list[3])
-    # else:
-    #     error_msg = f"Node: {if_node} invalid inside if block"
-    #     raise ValueError(error_msg)
-
-    # token_list[0] = if_node
+    if_tree: OperatorNode = token_list[1]
+    token_amount = len(token_list)
+    for i in range(2, token_amount):
+        if_tree.add_deepest(Operand.ALTERNATIVE, token_list[i])
+    token_list[0] = if_tree
+    print(if_tree)
 
 
 def p_if(token_list: yacc.YaccProduction) -> None:
     """if   :   IF condition COLON body
             |   IF condition COLON complex_statement
     """
-    if_node = OperatorNode(OperatorType.IF)
-    if_node.set_left_operand(token_list[2])
-    if_node.set_right_operand(token_list[4])
-
+    if_node = OperatorNode(OperatorType.IF, max_adjacents=3)
+    if_node.add_named_adjacent(Operand.CONDITION, token_list[2])
+    if_node.add_named_adjacent(Operand.BODY, token_list[4])
     token_list[0] = if_node
 
 
@@ -882,13 +866,12 @@ def p_elif_block(token_list: yacc.YaccProduction) -> None:
     """elif_block   :   elif_block elif
                     |   elif
     """
-    elif_block = token_list[1]
-    if isinstance(elif_block, list):
-        elif_block.append(token_list[2])
-    else:
-        elif_block = [token_list[1]]
+    if len(token_list) == 3:
+        new_node = token_list[2]
+        elif_tree: OperatorNode = token_list[1]
+        elif_tree.add_deepest(Operand.ALTERNATIVE, new_node)
 
-    token_list[0] = elif_block
+    token_list[0] = token_list[1]
 
 
 # same logic as if rule
@@ -896,9 +879,9 @@ def p_elif(token_list: yacc.YaccProduction) -> None:
     """elif     :   ELIF condition COLON body
                 |   ELIF condition COLON complex_statement
     """
-    if_node = OperatorNode(OperatorType.IF)
-    if_node.set_left_operand(token_list[2])
-    if_node.set_right_operand(token_list[4])
+    if_node = OperatorNode(OperatorType.ELIF, max_adjacents=3)
+    if_node.add_named_adjacent(Operand.CONDITION, token_list[2])
+    if_node.add_named_adjacent(Operand.BODY, token_list[4])
     token_list[0] = if_node
 
 
@@ -996,10 +979,13 @@ def p_return_statement(token_list: yacc.YaccProduction) -> None:
         errors.append(msg)
         raise SyntaxError(msg)
 
-    if len(token_list) > 2:
-        token_list[0] = token_list[2]
+    node = OperatorNode(OperatorType.RETURN)
+    if len(token_list) == 3:
+        node.set_center_operand(token_list[2])
     else:
-        token_list[0] = None
+        node.set_center_operand(None)
+
+    token_list[0] = node
 
 
 def p_return_value_list(token_list: yacc.YaccProduction) -> None:
@@ -1172,12 +1158,8 @@ def p_callable(token_list: yacc.YaccProduction) -> None:
                 |   BINARY_NUMBER
                 |   OCTAL_NUMBER
                 |   HEXADECIMAL_NUMBER
-                |   L_PARENTHESIS INTEGER_NUMBER R_PARENTHESIS
     """
-    if len(token_list) == 2:
-        token_list[0] = token_list[1]
-    else:
-        token_list[0] = token_list[2]
+    token_list[0] = token_list[1]
 
 
 # =============================== CLASSES =====================================
