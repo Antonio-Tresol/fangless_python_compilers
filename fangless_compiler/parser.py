@@ -19,7 +19,6 @@ from common import (
 )
 from collections import defaultdict
 from typing import Any
-from pprint import pprint
 
 from abstract_syntax_tree.node import NIL_NODE
 from abstract_syntax_tree.operator_node import (OperatorType, OperatorNode, Operand)
@@ -47,7 +46,6 @@ precedence = (
     ("left", "AND"),
     ("left", "OR"),
 )
-
 
 symbol_table: defaultdict[str, Any] = defaultdict(lambda: None)
 object_symbols: defaultdict[str, defaultdict[str, Any]] = defaultdict(
@@ -104,7 +102,6 @@ def p_all(token_list: yacc.YaccProduction) -> None:
 
 
 # ================================== LITERALS =================================
-# done collecting literals
 def p_literal(token_list: yacc.YaccProduction) -> None:
     """literal  :   structure
                 |   number
@@ -139,12 +136,11 @@ def p_bool(token_list: yacc.YaccProduction) -> None:
     """bool     :   TRUE
                 |   FALSE
     """
-    # convert to equivalent boolean value
+    # convert to equivalent boolean value and send it up
     token_list[0] = token_list[1] == "True"
 
 
 # =============================== STRUCTURES ===================================
-# done collecting structures
 def p_structure(token_list: yacc.YaccProduction) -> None:
     """structure    :   dict
                     |   list
@@ -152,6 +148,7 @@ def p_structure(token_list: yacc.YaccProduction) -> None:
                     |   set
                     |   string
     """
+    # structure come ready, so just send we just send it up
     token_list[0] = token_list[1]
     if VERBOSE_AST:
         print(token_list[1])
@@ -175,7 +172,6 @@ def p_string(token_list: yacc.YaccProduction) -> None:
 
 
 # ============= DICTIONARY ===========================
-# done collecting dictionaries
 def p_dict(token_list: yacc.YaccProduction) -> None:
     """dict :   L_CURLY_BRACE completed_key_value_series R_CURLY_BRACE
             |   L_CURLY_BRACE R_CURLY_BRACE
@@ -197,6 +193,7 @@ def p_completed_key_value_series(token_list: yacc.YaccProduction) -> None:
     """completed_key_value_series   :   key_value_series COMMA
                                     |   key_value_series
     """
+    # the key_value_series is ready, just send it up
     token_list[0] = token_list[1]
 
 
@@ -207,27 +204,29 @@ def p_key_value_series(token_list: yacc.YaccProduction) -> None:
     # if we only have one key_value_pair
     if len(token_list) == 2:
         new_key_value = token_list[1]
-        key_values = {
+        keys_and_values = {
             "keys": [new_key_value["key"]],
             "values": [
                 new_key_value["value"],
             ],
         }
-        token_list[0] = key_values
+        token_list[0] = keys_and_values
         return
 
     # if we have a series of them
-    key_values = token_list[1]
+    keys_and_values = token_list[1]
     new_key_value = token_list[3]
     # we add them to the new dictionary
-    key_values["keys"].append(new_key_value["key"])
-    key_values["values"].append(new_key_value["value"])
+    keys_and_values["keys"].append(new_key_value["key"])
+    keys_and_values["values"].append(new_key_value["value"])
 
-    token_list[0] = key_values
+    token_list[0] = keys_and_values
 
 
 def p_key_value_pair(token_list: yacc.YaccProduction) -> None:
     """key_value_pair   :   non_mutable_literal COLON scalar_statement"""
+    # for key value pairs we build a dict with it key and its value and
+    # we send it up
     token_list[0] = {"key": token_list[1], "value": token_list[3]}
 
 
@@ -239,9 +238,9 @@ def p_non_mutable_literal(token_list: yacc.YaccProduction) -> None:
                             |   NONE
                             |   NAME
     """
-    # Names are passed up as strings
     match token_list.slice[1].type:
         case "NAME":
+            # we make a name node here because we have work to do
             token_list[0] = NameNode(token_list[1])
         case "NONE":
             token_list[0] = None
@@ -251,19 +250,21 @@ def p_non_mutable_literal(token_list: yacc.YaccProduction) -> None:
 
 # ================================= LIST, SET, TUPLE ==========================
 # both tuples and list can be declared empty so general structure considers
-# series of literals (general series) or empty called epsilon
+# series of literals (general series) or empty
 def p_list(token_list: yacc.YaccProduction) -> None:
     """list :   L_BRACKET completed_general_series R_BRACKET
             |   L_BRACKET R_BRACKET
     """
+    # if we do not have elements inside the list
     if len(token_list) == 3:
         token_list[0] = []
-    else:
-        series = token_list[2]
-        token_list[0] = series
+        return
+    # if we have elements inside
+    series = token_list[2]
+    token_list[0] = series
 
 
-# sets can not be declared empty so they can only have a general series inside
+# sets can not be declared empty 
 def p_set(token_list: yacc.YaccProduction) -> None:
     """set  :   L_CURLY_BRACE completed_general_series R_CURLY_BRACE"""
     series = token_list[2]
@@ -274,6 +275,8 @@ def p_completed_general_series(token_list: yacc.YaccProduction) -> None:
     """completed_general_series :   general_series COMMA
                                 |   general_series
     """
+    # the comma is ignored and the general series comes ready
+    # so up
     token_list[0] = token_list[1]
 
 
@@ -284,26 +287,24 @@ def p_general_series(token_list: yacc.YaccProduction) -> None:
     # if it is only a literal, make it a list and send it up
     if len(token_list) == 2:
         token_list[0] = [token_list[1]]
-    else:
-        # when we already have a series
-        # add the literal to the list
-        series = token_list[1]
-        series.append(token_list[3])
-        token_list[0] = series
+        return
+
+    # when we already have a series
+    # add the literal to the existing list and
+    # send it up
+    series = token_list[1]
+    series.append(token_list[3])
+    token_list[0] = series
 
 
 def p_tuple(token_list: yacc.YaccProduction) -> None:
-    """tuple    :   L_PARENTHESIS general_series COMMA literal R_PARENTHESIS
-                |   L_PARENTHESIS general_series COMMA R_PARENTHESIS
+    """tuple    :   L_PARENTHESIS general_series COMMA R_PARENTHESIS
                 |   L_PARENTHESIS R_PARENTHESIS
     """
     series = []
     # if we have a general series inside the tuple
     if len(token_list) > 3:
         series = token_list[2]
-        # if we have a literal to add to the series
-        if len(token_list) == 6:
-            series.append(token_list[4])
 
     token_list[0] = tuple(series)
 

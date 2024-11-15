@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Union
 NIL_NODE = None
 
 AdjacentKey = int | float | str | tuple
@@ -39,7 +39,7 @@ class Node:
 
         self.adjacents[key] = adj
 
-    def get_adjacent(self, key: AdjacentKey) -> "Node":
+    def get_adjacent(self, key: AdjacentKey) -> Union["Node", None]:
         return self.adjacents.get(key, None)
 
     def __repr__(self) -> str:

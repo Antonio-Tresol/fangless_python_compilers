@@ -46,7 +46,7 @@ class Operand(Enum):
 
 
 class OperatorNode(Node):
-    def __init__(self, operator: OperatorType, max_adjacents : int = 2) -> None:
+    def __init__(self, operator: OperatorType, max_adjacents: int = 2) -> None:
         super().__init__("operator")
         if isinstance(operator, str):
             self.operator = operator.strip()
@@ -54,12 +54,6 @@ class OperatorNode(Node):
             self.operator = operator.value
         self.parenthesis = False
         self.max_adjacents = max_adjacents
-        # mis adjacentes son mis operandos
-
-
-    # TODO
-    def try_evaluate(self) -> bool:
-        ...
 
     def __repr__(self) -> str:
         string = "{\n"
@@ -72,6 +66,24 @@ class OperatorNode(Node):
             string = self.append_adjacent_nodes("    ", string, key, adjacent)
         string += "  }\n"
         string += "}"
+        return string
+
+    def to_string(self, level: str) -> str:
+        string = f"{level}{{\n"
+        string += f'{level}  "Node": "{self.node_type}",\n'
+        string += f'{level}  "Operator": "{self.operator}",\n'
+
+        if self.parenthesis:
+            string += f'{level}  "Parenthesis": {self.parenthesis},\n'
+
+        string += f'{level}  "Adjacents": {{\n'
+        for key, adjacent in self.adjacents.items():
+            string = self.append_adjacent_nodes(
+                level + "    ", string, key, adjacent,
+            )
+
+        string += f"{level}  }}\n"
+        string += f"{level}}}\n"
         return string
 
     def add_named_adjacent(self, key: Operand, adj: "Node") -> Operand:
@@ -87,21 +99,6 @@ class OperatorNode(Node):
             raise ValueError(error)
         self.adjacents[key] = adj
         return key
-
-    def to_string(self, level: str) -> str:
-        string = f"{level}{{\n"
-        string += f'{level}  "Node": "{self.node_type}",\n'
-        string += f'{level}  "Operator": "{self.operator}",\n'
-        if self.parenthesis:
-            string += f'{level}  "Parenthesis": {self.parenthesis},\n'
-        string += f'{level}  "Adjacents": {{\n'
-        for key, adjacent in self.adjacents.items():
-            string = self.append_adjacent_nodes(
-                level + "    ", string, key, adjacent,
-            )
-        string += f"{level}  }}\n"
-        string += f"{level}}}\n"
-        return string
 
     def set_left_operand(self, value: Any) -> None:
         self.adjacents[Operand.LEFT] = value
@@ -152,34 +149,6 @@ class OperatorNode(Node):
             current = right
         parent.set_right_operand(new)
 
-    def promote_righmost_sibling(self) -> Node:
-        grand_parent = self
-        parent = grand_parent.get_right_operand()
-        if parent is None:
-            error = (
-                f"Node {self.node_type} tried to promote a non existent child"
-            )
-            raise IndexError(error)
-        if not isinstance(parent, OperatorNode) or len(parent.adjacents) == 0:
-            return grand_parent.get_left_operand()
-
-        current = parent.get_right_operand()
-        while isinstance(current, Node):
-            right = current.get_adjacent(Operand.RIGHT)
-            if right is None:
-                # move sibling up
-                left = parent.get_left_operand()
-                # move sibling up
-                grand_parent.set_left_operand(left)
-                return self
-            grand_parent = parent
-            parent = current
-            current = right
-
-        left = parent.get_left_operand()
-        grand_parent.set_left_operand(left)
-        return self
-
     def set_leftmost(self, new: Node) -> None:
         parent = self
         current = parent.get_left_operand()
@@ -191,3 +160,34 @@ class OperatorNode(Node):
             parent = current
             current = left
         parent.set_left_operand(new)
+
+    def promote_righmost_sibling(self) -> Node:
+        grand_parent = self
+        parent = grand_parent.get_right_operand()
+
+        if parent is None:
+            error = (
+                f"Node {self.node_type} tried to promote a non existent child"
+            )
+            raise IndexError(error)
+        # if parent is not a node or it doesn't have adjacents, just return it
+        # so that the transplant can be done outside
+        if not isinstance(parent, OperatorNode) or len(parent.adjacents) == 0:
+            return grand_parent.get_left_operand()
+
+        current = parent.get_right_operand()
+        while isinstance(current, Node):
+            right = current.get_adjacent(Operand.RIGHT)
+            if right is None:
+                # get sibling up
+                left = parent.get_left_operand()
+                # move sibling up
+                grand_parent.set_left_operand(left)
+                return self
+            grand_parent = parent
+            parent = current
+            current = right
+
+        left = parent.get_left_operand()
+        grand_parent.set_left_operand(left)
+        return self

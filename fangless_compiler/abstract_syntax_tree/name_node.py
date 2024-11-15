@@ -6,7 +6,6 @@ class NameNode(Node):
         super().__init__("name")
         self.id = identifier
         self.max_adjacents = 0
-        # No tiene adyacentes
 
     def __repr__(self) -> str:
         return f"(Node {self.node_type} with id: {self.id})"
