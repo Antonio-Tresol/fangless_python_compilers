@@ -825,7 +825,6 @@ def p_complex_statement(token_list: yacc.YaccProduction) -> None:
                             |   BREAK
                             |   PASS
                             |   dot_pass
-                            |   epsilon
     """
     validate_flow_tokens_are_in_context(token_list)
 
@@ -1293,6 +1292,9 @@ def p_class_definition(token_list: yacc.YaccProduction) -> None:
                         |   class_header L_PARENTHESIS NAME R_PARENTHESIS COLON body
     """
     parser_state_info["classes"] -= 1
+    class_node = OperatorNode(OperatorType.CLASS_DECLARATION, max_adjacents=3)
+    class_node.add_named_adjacent(Operand.CLASS_NAME, NameNode(token_list[1]))
+
     if len(token_list) == 7:
         if token_list[1] == token_list[3]:
             msg = (
@@ -1305,6 +1307,18 @@ def p_class_definition(token_list: yacc.YaccProduction) -> None:
         if symbol_table[token_list[3]] is None:
             undefined_classes.add(token_list[3])
 
+        class_node.add_named_adjacent(Operand.PARENT_CLASS, NameNode(token_list[3]))
+        class_node.add_named_adjacent(Operand.BODY, token_list[6])
+    else:
+        class_node.add_named_adjacent(Operand.BODY, token_list[3])
+
+    token_list[0] = class_node
+    if VERBOSE_AST:
+        print("\n\n=============== Class declaration ===============")
+        print(token_list[0])
+        print("===============================================\n")
+
+
 
 def p_class_header(token_list: yacc.YaccProduction) -> None:
     """class_header :   CLASS NAME"""
@@ -1314,12 +1328,7 @@ def p_class_header(token_list: yacc.YaccProduction) -> None:
     token_list[0] = token_list[2]
 
 
-# =============================== OTHER =======================================
-def p_epsilon(token_list: yacc.YaccProduction) -> None:
-    """epsilon  :"""
-    _ = token_list
-
-
+# =============================== PARSER ======================================
 class FanglessParser:
     def __init__(self, lexer: FanglessLexer = None) -> None:
         if lexer is None:
@@ -1342,7 +1351,9 @@ class FanglessParser:
     def print_errors(self) -> None:
         if len(errors) > 0:
             print("\n\n=================================================")
-            remark = color_msg("horseshit") if not SENSITIVE_PROGRAMMER else "not working"
+            remark = (
+                color_msg("horseshit") if not SENSITIVE_PROGRAMMER else "not working"
+            )
             print(f"Your program is {remark}, here is why:")
             while len(errors) > 0:
                 print(color_msg(errors.pop(), RAINBOW_ERRORS))

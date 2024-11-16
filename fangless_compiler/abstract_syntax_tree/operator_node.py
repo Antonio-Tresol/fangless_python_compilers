@@ -44,6 +44,8 @@ class Operand(Enum):
     ALTERNATIVE = 15
     SYMBOLS = 16
     FOR_LITERAL = 17
+    CLASS_NAME = 18
+    PARENT_CLASS = 19
 
     def __repr__(self) -> str:
         return str(self.name).lower()
