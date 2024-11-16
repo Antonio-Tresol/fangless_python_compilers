@@ -15,3 +15,4 @@ tests/__pycache__/__init__.cpython-312.pyc
 fangless_compiler/__pycache__/*
 fangless_compiler/abstract_syntax_tree/__pycache__/*
 tests/__pycache__/*
+*.txt
