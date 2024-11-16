@@ -1,4 +1,3 @@
-# a = b = c = d = 3
 class perro:
     def __init__(self) -> None:
         self.bro = list()
@@ -12,7 +11,20 @@ class antonio:
 class Joe:
     def __init__(self) -> None:
         self.antonio = antonio()
+        self.tpl = (1, 2, 3)
 
 
+joseph = 1, 2, 3
 joseph = Joe()
-joseph.antonio.lalo.bro.append(1)
+joseph.antonio.lalo.bro[0] = 1
+joseph.antonio.lalo.sup = 1
+
+a, b, c = joseph.tpl
+
+joseph.antonio.lalo.bro[6:8] = joseph.antonio.lalo.bro[-2:-4]
+
+a += 1
+a -= 1
+a *= 1
+a **= 2
+a /= 1

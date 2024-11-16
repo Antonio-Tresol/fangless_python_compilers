@@ -19,20 +19,19 @@ from common import (
 )
 from collections import defaultdict
 from typing import Any
-from pprint import pprint
-from nodes import (
-    OperatorType,
-    NIL_NODE,
-    OperatorNode,
-    NameNode,
-    EpicNode,
-)
+
+from abstract_syntax_tree.node import NIL_NODE
+from abstract_syntax_tree.operator_node import (OperatorType, OperatorNode, Operand)
+from abstract_syntax_tree.epic_node import EpicNode
+from abstract_syntax_tree.name_node import NameNode
 
 # ================================ NEEDED OBJECTS =============================
 tokens = TOKENS
 
 precedence = (
     ("right", "EQUAL"),
+    ("left", "EQUAL_EQUAL", "NOT_EQUAL", "LESS_THAN", "LESS_EQUAL",
+     "GREATER_THAN", "GREATER_EQUAL"),
     ("left", "PLUS", "MINUS"),
     ("left", "STAR", "SLASH"),
     ("left", "DOUBLE_STAR"),
@@ -43,8 +42,6 @@ precedence = (
     ("left", "AMPERSAND"),
     ("left", "HAT"),
     ("left", "BAR"),
-    ("left", "EQUAL_EQUAL", "NOT_EQUAL", "LESS_THAN", "LESS_EQUAL",
-     "GREATER_THAN", "GREATER_EQUAL"),
     ("left", "NOT"),
     ("left", "AND"),
     ("left", "OR"),
@@ -77,8 +74,55 @@ def does_name_exist(token_list: yacc.YaccProduction) -> None:
         raise SyntaxError(msg)
 
 
+def validate_variable_declaration_or_class_scope(
+    token_list: yacc.YaccProduction,
+) -> None:
+    """check variables are declared
+    and handle the special case for self in class context
+    """
+    if (
+        token_list.slice[1].type == "NAME"
+        and symbol_table[token_list[1]] is None
+        and (token_list[1] != "self" or parser_state_info["classes"] <= 0)
+    ):
+        msg = (
+            f"--Name: '{token_list[1]}' is not defined at "
+            f" line {token_list.lineno(1)}"
+            f"--{add_remark()}"
+        )
+        errors.append(msg)
+        raise SyntaxError(msg)
+
+
+def validate_flow_tokens_are_in_context(token_list: yacc.YaccProduction) -> None:
+    t_type = token_list.slice[1].type
+    # if it is continue or break, check we are in a loop
+    if t_type in {"CONTINUE", "BREAK"} and parser_state_info["loops"] <= 0:
+        line_number = token_list.lineno(1)
+        msg = (
+            f"--Cant call '{token_list[1]}' on this context on line {line_number}"
+            f"--{add_remark()}"
+        )
+        errors.append(msg)
+        raise SyntaxError(msg)
+    # if it is pass check we are in a loop or inside a functions
+    if (
+        t_type == "PASS"
+        and parser_state_info["loops"] <= 0
+        and parser_state_info["functions"] <= 0
+    ):
+        msg = (
+            f"--Cant call 'pass' on this"
+            f" context on line {token_list.lineno(1)}--{add_remark()}"
+        )
+        errors.append(msg)
+        raise SyntaxError(msg)
+
+
 def p_error(token_list: yacc.YaccProduction) -> None:
-    print(f"Parser Error near '{token_list}' in line {token_list.lineno}")
+    error = f"Parser Error near '{token_list}' in line {token_list.lineno}" 
+    print(error)
+    errors.append(error)
 
 
 # =================================== BASIC ===================================
@@ -101,11 +145,18 @@ def p_all(token_list: yacc.YaccProduction) -> None:
         msg += f"\nWere not defined as classes--{add_remark()}"
         errors.append(msg)
         raise SyntaxError(msg)
-    _ = token_list
+
+    group: list = token_list[2]
+    token_list[0] = group
+
+    if VERBOSE_AST:
+        for line, statement in enumerate(group):
+            print(f"\n\n=============== Statement: {line} ===============")
+            print(statement)
+            print("============================================\n")
 
 
 # ================================== LITERALS =================================
-# done collecting literals
 def p_literal(token_list: yacc.YaccProduction) -> None:
     """literal  :   structure
                 |   number
@@ -116,6 +167,8 @@ def p_literal(token_list: yacc.YaccProduction) -> None:
     does_name_exist(token_list)
     match token_list.slice[1].type:
         case "NAME":
+            # for names we create a node so that
+            # we know we have to resolve it at some point.
             token_list[0] = NameNode(token_list[1])
         case "NONE":
             token_list[0] = None
@@ -130,6 +183,7 @@ def p_number(token_list: yacc.YaccProduction) -> None:
                 |   OCTAL_NUMBER
                 |   HEXADECIMAL_NUMBER
     """
+    # numbers just go up
     token_list[0] = token_list[1]
 
 
@@ -137,11 +191,11 @@ def p_bool(token_list: yacc.YaccProduction) -> None:
     """bool     :   TRUE
                 |   FALSE
     """
+    # convert to equivalent boolean value and send it up
     token_list[0] = token_list[1] == "True"
 
 
 # =============================== STRUCTURES ===================================
-# done collecting structures
 def p_structure(token_list: yacc.YaccProduction) -> None:
     """structure    :   dict
                     |   list
@@ -149,9 +203,8 @@ def p_structure(token_list: yacc.YaccProduction) -> None:
                     |   set
                     |   string
     """
+    # structure come ready, so just send we just send it up
     token_list[0] = token_list[1]
-    if VERBOSE_AST:
-        print(token_list[1])
 
 
 def p_string(token_list: yacc.YaccProduction) -> None:
@@ -164,7 +217,7 @@ def p_string(token_list: yacc.YaccProduction) -> None:
             token_list[0] = token_list[1]
         case "UNICODE_STRING":
             token_list[0] = str(token_list[1])
-        case "RAW_STRING": 
+        case "RAW_STRING":
             if isinstance(token_list[1], bytes):
                 token_list[0] = token_list[1].decode("utf-8", errors="replace")
             else:
@@ -172,25 +225,28 @@ def p_string(token_list: yacc.YaccProduction) -> None:
 
 
 # ============= DICTIONARY ===========================
-# done collecting dictionaries
 def p_dict(token_list: yacc.YaccProduction) -> None:
     """dict :   L_CURLY_BRACE completed_key_value_series R_CURLY_BRACE
             |   L_CURLY_BRACE R_CURLY_BRACE
     """
+    # if empty dictionary
     if len(token_list) == 3:
         token_list[0] = {}
-    else:
-        key_values = token_list[2]
-        keys = key_values[0]
-        values = key_values[1]
+        return
 
-        token_list[0] = dict(zip(keys, values))
+    # when the dictionary is not empty
+    key_values = token_list[2]
+    keys = key_values["keys"]
+    values = key_values["values"]
+
+    token_list[0] = dict(zip(keys, values))
 
 
 def p_completed_key_value_series(token_list: yacc.YaccProduction) -> None:
     """completed_key_value_series   :   key_value_series COMMA
                                     |   key_value_series
     """
+    # the key_value_series is ready, just send it up
     token_list[0] = token_list[1]
 
 
@@ -198,25 +254,33 @@ def p_key_value_series(token_list: yacc.YaccProduction) -> None:
     """key_value_series     :   key_value_series COMMA key_value_pair
                             |   key_value_pair
     """
+    # if we only have one key_value_pair
     if len(token_list) == 2:
-        token_list[0] = token_list[1]
-    else:
-        key_values = token_list[1]
-        keys = key_values[0]
-        values = key_values[1]
+        new_key_value = token_list[1]
+        keys_and_values = {
+            "keys": [new_key_value["key"]],
+            "values": [
+                new_key_value["value"],
+            ],
+        }
+        token_list[0] = keys_and_values
+        return
 
-        new = token_list[3]
-        new_key = new[0][0]
-        new_value = new[1][0]
-        keys.append(new_key)
-        values.append(new_value)
-        token_list[0] = [keys, values]
+    # if we have a series of them
+    keys_and_values = token_list[1]
+    new_key_value = token_list[3]
+    # we add them to the new dictionary
+    keys_and_values["keys"].append(new_key_value["key"])
+    keys_and_values["values"].append(new_key_value["value"])
+
+    token_list[0] = keys_and_values
 
 
 def p_key_value_pair(token_list: yacc.YaccProduction) -> None:
     """key_value_pair   :   non_mutable_literal COLON scalar_statement"""
-    # first list are the keys and the second list are the values
-    token_list[0] = [[token_list[1]], [token_list[3]]]
+    # for key value pairs we build a dict with it key and its value and
+    # we send it up
+    token_list[0] = {"key": token_list[1], "value": token_list[3]}
 
 
 def p_non_mutable_literal(token_list: yacc.YaccProduction) -> None:
@@ -227,9 +291,9 @@ def p_non_mutable_literal(token_list: yacc.YaccProduction) -> None:
                             |   NONE
                             |   NAME
     """
-    # Names are passed up as strings
     match token_list.slice[1].type:
         case "NAME":
+            # we make a name node here because we have work to do
             token_list[0] = NameNode(token_list[1])
         case "NONE":
             token_list[0] = None
@@ -239,19 +303,21 @@ def p_non_mutable_literal(token_list: yacc.YaccProduction) -> None:
 
 # ================================= LIST, SET, TUPLE ==========================
 # both tuples and list can be declared empty so general structure considers
-# series of literals (general series) or empty called epsilon
+# series of literals (general series) or empty
 def p_list(token_list: yacc.YaccProduction) -> None:
     """list :   L_BRACKET completed_general_series R_BRACKET
             |   L_BRACKET R_BRACKET
     """
+    # if we do not have elements inside the list
     if len(token_list) == 3:
         token_list[0] = []
-    else:
-        series = token_list[2]
-        token_list[0] = series
+        return
+    # if we have elements inside
+    series = token_list[2]
+    token_list[0] = series
 
 
-# sets can not be declared empty so they can only have a general series inside
+# sets can not be declared empty 
 def p_set(token_list: yacc.YaccProduction) -> None:
     """set  :   L_CURLY_BRACE completed_general_series R_CURLY_BRACE"""
     series = token_list[2]
@@ -262,6 +328,8 @@ def p_completed_general_series(token_list: yacc.YaccProduction) -> None:
     """completed_general_series :   general_series COMMA
                                 |   general_series
     """
+    # the comma is ignored and the general series comes ready
+    # so up
     token_list[0] = token_list[1]
 
 
@@ -269,12 +337,17 @@ def p_general_series(token_list: yacc.YaccProduction) -> None:
     """general_series   :   general_series COMMA literal
                         |   literal
     """
+    # if it is only a literal, make it a list and send it up
     if len(token_list) == 2:
         token_list[0] = [token_list[1]]
-    else:
-        series = token_list[1]
-        series.append(token_list[3])
-        token_list[0] = series
+        return
+
+    # when we already have a series
+    # add the literal to the existing list and
+    # send it up
+    series = token_list[1]
+    series.append(token_list[3])
+    token_list[0] = series
 
 
 def p_tuple(token_list: yacc.YaccProduction) -> None:
@@ -283,6 +356,7 @@ def p_tuple(token_list: yacc.YaccProduction) -> None:
                 |   L_PARENTHESIS R_PARENTHESIS
     """
     series = []
+
     if len(token_list) > 3:
         series = token_list[2]
         if len(token_list) == 6:
@@ -300,19 +374,15 @@ def p_unary_operation(token_list: yacc.YaccProduction) -> None:
                         |   NOT unary_operand
                         |   TILDE unary_operand
     """
+    # if the unary operations has parenthesis
     if token_list.slice[1].type == "L_PARENTHESIS":
         node: OperatorNode = token_list[2]
         node.parenthesis = True
         token_list[0] = node
-
     else:
-        unary_op_node = OperatorNode(token_list[1])
-        unary_op_node.add_adjacent(token_list[2])
+        unary_op_node = OperatorNode(operator=token_list[1])
+        unary_op_node.set_center_operand(token_list[2])
         token_list[0] = unary_op_node
-    if VERBOSE_AST:
-        print("\n\n==============================")
-        print(token_list[0])
-        print("==============================\n")
 
 
 def p_unary_operand(token_list: yacc.YaccProduction) -> None:
@@ -320,14 +390,16 @@ def p_unary_operand(token_list: yacc.YaccProduction) -> None:
                         |   unary_operation
                         |   scalar_statement
     """
+    # if the operand has parenthesis and is an OperatorNode
     if token_list.slice[1].type == "L_PARENTHESIS":
         if isinstance(token_list[2], OperatorNode):
             node: OperatorNode = token_list[2]
             node.parenthesis = True
 
         token_list[0] = token_list[2]
-    else:
-        token_list[0] = token_list[1]
+        return
+    # when it is unary operation or scalar statement just send it up
+    token_list[0] = token_list[1]
 
 
 # ========================= BINARY OPERATIONS =================================
@@ -335,27 +407,23 @@ def p_binary_operation(token_list: yacc.YaccProduction) -> None:
     """binary_operation     :   L_PARENTHESIS binary_operation R_PARENTHESIS
                             |   binary_operand binary_operator binary_operand
     """
+    # if we have parenthesis, we know we have a node so just add them
     if token_list.slice[1].type == "L_PARENTHESIS":
         node: OperatorNode = token_list[2]
         node.parenthesis = True
         token_list[0] = node
-
-    else:
-        binary_op_node = OperatorNode(token_list[2])
-        binary_op_node.add_adjacent(token_list[1])
-        binary_op_node.add_adjacent(token_list[3])
+    else:  # when building a new binary operation
+        binary_op_node = OperatorNode(operator=token_list[2])
+        binary_op_node.set_left_operand(token_list[1])
+        binary_op_node.set_right_operand(token_list[3])
         token_list[0] = binary_op_node
-    if VERBOSE_AST:
-        print("\n\n==============================")
-        print(token_list[0])
-        print("==============================\n")
 
 
-   
 def p_binary_operand(token_list: yacc.YaccProduction) -> None:
-    """binary_operand   :   unary_operand
-                        |   binary_operation
+    """binary_operand  :   unary_operand
+                       |   binary_operation
     """
+    # both come ready, just send it up
     token_list[0] = token_list[1]
 
 
@@ -385,9 +453,10 @@ def p_binary_operator(token_list: yacc.YaccProduction) -> None:
                         |   NOT IN
                         |   IN
     """
-    operators = ""
-    for i in range(1, len(token_list)):
-        operators = operators + " " + token_list[i]
+    operators = token_list[1]
+    # if we have a two token operator
+    if len(token_list) > 2:
+        operators = operators + " " + token_list[2]
     token_list[0] = operators
 
 
@@ -398,22 +467,32 @@ def p_assignation(token_list: yacc.YaccProduction) -> None:
                     |   name_assignation
                     |   index_assignation
     """
+    # they are ready, so send it up
     token_list[0] = token_list[1]
 
 
 def p_comma_assignation(token_list: yacc.YaccProduction) -> None:
     """comma_assignation :   completed_name_comma_series EQUAL assignation_value"""
-    names : list = token_list[1]
+    names: list[NameNode] = token_list[1]
     for name in names:
-        if symbol_table[name] is None:
-            stack.append(name)
-        symbol_table[name] = VARIABLE        
+        # if the name is not in the symbol table add it to the stack
+        # to keep track of scope variables
+        if symbol_table[name.id] is None:
+            stack.append(name.id)
+        # TODO(@all): add it value
+        symbol_table[name.id] = VARIABLE
+    # assignation node
+    assignation = OperatorNode(OperatorType.UNPACK_ASSIGNATION)
+    assignation.set_left_operand(token_list[1])
+    assignation.set_right_operand(token_list[3])
+    token_list[0] = assignation
 
 
 def p_completed_name_comma_series(token_list: yacc.YaccProduction) -> None:
     """completed_name_comma_series  : name_comma_series COMMA
                                     | name_comma_series
     """
+    # it's ready, just send it up and ignore the comma
     token_list[0] = token_list[1]
 
 
@@ -421,11 +500,15 @@ def p_name_comma_series(token_list: yacc.YaccProduction) -> None:
     """name_comma_series    : name_comma_series COMMA NAME
                             | NAME COMMA NAME
     """
+    # if this is the first pair of names, make a list of them
     if token_list.slice[1].type == "NAME":
-        token_list[0] = [token_list[1], token_list[3]]
-    else:
+        token_list[0] = [
+            NameNode(identifier=token_list[1]),
+            NameNode(identifier=token_list[3]),
+        ]
+    else:  # when we have already some names, just add the name to the list
         names = token_list[1]
-        names.append(token_list[3])
+        names.append(NameNode(identifier=token_list[3]))
         token_list[0] = names
 
 
@@ -435,41 +518,41 @@ def p_assignation_value(token_list: yacc.YaccProduction) -> None:
                             |   scalar_statement
                             |   completed_general_series
     """
+    # they are all ready packed, send it up
     token_list[0] = token_list[1]
 
 
 def p_dot_assignation(token_list: yacc.YaccProduction) -> None:
     """dot_assignation :   name_dot_series EQUAL assignation_value"""
-    _ = token_list
+    assignation = OperatorNode(OperatorType.ASSIGNATION)
+    assignation.set_left_operand(token_list[1])
+    assignation.set_right_operand(token_list[3])
+
+    token_list[0] = assignation
 
 
 def p_name_dot_series(token_list: yacc.YaccProduction) -> None:
     """name_dot_series  :   name_dot_series DOT NAME
                         |   NAME DOT NAME
     """
-    if (
-        token_list.slice[1].type == "NAME"
-        and symbol_table[token_list[1]] is None
-        and (token_list[1] != "self" or parser_state_info["classes"] <= 0)
-    ):
-        msg = (
-               f"--Name: '{token_list[1]}' is not defined at line {token_list.lineno(1)}"
-               f"--{add_remark()}"
-              )
-        errors.append(msg)
-        raise SyntaxError(msg)
+    validate_variable_declaration_or_class_scope(token_list)
 
-    attribute_node = OperatorNode(OperatorType.ATTRIBUTE_CALL)
-
+    new_node = OperatorNode(OperatorType.ATTRIBUTE_CALL)
+    # if we are starting the series of dot names
     if token_list.slice[1].type == "NAME":
-        attribute_node.add_adjacent(NameNode(token_list[1]))
-        attribute_node.add_adjacent(NameNode(token_list[3]))
-    else:
+        new_node.set_left_operand(NameNode(identifier=token_list[1]))
+        new_node.set_right_operand(NameNode(identifier=token_list[3]))
+        token_list[0] = new_node
+    else:  # if we already have a series of names, extend the tree to the right
         attribute_subtree: OperatorNode = token_list[1]
-        attribute_node.add_adjacent(attribute_subtree)
-        attribute_node.add_adjacent(NameNode(token_list[3]))
-
-    token_list[0] = attribute_node
+        # new node will have as left the last attribute in the tree
+        # which is in the rightmost position of the tree
+        new_node.set_left_operand(attribute_subtree.get_rightmost())
+        # its right will be the new name in the series
+        new_node.set_right_operand(NameNode(identifier=token_list[3]))
+        # and that subtree will be planted at the rightmost position of the last tree
+        attribute_subtree.set_rightmost(new_node)
+        token_list[0] = attribute_subtree
 
 
 def p_name_assignation(token_list: yacc.YaccProduction) -> None:
@@ -477,28 +560,33 @@ def p_name_assignation(token_list: yacc.YaccProduction) -> None:
                         |   var_declaration EQUAL assignation_value
                         |   NAME EQUAL assignation_value
     """
-    names = token_list[1]
+    name = token_list[1]
     assignation = OperatorNode(OperatorType.ASSIGNATION)
-    if not isinstance(names, OperatorNode):
+    # if we have a var declaration or a name
+    if not isinstance(name, tuple):
         if symbol_table[token_list[1]] is None:
             stack.append(token_list[1])
         symbol_table[token_list[1]] = VARIABLE
-
-        assignation.add_adjacent(token_list[1])
-        assignation.add_adjacent(token_list[3])
+        # the name left
+        assignation.set_left_operand(token_list[1])
+        # the value right
+        assignation.set_right_operand(token_list[3])
         token_list[0] = assignation
-
-    else:
-        for name_node in names.get_leaves():
+    else:  # when we have a name equal series
+        root, last_tree = name
+        # the leaves of the tree are the names so far
+        for name_node in root.get_leaves():
             if symbol_table[name_node.id] is None:
                 stack.append(name_node.id)
             symbol_table[name_node.id] = VARIABLE
-        assignation.add_adjacent(names.get_adjacent(1))
-        assignation.add_adjacent(token_list[3])
-        names.change_adjacent(1, assignation)
-        token_list[0] = names
-
-    print(token_list[0])
+        # the new assignation node will have as left
+        # the right of the las tree
+        assignation.set_left_operand(last_tree.get_right_operand())
+        # and as left the new name
+        assignation.set_right_operand(token_list[3])
+        # finally that new assignation node will be the last tree new right
+        last_tree.set_right_operand(assignation)
+        token_list[0] = root
 
 
 def p_name_equal_series(token_list: yacc.YaccProduction) -> None:
@@ -506,22 +594,28 @@ def p_name_equal_series(token_list: yacc.YaccProduction) -> None:
                            | NAME EQUAL NAME
     """
     new_tree = OperatorNode(OperatorType.ASSIGNATION)
-
+    # if we are starting the name series
     if token_list.slice[1].type == "NAME":
-        new_tree.add_adjacent(NameNode(token_list[1]))
-        new_tree.add_adjacent(NameNode(token_list[3]))
-        token_list[0] = new_tree
-    else:
-        last_tree: OperatorNode = token_list[1]
-        new_tree.add_adjacent(last_tree.get_adjacent(1))
-        new_tree.add_adjacent(NameNode(token_list[3]))
-        last_tree.change_adjacent(1, new_tree)
-        token_list[0] = last_tree
+        new_tree.set_left_operand(NameNode(identifier=token_list[1]))
+        new_tree.set_right_operand(NameNode(identifier=token_list[3]))
+        token_list[0] = (new_tree, new_tree)
+    else:  # when we already have a series
+        tree = token_list[1]
+        root, last_tree = tree
+
+        new_tree.set_left_operand(last_tree.get_right_operand())
+        new_tree.set_right_operand(NameNode(identifier=token_list[3]))
+        last_tree.set_right_operand(new_tree)
+        token_list[0] = (root, new_tree)
 
 
 def p_index_assignation(token_list: yacc.YaccProduction) -> None:
     """index_assignation    :   index_literal EQUAL assignation_value"""
-    _ = token_list
+    assignation = OperatorNode(OperatorType.ASSIGNATION)
+    assignation.set_left_operand(token_list[1])
+    assignation.set_right_operand(token_list[3])
+
+    token_list[0] = assignation
 
 
 def p_index_literal(token_list: yacc.YaccProduction) -> None:
@@ -529,29 +623,35 @@ def p_index_literal(token_list: yacc.YaccProduction) -> None:
                         |   index_literal L_BRACKET index R_BRACKET
                         |   structure L_BRACKET slice R_BRACKET
                         |   structure L_BRACKET index R_BRACKET
+                        |   name_dot_series L_BRACKET slice R_BRACKET
+                        |   name_dot_series L_BRACKET index R_BRACKET
                         |   NAME L_BRACKET slice R_BRACKET
                         |   NAME L_BRACKET index R_BRACKET
     """
     does_name_exist(token_list)
     tree: OperatorNode = NIL_NODE
 
-    # Slicing
+    # if we have a slice in the brackets
     if isinstance(token_list[3], EpicNode):
         tree = OperatorNode(OperatorType.SLICING)
         temp_node: EpicNode = token_list[3]
-        tree.add_adjacent(NIL_NODE)
-        tree.add_adjacent({"start": temp_node.get_adjacent(0), "end": temp_node.get_adjacent(1)})
-
+        tree.add_named_adjacent(
+            Operand.SLICE,
+            {
+                Operand.START: temp_node.get_adjacent(Operand.START),
+                Operand.END: temp_node.get_adjacent(Operand.END),
+            },
+        )
     # Indexing
     else:
         tree = OperatorNode(OperatorType.INDEXING)
-        tree.add_adjacent(NIL_NODE)
-        tree.add_adjacent(token_list[3])
+        tree.add_named_adjacent(Operand.INDEX, token_list[3])
 
+    # if we are indexing over a variable
     if token_list.slice[1].type == "NAME":
-        tree.change_adjacent(0, NameNode(token_list[1]))
-    else:
-        tree.change_adjacent(0, token_list[1])
+        tree.add_named_adjacent(Operand.INSTANCE, NameNode(identifier=token_list[1]))
+    else:  # if we are indexing directly into a structure
+        tree.add_named_adjacent(Operand.INSTANCE, token_list[1])
 
     token_list[0] = tree
 
@@ -560,10 +660,10 @@ def p_slice(token_list: yacc.YaccProduction) -> None:
     """slice    :   index COLON index"""
     operand1 = token_list[1]
     operand2 = token_list[3]
-
+    # sending a temp node up to recognize it
     temp_node = EpicNode(2)
-    temp_node.add_adjacent(operand1)
-    temp_node.add_adjacent(operand2)
+    temp_node.add_named_adjacent(Operand.START, operand1)
+    temp_node.add_named_adjacent(Operand.END, operand2)
     token_list[0] = temp_node
 
 
@@ -574,7 +674,11 @@ def p_index(token_list: yacc.YaccProduction) -> None:
 
 def p_op_assignation(token_list: yacc.YaccProduction) -> None:
     """op_assignation   :   op_assignation_operand op_assignation_operator assignation_value"""
-    _ = token_list
+    operation = OperatorNode(token_list[2])
+    operation.set_left_operand(token_list[1])
+    operation.set_right_operand(token_list[3])
+
+    token_list[0] = operation
 
 
 def p_op_assignation_operand(token_list: yacc.YaccProduction) -> None:
@@ -586,13 +690,19 @@ def p_op_assignation_operand(token_list: yacc.YaccProduction) -> None:
     if isinstance(name, list):
         if symbol_table[name[1]] is None:
             msg = (
-                f"--Name: '{name[1]}' is not defined at line {token_list.lineno(1)}--"
-                f"{add_remark()}"
+                f"--Name: '{name[1]}' is not defined at line {token_list.lineno(1)}"
+                f"--{add_remark()}"
             )
             errors.append(msg)
             raise SyntaxError(msg)
     else:
         does_name_exist(token_list)
+
+    # TODO(Antonio)
+    if token_list.slice[1].type == "NAME":
+        token_list[0] = NameNode(token_list[1])
+    else:
+        token_list[0] = token_list[1]
 
 
 def p_op_assignation_operator(token_list: yacc.YaccProduction) -> None:
@@ -609,7 +719,7 @@ def p_op_assignation_operator(token_list: yacc.YaccProduction) -> None:
                                 |   LEFT_SHIFT_EQUAL
                                 |   RIGHT_SHIFT_EQUAL
     """
-    _ = token_list
+    token_list[0] = token_list[1]
 
 
 # ========================= VARIABLES & HINTS =================================
@@ -633,18 +743,18 @@ def p_hint(token_list: yacc.YaccProduction) -> None:
     hint = token_list[1]
     if token_list.slice[1].type == "NAME" and token_list[1] not in TYPES:
         msg = (
-               f"--TYPE HINTS: '{token_list[1]}' is not a valid type "
-               f"on line {token_list.lineno(1)}--{add_remark()}"
-               )
+            f"--TYPE HINTS: '{token_list[1]}' is not a valid type "
+            f"on line {token_list.lineno(1)}--{add_remark()}"
+        )
         errors.append(msg)
         raise SyntaxError(msg)
-    elif isinstance(hint, list):
-        for type in hint:
-            if type not in TYPES:
+    if isinstance(hint, list):
+        for type_hint in hint:
+            if type_hint not in TYPES:
                 msg = (
-                       f"--TYPE HINTS: '{token_list[1]}' is not a "
-                       f"valid type on line {token_list.lineno(1)}--{add_remark()}"
-                       )
+                    f"--TYPE HINTS: '{token_list[1]}' is not a "
+                    f"valid type on line {token_list.lineno(1)}--{add_remark()}"
+                )
                 errors.append(msg)
                 raise SyntaxError(msg)
 
@@ -653,9 +763,9 @@ def p_container_type(token_list: yacc.YaccProduction) -> None:
     """container_type  : NAME L_BRACKET type_series R_BRACKET"""
     if token_list[1] not in CONTAINER_TYPES:
         msg = (
-                f"--TYPE HINTS: '{token_list[1]}' is not a valid "
-                f"container type on line {token_list.lineno(1)}--{add_remark()}"
-                )
+            f"--TYPE HINTS: '{token_list[1]}' is not a valid "
+            f"container type on line {token_list.lineno(1)}--{add_remark()}"
+        )
         errors.append(msg)
         raise SyntaxError(msg)
     token_list[0] = token_list[3]
@@ -685,7 +795,7 @@ def p_scalar_statement(token_list: yacc.YaccProduction) -> None:
     """
     does_name_exist(token_list)
     if token_list.slice[1].type == "NAME":
-        token_list[0] = NameNode(token_list[1])
+        token_list[0] = NameNode(identifier=token_list[1])
 
     token_list[0] = token_list[1]
 
@@ -708,44 +818,40 @@ def p_complex_statement(token_list: yacc.YaccProduction) -> None:
                             |   dot_pass
                             |   epsilon
     """
-    if (
-        token_list.slice[1].type == "CONTINUE" or token_list.slice[1].type == "BREAK"
-    ) and parser_state_info["loops"] <= 0:
-        line_number = token_list.lineno(1)
-        msg = f"--Cant call '{token_list[1]}' on this context on line {line_number}--{add_remark()}"
-        errors.append(msg)
-        raise SyntaxError(msg)
-
-    elif token_list.slice[1].type == "PASS" and (
-        parser_state_info["loops"] <= 0 and parser_state_info["functions"] <= 0
-    ):
-        msg = (
-            f"--Cant call 'pass' on this"
-            f" context on line {token_list.lineno(1)}--{add_remark()}"
-        )
-        errors.append(msg)
-        raise SyntaxError(msg)
-
-    token_list[0] = token_list[1]
+    validate_flow_tokens_are_in_context(token_list)
+    match token_list.slice[1].type:
+        case "CONTINUE":
+            token_list[0] = OperatorNode(OperatorType.CONTINUE, max_adjacents=0)
+        case "BREAK":
+            token_list[0] = OperatorNode(OperatorType.BREAK, max_adjacents=0)
+        case "PASS":
+            token_list[0] = OperatorNode(OperatorType.PASS, max_adjacents=0)
+        case _:
+            token_list[0] = token_list[1]
 
 
 def p_dot_pass(token_list: yacc.YaccProduction) -> None:
     """dot_pass    :   DOT DOT DOT"""
     if parser_state_info["functions"] <= 0:
         msg = (
-               f"--Cant call 'TRIPLE DOT' on this "
-               f"context on line {token_list.lineno(1)}--{add_remark()}"
-              )
+            f"--Cant call 'TRIPLE DOT' on this "
+            f"context on line {token_list.lineno(1)}--{add_remark()}"
+        )
         errors.append(msg)
         raise SyntaxError(msg)
-    _ = token_list
+    token_list[0] = OperatorNode(OperatorType.PASS, max_adjacents=0)
 
 
 def p_statement_group(token_list: yacc.YaccProduction) -> None:
     """statement_group    :   statement_group NEWLINE complex_statement
                           |   complex_statement
     """
-    _ = token_list
+    if len(token_list) == 2:
+        token_list[0] = [token_list[1]]
+        return
+    group = token_list[1]
+    group.append(token_list[3])
+    token_list[0] = group
 
 
 def p_body(token_list: yacc.YaccProduction) -> None:
@@ -754,7 +860,7 @@ def p_body(token_list: yacc.YaccProduction) -> None:
     while local_var != SCOPE_OPENED:
         symbol_table[local_var] = None
         local_var = stack.pop()
-    _ = token_list
+    token_list[0] = token_list[3]
 
 
 def p_open_scope(token_list: yacc.YaccProduction) -> None:
@@ -778,43 +884,20 @@ def p_if_block(token_list: yacc.YaccProduction) -> None:
                     |   if else
                     |   if
     """
-    token_amount = len(token_list) - 1
-
-    # fist element is always an if here
-    if_node: OperatorNode = token_list[1]
-
-    # if token_amount == 1:
-    #     # already added
-    #     pass
-    # elif token_amount == 2:
-    #     last_token = token_list[token_amount]
-    #     # adds the elif or elif at the end
-    #     if isinstance(token_list[token_amount], list):
-    #         if_node.get_adjacent(1).extend(last_token)
-    #     else:
-    #         if_node.get_adjacent(1).append(last_token)
-    # elif token_amount == 3:
-    #     elif_list = token_list[2]
-    #     # adds the elif first
-    #     if_node.get_adjacent(1).extend(elif_list)
-
-    #     # adds the else at the end
-    #     if_node.get_adjacent(1).append(token_list[3])
-    # else:
-    #     error_msg = f"Node: {if_node} invalid inside if block"
-    #     raise ValueError(error_msg)
-
-    # token_list[0] = if_node
+    if_tree: OperatorNode = token_list[1]
+    token_amount = len(token_list)
+    for i in range(2, token_amount):
+        if_tree.add_deepest(Operand.ALTERNATIVE, token_list[i])
+    token_list[0] = if_tree
 
 
 def p_if(token_list: yacc.YaccProduction) -> None:
     """if   :   IF condition COLON body
             |   IF condition COLON complex_statement
     """
-    if_node = OperatorNode(OperatorType.IF)
-    if_node.add_adjacent(token_list[2])
-    if_node.add_adjacent(token_list[4])
-
+    if_node = OperatorNode(OperatorType.IF, max_adjacents=3)
+    if_node.add_named_adjacent(Operand.CONDITION, token_list[2])
+    if_node.add_named_adjacent(Operand.BODY, token_list[4])
     token_list[0] = if_node
 
 
@@ -822,13 +905,12 @@ def p_elif_block(token_list: yacc.YaccProduction) -> None:
     """elif_block   :   elif_block elif
                     |   elif
     """
-    elif_block = token_list[1]
-    if isinstance(elif_block, list):
-        elif_block.append(token_list[2])
-    else:
-        elif_block = [token_list[1]]
+    if len(token_list) == 3:
+        new_node = token_list[2]
+        elif_tree: OperatorNode = token_list[1]
+        elif_tree.add_deepest(Operand.ALTERNATIVE, new_node)
 
-    token_list[0] = elif_block
+    token_list[0] = token_list[1]
 
 
 # same logic as if rule
@@ -836,9 +918,9 @@ def p_elif(token_list: yacc.YaccProduction) -> None:
     """elif     :   ELIF condition COLON body
                 |   ELIF condition COLON complex_statement
     """
-    if_node = OperatorNode(OperatorType.IF)
-    if_node.add_adjacent(token_list[2])
-    if_node.add_adjacent(token_list[4])
+    if_node = OperatorNode(OperatorType.ELIF, max_adjacents=3)
+    if_node.add_named_adjacent(Operand.CONDITION, token_list[2])
+    if_node.add_named_adjacent(Operand.BODY, token_list[4])
     token_list[0] = if_node
 
 
@@ -852,9 +934,15 @@ def p_else(token_list: yacc.YaccProduction) -> None:
 
 def p_ternary(token_list: yacc.YaccProduction) -> None:
     """ternary  :   literal IF condition ELSE scalar_statement"""
-    if_node = OperatorNode(OperatorType.IF)
-    if_node.add_adjacent(token_list[3])
-    if_node.add_adjacent({True: token_list[1], False: token_list[5]})
+    if_node = OperatorNode(OperatorType.TERNARY)
+    if_node.add_named_adjacent(Operand.CONDITION, token_list[3])
+    if_node.add_named_adjacent(
+        Operand.VALUES,
+        {
+            True: token_list[1],
+            False: token_list[5],
+        },
+    )
     token_list[0] = if_node
 
 
@@ -863,13 +951,19 @@ def p_while_block(token_list: yacc.YaccProduction) -> None:
     """while_block  :   while else
                     |   while
     """
-    _ = token_list
+    while_node : OperatorNode = token_list[1]
+    if len(token_list) == 3:
+        while_node.add_named_adjacent(Operand.ALTERNATIVE, token_list[2])
+    token_list[0] = while_node
 
 
 def p_while(token_list: yacc.YaccProduction) -> None:
     """while   :   while_open condition COLON body"""
     parser_state_info["loops"] -= 1
-    _ = token_list
+    while_node = OperatorNode(OperatorType.WHILE, max_adjacents=3)
+    while_node.add_named_adjacent(Operand.CONDITION, token_list[2])
+    while_node.add_named_adjacent(Operand.BODY, token_list[4])
+    token_list[0] = while_node
 
 
 def p_while_open(token_list: yacc.YaccProduction) -> None:
@@ -882,20 +976,33 @@ def p_for_block(token_list: yacc.YaccProduction) -> None:
     """for_block    :   for else
                     |   for
     """
-    _ = token_list
+    for_node: OperatorNode = token_list[1]
+    if len(token_list) == 3:
+        for_node.add_named_adjacent(Operand.ALTERNATIVE, token_list[2])
+    token_list[0] = for_node
 
 
 def p_for(token_list: yacc.YaccProduction) -> None:
     """for :   for_open for_symbols IN for_literal COLON body"""
     parser_state_info["loops"] -= 1
-    names = token_list[2]
-    for name in names:
-        symbol_table[name] = None
+
+    local_var = stack.pop()
+    while local_var != SCOPE_OPENED:
+        symbol_table[local_var] = None
+        local_var = stack.pop()
+
+    for_node = OperatorNode(OperatorType.FOR, max_adjacents=4)
+    for_node.add_named_adjacent(Operand.SYMBOLS, token_list[2])
+    for_node.add_named_adjacent(Operand.FOR_LITERAL, token_list[4])
+    for_node.add_named_adjacent(Operand.BODY, token_list[6])
+
+    token_list[0] = for_node
 
 
 def p_for_open(token_list: yacc.YaccProduction) -> None:
     """for_open :   FOR"""
     parser_state_info["loops"] += 1
+    stack.append(SCOPE_OPENED)
     _ = token_list
 
 
@@ -903,13 +1010,18 @@ def p_for_symbols(token_list: yacc.YaccProduction) -> None:
     """for_symbols  :   for_symbols COMMA NAME
                     |   NAME
     """
+    # when we have one name
     if token_list.slice[1].type == "NAME":
+        if symbol_table[token_list[1]] is None:
+            stack.append(token_list[1])
         symbol_table[token_list[1]] = VARIABLE
-        token_list[0] = [token_list[1]]
-    else:
+        token_list[0] = [NameNode(identifier=token_list[1])]
+    else:  # when we already have some for symbols
+        if symbol_table[token_list[3]] is None:
+            stack.append(token_list[3])
         symbol_table[token_list[3]] = VARIABLE
         names = token_list[1]
-        names.append(token_list[3])
+        names.append(NameNode(identifier=token_list[3]))
         token_list[0] = names
 
 
@@ -919,6 +1031,9 @@ def p_for_literal(token_list: yacc.YaccProduction) -> None:
                     |   NAME
     """
     does_name_exist(token_list)
+    if token_list.slice[1].type == "NAME":
+        token_list[0] = NameNode(identifier=token_list[1])
+        return
 
     token_list[0] = token_list[1]
 
@@ -930,16 +1045,19 @@ def p_return_statement(token_list: yacc.YaccProduction) -> None:
     """
     if parser_state_info["functions"] <= 0:
         msg = (
-               f"--Cant call RETURN 'on this context "
-               f"on line {token_list.lineno(1)}--{add_remark()}"
-              )
+            f"--Cant call RETURN 'on this context "
+            f"on line {token_list.lineno(1)}--{add_remark()}"
+        )
         errors.append(msg)
         raise SyntaxError(msg)
 
-    if len(token_list) > 2:
-        token_list[0] = token_list[2]
+    node = OperatorNode(OperatorType.RETURN)
+    if len(token_list) == 3:
+        node.set_center_operand(token_list[2])
     else:
-        token_list[0] = None
+        node.set_center_operand(None)
+
+    token_list[0] = node
 
 
 def p_return_value_list(token_list: yacc.YaccProduction) -> None:
@@ -968,13 +1086,22 @@ def p_function_definition(token_list: yacc.YaccProduction) -> None:
                             |   def_open NAME complete_argument_list ARROW hints COLON body
     """
     parser_state_info["functions"] -= 1
-    arguments = token_list[3]
-    for argument in arguments:
-        symbol_table[argument] = None
+
+    local_var = stack.pop()
+    while local_var != SCOPE_OPENED:
+        symbol_table[local_var] = None
+        local_var = stack.pop()
+
     symbol_table[token_list[2]] = FUNCTION
     undefined_functions.discard(token_list[2])
 
-    # treeable
+    func_node = OperatorNode(OperatorType.FUNC_DECLARATION, max_adjacents=3)
+    func_node.add_named_adjacent(Operand.FUNCTION_NAME, NameNode(token_list[2]))
+    func_node.add_named_adjacent(Operand.ARGUMENTS, token_list[3])
+    body_index = 5 if len(token_list) == 6 else 7
+    func_node.add_named_adjacent(Operand.BODY, token_list[body_index])
+    token_list[0] = func_node
+
 
 
 def p_def_open(token_list: yacc.YaccProduction) -> None:
@@ -983,19 +1110,40 @@ def p_def_open(token_list: yacc.YaccProduction) -> None:
     _ = token_list
 
 
+def p_mixed_argument_list(token_list: yacc.YaccProduction) -> None:
+    """mixed_argument_list   :  argument_list COMMA default_argument_list
+                             |  argument_list COMMA default_argument_list COMMA
+    """
+    arguments = token_list[1]
+    default_arguments = token_list[3]
+    arguments.extend(default_arguments)
+    token_list[0] = arguments
+
+
 def p_complete_argument_list(token_list: yacc.YaccProduction) -> None:
     """complete_argument_list   :   L_PARENTHESIS argument_list COMMA R_PARENTHESIS
                                 |   L_PARENTHESIS argument_list R_PARENTHESIS
                                 |   L_PARENTHESIS default_argument_list R_PARENTHESIS
-                                |   L_PARENTHESIS argument_list COMMA default_argument_list R_PARENTHESIS
+                                |   L_PARENTHESIS mixed_argument_list R_PARENTHESIS
                                 |   L_PARENTHESIS R_PARENTHESIS
     """
-    arguments = token_list[2]
-    if len(token_list) == 6:
-        default_arguments = token_list[4]
-        arguments.extend(default_arguments)
+    stack.append(SCOPE_OPENED)
+    # argument list
+    if len(token_list) == 3:
+        token_list[0] = []
+        return
+
+    arguments: list = token_list[2]
     for argument in arguments:
-        symbol_table[argument] = VARIABLE
+        if isinstance(argument, dict):
+            argument_id = argument["argument"].id
+        else:
+            argument_id = argument.id
+
+        if symbol_table[argument_id] is None:
+            stack.append(argument_id)
+        symbol_table[argument_id] = VARIABLE
+
     token_list[0] = arguments
 
 
@@ -1025,26 +1173,26 @@ def p_default_argument_list(token_list: yacc.YaccProduction) -> None:
 
 def p_default_argument(token_list: yacc.YaccProduction) -> None:
     """default_argument :   argument EQUAL literal"""
-    token_list[0] = token_list[1]
+    token_list[0] = {"argument": token_list[1], "default": token_list[3]}
 
 
 def p_argument(token_list: yacc.YaccProduction) -> None:
     """argument   :   NAME COLON hints
                   |   NAME
     """
-    token_list[0] = token_list[1]
+    token_list[0] = NameNode(identifier=token_list[1])
 
 
 def p_function_call(token_list: yacc.YaccProduction) -> None:
     """function_call    :   NAME complete_parameter_list"""
-    if (symbol_table[token_list[1]] != FUNCTION and
-        symbol_table[token_list[1]] != CLASS):
+    symbol = symbol_table[token_list[1]]
+    if symbol not in {FUNCTION, CLASS}:
         undefined_functions.add(token_list[1])
 
     function_node = OperatorNode(OperatorType.FUNCTION_CALL)
-    function_node.add_adjacent(NameNode(token_list[1]))
+    function_node.add_named_adjacent(Operand.FUNCTION_NAME, NameNode(token_list[1]))
     parameter_list: list = token_list[2]
-    function_node.add_adjacent(parameter_list)
+    function_node.add_named_adjacent(Operand.ARGUMENTS, parameter_list)
     token_list[0] = function_node
 
 
@@ -1052,10 +1200,12 @@ def p_complete_parameter_list(token_list: yacc.YaccProduction) -> None:
     """complete_parameter_list  :   L_PARENTHESIS parameter_list R_PARENTHESIS
                                 |   L_PARENTHESIS R_PARENTHESIS
     """
-    param_list = token_list[1]
+    param_list = token_list[2]
 
     if isinstance(param_list, list):
         token_list[0] = param_list
+    else:
+        token_list[0] = []
 
 
 def p_parameter_list(token_list: yacc.YaccProduction) -> None:
@@ -1083,29 +1233,25 @@ def p_method_call(token_list: yacc.YaccProduction) -> None:
                     |   name_dot_series complete_parameter_list
     """
     method_node = OperatorNode(OperatorType.METHOD_CALL)
+    function_node: OperatorNode = NIL_NODE
 
-    # Case: first rule (method call over directly over an instance)
     if token_list.slice[2].type == "DOT":
-        # instance
-        method_node.add_adjacent(token_list[1])
-        # function node is ready
         function_node: OperatorNode = token_list[3]
-        method_node.add_adjacent(function_node)
-
-    # Case: Second rule (method call over a name)
+        method_node.add_named_adjacent(Operand.INSTANCE, token_list[1])
     else:
         names_subtree: OperatorNode = token_list[1]
-        method_node.add_adjacent(names_subtree.get_adjacent(0))
 
-        # Function node
         function_node = OperatorNode(OperatorType.FUNCTION_CALL)
-        function_node.add_adjacent(names_subtree.get_adjacent(1))
-        parameter_list: list = token_list[2]
-        function_node.add_adjacent(parameter_list)
+        function_node.add_named_adjacent(
+            Operand.FUNCTION_NAME,
+            names_subtree.get_rightmost(),
+        )
+        function_node.add_named_adjacent(Operand.ARGUMENTS, token_list[2])
 
-        method_node.add_adjacent(function_node)
+        names_subtree = names_subtree.promote_righmost_sibling()
+        method_node.add_named_adjacent(Operand.INSTANCE, names_subtree)
 
-    # Send the resulting method node
+    method_node.add_named_adjacent(Operand.METHOD, function_node)
     token_list[0] = method_node
 
 
@@ -1118,7 +1264,6 @@ def p_callable(token_list: yacc.YaccProduction) -> None:
                 |   HEXADECIMAL_NUMBER
     """
     token_list[0] = token_list[1]
-    # TODO(Caenid) : Fix ints callables
 
 
 # =============================== CLASSES =====================================
@@ -1127,6 +1272,10 @@ def p_class_definition(token_list: yacc.YaccProduction) -> None:
                         |   class_header L_PARENTHESIS NAME R_PARENTHESIS COLON body
     """
     parser_state_info["classes"] -= 1
+    class_node = OperatorNode(OperatorType.CLASS_DECLARATION, max_adjacents=3)
+    class_node.add_named_adjacent(Operand.CLASS_NAME, NameNode(token_list[1]))
+
+    # TODO(Antonio)
     if len(token_list) == 7:
         if token_list[1] == token_list[3]:
             msg = (
@@ -1138,6 +1287,13 @@ def p_class_definition(token_list: yacc.YaccProduction) -> None:
 
         if symbol_table[token_list[3]] is None:
             undefined_classes.add(token_list[3])
+
+        class_node.add_named_adjacent(Operand.PARENT_CLASS, NameNode(token_list[3]))
+        class_node.add_named_adjacent(Operand.BODY, token_list[6])
+    else:
+        class_node.add_named_adjacent(Operand.BODY, token_list[3])
+
+    token_list[0] = class_node
 
 
 def p_class_header(token_list: yacc.YaccProduction) -> None:
@@ -1154,6 +1310,7 @@ def p_epsilon(token_list: yacc.YaccProduction) -> None:
     _ = token_list
 
 
+# =============================== PARSER ======================================
 class FanglessParser:
     def __init__(self, lexer: FanglessLexer = None) -> None:
         if lexer is None:
@@ -1176,7 +1333,9 @@ class FanglessParser:
     def print_errors(self) -> None:
         if len(errors) > 0:
             print("\n\n=================================================")
-            remark = color_msg("horseshit") if not SENSITIVE_PROGRAMMER else "not working"
+            remark = (
+                color_msg("horseshit") if not SENSITIVE_PROGRAMMER else "not working"
+            )
             print(f"Your program is {remark}, here is why:")
             while len(errors) > 0:
                 print(color_msg(errors.pop(), RAINBOW_ERRORS))

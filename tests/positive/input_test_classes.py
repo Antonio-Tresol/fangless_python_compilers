@@ -5,7 +5,7 @@ class Perrito:
 
     def camine(self, direccion: int) -> None:
         self.dirrecion = direccion
- 
+
     def static_whatever() -> None:
         print("hola")
 
