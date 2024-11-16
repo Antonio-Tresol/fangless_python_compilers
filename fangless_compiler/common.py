@@ -53,7 +53,7 @@ def be_artistic() -> str:
 # ===== COMPILER FLAGS ==================
 VERBOSE_INDENTATION = False
 VERBOSE_LEXER = False
-VERBOSE_PARSER = True
+VERBOSE_PARSER = False
 VERBOSE_AST = True
 RAINBOW_ERRORS = False
 SENSITIVE_PROGRAMMER = True

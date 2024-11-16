@@ -146,7 +146,14 @@ def p_all(token_list: yacc.YaccProduction) -> None:
         errors.append(msg)
         raise SyntaxError(msg)
 
-    token_list[0] = token_list[2]
+    group: list = token_list[2]
+    token_list[0] = group
+
+    if VERBOSE_AST:
+        for line, statement in enumerate(group):
+            print(f"\n\n=============== Statement: {line} ===============")
+            print(statement)
+            print("============================================\n")
 
 
 # ================================== LITERALS =================================
@@ -198,10 +205,6 @@ def p_structure(token_list: yacc.YaccProduction) -> None:
     """
     # structure come ready, so just send we just send it up
     token_list[0] = token_list[1]
-    if VERBOSE_AST:
-        print("\n\n=============== Structure ===============")
-        print(token_list[0])
-        print("=========================================\n")
 
 
 def p_string(token_list: yacc.YaccProduction) -> None:
@@ -381,11 +384,6 @@ def p_unary_operation(token_list: yacc.YaccProduction) -> None:
         unary_op_node.set_center_operand(token_list[2])
         token_list[0] = unary_op_node
 
-    if VERBOSE_AST:
-        print("\n\n=============== Unary Operation ===============")
-        print(token_list[0])
-        print("===============================================\n")
-
 
 def p_unary_operand(token_list: yacc.YaccProduction) -> None:
     """unary_operand    :   L_PARENTHESIS unary_operand R_PARENTHESIS
@@ -419,11 +417,6 @@ def p_binary_operation(token_list: yacc.YaccProduction) -> None:
         binary_op_node.set_left_operand(token_list[1])
         binary_op_node.set_right_operand(token_list[3])
         token_list[0] = binary_op_node
-
-    if VERBOSE_AST:
-        print("\n\n=============== Binary Operation ===============")
-        print(token_list[0])
-        print("================================================\n")
 
 
 def p_binary_operand(token_list: yacc.YaccProduction) -> None:
@@ -476,11 +469,6 @@ def p_assignation(token_list: yacc.YaccProduction) -> None:
     """
     # they are ready, so send it up
     token_list[0] = token_list[1]
-
-    if VERBOSE_AST:
-        print("\n\n=============== Assignation ===============")
-        print(token_list[0])
-        print("=========================================\n")
 
 
 def p_comma_assignation(token_list: yacc.YaccProduction) -> None:
@@ -691,10 +679,6 @@ def p_op_assignation(token_list: yacc.YaccProduction) -> None:
     operation.set_right_operand(token_list[3])
 
     token_list[0] = operation
-    if VERBOSE_AST:
-        print("\n\n=============== OP Assignation ===============")
-        print(token_list[0])
-        print("============================================\n")
 
 
 def p_op_assignation_operand(token_list: yacc.YaccProduction) -> None:
@@ -714,6 +698,7 @@ def p_op_assignation_operand(token_list: yacc.YaccProduction) -> None:
     else:
         does_name_exist(token_list)
 
+    # TODO(Antonio)
     if token_list.slice[1].type == "NAME":
         token_list[0] = NameNode(token_list[1])
     else:
@@ -875,7 +860,7 @@ def p_body(token_list: yacc.YaccProduction) -> None:
     while local_var != SCOPE_OPENED:
         symbol_table[local_var] = None
         local_var = stack.pop()
-    token_list = token_list[3]
+    token_list[0] = token_list[3]
 
 
 def p_open_scope(token_list: yacc.YaccProduction) -> None:
@@ -904,11 +889,6 @@ def p_if_block(token_list: yacc.YaccProduction) -> None:
     for i in range(2, token_amount):
         if_tree.add_deepest(Operand.ALTERNATIVE, token_list[i])
     token_list[0] = if_tree
-
-    if VERBOSE_AST:
-        print("\n\n=============== If ===============")
-        print(token_list[0])
-        print("=================================\n")
 
 
 def p_if(token_list: yacc.YaccProduction) -> None:
@@ -976,11 +956,6 @@ def p_while_block(token_list: yacc.YaccProduction) -> None:
         while_node.add_named_adjacent(Operand.ALTERNATIVE, token_list[2])
     token_list[0] = while_node
 
-    if VERBOSE_AST:
-        print("\n\n=============== While ===============")
-        print(token_list[0])
-        print("===================================\n")
-
 
 def p_while(token_list: yacc.YaccProduction) -> None:
     """while   :   while_open condition COLON body"""
@@ -1005,11 +980,6 @@ def p_for_block(token_list: yacc.YaccProduction) -> None:
     if len(token_list) == 3:
         for_node.add_named_adjacent(Operand.ALTERNATIVE, token_list[2])
     token_list[0] = for_node
-
-    if VERBOSE_AST:
-        print("\n\n=============== For ===============")
-        print(token_list[0])
-        print("=================================\n")
 
 
 def p_for(token_list: yacc.YaccProduction) -> None:
@@ -1132,10 +1102,6 @@ def p_function_definition(token_list: yacc.YaccProduction) -> None:
     func_node.add_named_adjacent(Operand.BODY, token_list[body_index])
     token_list[0] = func_node
 
-    if VERBOSE_AST:
-        print("\n\n=============== Function declaration ===============")
-        print(token_list[0])
-        print("==================================================\n")
 
 
 def p_def_open(token_list: yacc.YaccProduction) -> None:
@@ -1309,6 +1275,7 @@ def p_class_definition(token_list: yacc.YaccProduction) -> None:
     class_node = OperatorNode(OperatorType.CLASS_DECLARATION, max_adjacents=3)
     class_node.add_named_adjacent(Operand.CLASS_NAME, NameNode(token_list[1]))
 
+    # TODO(Antonio)
     if len(token_list) == 7:
         if token_list[1] == token_list[3]:
             msg = (
@@ -1327,10 +1294,6 @@ def p_class_definition(token_list: yacc.YaccProduction) -> None:
         class_node.add_named_adjacent(Operand.BODY, token_list[3])
 
     token_list[0] = class_node
-    if VERBOSE_AST:
-        print("\n\n=============== Class declaration ===============")
-        print(token_list[0])
-        print("===============================================\n")
 
 
 def p_class_header(token_list: yacc.YaccProduction) -> None:
