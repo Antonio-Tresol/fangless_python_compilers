@@ -16,6 +16,11 @@ class OperatorType(Enum):
     ASSIGNATION = "="
     UNPACK_ASSIGNATION = "unpack_assign"
     RETURN = "return"
+    WHILE = "while"
+    FOR = "for"
+    FUNC_DECLARATION = "func_declaration"
+    CLASS_DECLARATION = "class_declaration"
+    METHOD_DECLARATION = "method_declaration"
 
 
 class Operand(Enum):
@@ -37,6 +42,8 @@ class Operand(Enum):
     BODY = 13
     ELIF = 14
     ALTERNATIVE = 15
+    SYMBOLS = 16
+    FOR_LITERAL = 17
 
     def __repr__(self) -> str:
         return str(self.name).lower()

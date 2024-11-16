@@ -3,6 +3,7 @@ from ply.lex import LexToken
 import colors
 import error_messages
 
+
 def new_token(
     new_type: str, line_number: int, column_number: int,
 ) -> LexToken:
@@ -37,7 +38,10 @@ def color_msg(msg: str, rainbow: bool = True) -> str:
 def add_remark() -> str:
     if SENSITIVE_PROGRAMMER:
         return ""
-    return f"\n{choice(error_messages.connectors_tuple)} you {choice(error_messages.informative_remarks)}!"
+    return (
+        f"\n{choice(error_messages.connectors_tuple)} "
+        f"you {choice(error_messages.informative_remarks)}!"
+    )
 
 
 def be_artistic() -> str:
