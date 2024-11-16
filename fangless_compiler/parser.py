@@ -20,7 +20,7 @@ from common import (
 from collections import defaultdict
 from typing import Any
 
-from abstract_syntax_tree.node import NIL_NODE, Node
+from abstract_syntax_tree.node import NIL_NODE
 from abstract_syntax_tree.operator_node import (OperatorType, OperatorNode, Operand)
 from abstract_syntax_tree.epic_node import EpicNode
 from abstract_syntax_tree.name_node import NameNode
@@ -1104,8 +1104,6 @@ def p_function_definition(token_list: yacc.YaccProduction) -> None:
     """
     parser_state_info["functions"] -= 1
 
-    print("THIS IS THE STACK ---------------------------")
-    print(stack)
     local_var = stack.pop()
     while local_var != SCOPE_OPENED:
         symbol_table[local_var] = None

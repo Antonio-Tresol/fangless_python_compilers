@@ -8,7 +8,7 @@ class NameNode(Node):
         self.max_adjacents = 0
 
     def __repr__(self) -> str:
-        return f"(Node {self.node_type} with id: {self.id})"
+        return "{" + "NameNode {" + f"id: {self.id}" + "}}"
 
     def to_string(self, level: str) -> str:
         string = f"{level}{"{"}\n"
