@@ -120,7 +120,9 @@ def validate_flow_tokens_are_in_context(token_list: yacc.YaccProduction) -> None
 
 
 def p_error(token_list: yacc.YaccProduction) -> None:
-    print(f"Parser Error near '{token_list}' in line {token_list.lineno}")
+    error = f"Parser Error near '{token_list}' in line {token_list.lineno}" 
+    print(error)
+    errors.append(error)
 
 
 # =================================== BASIC ===================================
@@ -143,7 +145,8 @@ def p_all(token_list: yacc.YaccProduction) -> None:
         msg += f"\nWere not defined as classes--{add_remark()}"
         errors.append(msg)
         raise SyntaxError(msg)
-    _ = token_list
+
+    token_list[0] = token_list[2]
 
 
 # ================================== LITERALS =================================
@@ -346,12 +349,15 @@ def p_general_series(token_list: yacc.YaccProduction) -> None:
 
 def p_tuple(token_list: yacc.YaccProduction) -> None:
     """tuple    :   L_PARENTHESIS general_series COMMA literal R_PARENTHESIS
+                |   L_PARENTHESIS general_series COMMA R_PARENTHESIS
                 |   L_PARENTHESIS R_PARENTHESIS
     """
     series = []
-    # if we have a general series inside the tuple
+
     if len(token_list) > 3:
         series = token_list[2]
+        if len(token_list) == 6:
+            series.append(token_list[4])
 
     token_list[0] = tuple(series)
 
@@ -825,10 +831,18 @@ def p_complex_statement(token_list: yacc.YaccProduction) -> None:
                             |   BREAK
                             |   PASS
                             |   dot_pass
+                            |   epsilon
     """
     validate_flow_tokens_are_in_context(token_list)
-
-    token_list[0] = token_list[1]
+    match token_list.slice[1].type:
+        case "CONTINUE":
+            token_list[0] = OperatorNode(OperatorType.CONTINUE, max_adjacents=0)
+        case "BREAK":
+            token_list[0] = OperatorNode(OperatorType.BREAK, max_adjacents=0)
+        case "PASS":
+            token_list[0] = OperatorNode(OperatorType.PASS, max_adjacents=0)
+        case _:
+            token_list[0] = token_list[1]
 
 
 def p_dot_pass(token_list: yacc.YaccProduction) -> None:
@@ -840,7 +854,7 @@ def p_dot_pass(token_list: yacc.YaccProduction) -> None:
         )
         errors.append(msg)
         raise SyntaxError(msg)
-    _ = token_list
+    token_list[0] = OperatorNode(OperatorType.PASS, max_adjacents=0)
 
 
 def p_statement_group(token_list: yacc.YaccProduction) -> None:
@@ -1319,13 +1333,18 @@ def p_class_definition(token_list: yacc.YaccProduction) -> None:
         print("===============================================\n")
 
 
-
 def p_class_header(token_list: yacc.YaccProduction) -> None:
     """class_header :   CLASS NAME"""
     symbol_table[token_list[2]] = CLASS
     undefined_classes.discard(token_list[2])
     parser_state_info["classes"] += 1
     token_list[0] = token_list[2]
+
+
+# =============================== OTHER =======================================
+def p_epsilon(token_list: yacc.YaccProduction) -> None:
+    """epsilon  :"""
+    _ = token_list
 
 
 # =============================== PARSER ======================================

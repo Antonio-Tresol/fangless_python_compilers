@@ -34,6 +34,7 @@ def print_error_header(test_name: str, header: str) -> None:
     print(f"File: {test_name}")
     print(separator)
 
+
 def test_positive_cases() -> None:
     for test in positive_tests:
         try:
@@ -48,7 +49,6 @@ def test_positive_cases() -> None:
                 print(f"✅ Test passed: {test.name}")
         except Exception as e:
             print_error_header(test.name, "POSITIVE TEST FAILED")
-            print(f"📁 File content:\n{content}\n")
             print(f"❌ Error details:\n{e}")
             print(f"📍 Error location: {e.__traceback__.tb_lineno}")
             raise e
@@ -68,7 +68,6 @@ def test_negative_cases() -> None:
                 print(f"✅ Test passed: {test.name}")
         except Exception as e:
             print_error_header(test.name, "NEGATIVE TEST FAILED")
-            print(f"📁 File content:\n{content}\n")
             print(f"❌ Error details:\n{e}")
             print(f"📍 Error location: {e.__traceback__.tb_lineno}")
             raise e
@@ -88,7 +87,6 @@ def test_ast_cases() -> None:
                 print(f"✅ Test passed: {test.name}")
         except Exception as e:
             print_error_header(test.name, "AST TEST FAILED")
-            print(f"📁 File content:\n{content}\n")
             print(f"❌ Error details:\n{e}")
             print(f"📍 Error location: {e.__traceback__.tb_lineno}")
             raise e

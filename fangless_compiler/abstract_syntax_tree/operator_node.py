@@ -21,6 +21,9 @@ class OperatorType(Enum):
     FUNC_DECLARATION = "func_declaration"
     CLASS_DECLARATION = "class_declaration"
     METHOD_DECLARATION = "method_declaration"
+    PASS = "pass"
+    BREAK = "break"
+    CONTINUE = "continue"
 
 
 class Operand(Enum):
