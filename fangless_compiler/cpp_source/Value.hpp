@@ -1,33 +1,67 @@
-#include <optional>
-#include <vector>
-#include <map>
-#include <tuple>
-#include <string>
-#include <iostram>
+#include <algorithm>
 #include <cmath>
+#include <iostream>
+#include <map>
+#include <optional>
+#include <set>
+#include <string>
 #include <variant>
+#include <vector>
+#include <typeindex>
 
 class Thing;
 
-using el_universo_de_tipos = int, double, std::string, std::map<Thing>, std::vector<Thing>,
-
-template<class... Ts> struct overloaded : Ts... { using Ts::operator()...; };
-
-class Thing : public std::variant<el_universo_de_tipos> {
-    public:
+struct None {
+ public:
+  None() = default;
+  ~None() = default;
 };
 
-// jaja saludos :/
-// 1. class None
-// 2. class Thing: public std::variant<el universo de tipos + None>
-// 3. Thing a = b
-// 4. joseph plantillas
+using std::get;
+using std::holds_alternative;
+using std::map;
+using std::set;
+using std::string;
+using std::variant;
+using std::vector;
+
+#define type_universe \
+  int, double, string, vector<Thing*>, map<Thing*, Thing*>, set<Thing*>, None
+
+template <class... Ts>
+struct overloaded : Ts... {
+  using Ts::operator()...;
+};
 
 
-// std::visit(overloaded {
-//     [](int cosaInt) {
-//         cosaInt += 1;
-//     }
-// }, cosa);
+class Thing : public variant<type_universe> {
+ public:
+  using std::variant<type_universe>::variant;
+
+  inline bool isStructure() const {
+    return holds_alternative<vector<Thing*>>(*this) ||
+           holds_alternative<map<Thing*, Thing*>>(*this) ||
+           holds_alternative<set<Thing*>>(*this);
+  }
+
+  inline bool isNone() const { return holds_alternative<None>(*this); };
+
+  inline std::size_t getType() const {
+    return this->index();
+  }
+
+  
+
+//   auto& get() {
+//     return std::visit(overloaded{
+//             [] (int& variant) { return static_cast<int>(variant); },
+//             [] (double& variant) { return static_cast<double>(variant); },
+//             [] (std::string& variant) { return static_cast<std::string>(variant); },
+//             [] (vector<Thing*>& variant) { return static_cast<vector<Thing*>>(variant); },
+//             [] (map<Thing*, Thing*>& variant) { return static_cast<map<Thing*, Thing*>>(variant); },
+//             [] (double& variant) { return static_cast<int>(variant); },
+//         }, *this);
+//}  
+};
 
 
