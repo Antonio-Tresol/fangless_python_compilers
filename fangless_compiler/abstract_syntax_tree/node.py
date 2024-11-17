@@ -10,6 +10,9 @@ class Node:
         self.adjacents = {}
         self.max_adjacents = 0
 
+    def is_leaf(self) -> bool:
+        return len(self.adjacents) == 0
+
     def add_named_adjacent(self, key: AdjacentKey, adj: "Node") -> AdjacentKey:
         length = len(self.adjacents)
         if length >= self.max_adjacents:

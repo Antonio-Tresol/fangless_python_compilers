@@ -20,10 +20,16 @@ class OperatorType(Enum):
     FOR = "for"
     FUNC_DECLARATION = "func_declaration"
     CLASS_DECLARATION = "class_declaration"
-    METHOD_DECLARATION = "method_declaration"
     PASS = "pass"
     BREAK = "break"
     CONTINUE = "continue"
+
+    def __repr__(self) -> str:
+        return self.value.lower()
+
+    def __str__(self) -> str:
+        return self.value.lower()
+
 
 
 class Operand(Enum):
@@ -63,7 +69,7 @@ class OperatorNode(Node):
         if isinstance(operator, str):
             self.operator = operator.strip()
         else:
-            self.operator = operator.value
+            self.operator = operator
         self.parenthesis = False
         self.max_adjacents = max_adjacents
 
