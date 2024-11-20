@@ -12,7 +12,6 @@
 #include "Slice.hpp"
 
 class String : public Object {
- private:
   std::string value_;
 
  public:
@@ -103,23 +102,15 @@ class String : public Object {
     throw std::runtime_error("'str' object attributes are read-only");
   }
 
-  bool operator<(const String& other) const
-  {
-    return value_ < other.value_;
-  }
-  bool operator>(const String& other) const
-  {
-    return value_ > other.value_;
-  }
-  bool operator<=(const String& other) const
-  {
-    return value_ <= other.value_;
-  }
-  bool operator>=(const String& other) const
-  {
-    return value_ >= other.value_;
-  }
 
+  std::strong_ordering compare (const Object& other) const override
+  {
+    auto* strObj = dynamic_cast<const String*>(&other);
+    if (strObj == nullptr) return std::strong_ordering::greater;
+    auto& otherRef = *strObj;
+
+    return value_ <=> otherRef.value_;
+  }
 
   char operator[](int index) const {
     int actual_index = index;

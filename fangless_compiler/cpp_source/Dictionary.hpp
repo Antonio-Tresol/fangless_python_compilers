@@ -4,11 +4,22 @@
 #include <map>
 #include "Object.hpp"
 #include "List.hpp"
-#include "String.hpp"
+
+struct ObjectComparator
+{
+    bool operator()(const std::shared_ptr<Object>& obj1, const std::shared_ptr<Object>& obj2) const
+    {
+        if (!(obj1 && obj2) || obj1->type() != obj2->type()) {
+            return false;
+        }
+
+        return *obj1 < *obj2;
+    }
+};
 
 class Dictionary : public Object {
 private:
-    std::map<std::shared_ptr<Object>, std::shared_ptr<Object>> elements_;
+    std::map<std::shared_ptr<Object>, std::shared_ptr<Object>, ObjectComparator> elements_;
 
 public:
     Dictionary() = default;

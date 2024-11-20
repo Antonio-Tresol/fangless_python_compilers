@@ -76,10 +76,14 @@ class Int : public Object {
   std::shared_ptr<Float> operator/(const Float& other) const;
 
   // Comparison operators
-  bool operator<(const Int& other) const { return value_ < other.value_; }
-  bool operator>(const Int& other) const { return value_ > other.value_; }
-  bool operator<=(const Int& other) const { return value_ <= other.value_; }
-  bool operator>=(const Int& other) const { return value_ >= other.value_; }
+  std::strong_ordering compare(const Object& other) const override
+  {
+    auto* strObj = dynamic_cast<const Int*>(&other);
+    if (strObj == nullptr) return std::strong_ordering::greater;
+    auto& otherRef = *strObj;
+
+    return value_ <=> otherRef.value_;
+  }
 };
 
 #endif  // INT_HPP

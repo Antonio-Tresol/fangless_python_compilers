@@ -30,7 +30,18 @@ class Object {
   {
       return equals(other);
   }
+
   explicit operator bool() const { return toBool(); }
+
+  virtual std::strong_ordering compare(const Object& other) const
+  {
+      return toString() <=> other.toString();
+  }
+
+  std::strong_ordering operator<=>(const Object& other) const
+  {
+      return compare(other);
+  }
 
   // Add iostream operator
   friend std::ostream& operator<<(std::ostream& os, const Object& obj) {
