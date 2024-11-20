@@ -40,6 +40,7 @@ class Object {
 
   std::strong_ordering operator<=>(const Object& other) const
   {
+      if (type() != other.type()) return Object::compare(other);
       return compare(other);
   }
 

@@ -2,20 +2,10 @@
 #define DICT_HPP
 
 #include <map>
+
 #include "Object.hpp"
 #include "List.hpp"
-
-struct ObjectComparator
-{
-    bool operator()(const std::shared_ptr<Object>& obj1, const std::shared_ptr<Object>& obj2) const
-    {
-        if (!(obj1 && obj2) || obj1->type() != obj2->type()) {
-            return false;
-        }
-
-        return *obj1 < *obj2;
-    }
-};
+#include "Iterable.hpp"
 
 class Dictionary : public Object {
 private:
@@ -40,7 +30,6 @@ public:
     }
 
     bool equals(const Object& other) const override {
-        std::cout << "sup" << std::endl;
         if (auto* mapObj = dynamic_cast<const Dictionary*>(&other)) {
             return elements_ == mapObj->elements_;
         }

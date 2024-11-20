@@ -94,6 +94,7 @@ public:
     }
 
     size_t size() const { return elements_.size(); }
+
 };
 
 #endif //TUPLE_HPP

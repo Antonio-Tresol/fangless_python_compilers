@@ -106,7 +106,7 @@ class String : public Object {
   std::strong_ordering compare (const Object& other) const override
   {
     auto* strObj = dynamic_cast<const String*>(&other);
-    if (strObj == nullptr) return std::strong_ordering::greater;
+    if (strObj == nullptr) return Object::compare(other);
     auto& otherRef = *strObj;
 
     return value_ <=> otherRef.value_;

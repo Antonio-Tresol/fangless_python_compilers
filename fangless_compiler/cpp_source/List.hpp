@@ -9,7 +9,6 @@
 #include <climits>
 
 class List : public Object {
-private:
     std::vector<std::shared_ptr<Object>> elements_;
 
 public:
