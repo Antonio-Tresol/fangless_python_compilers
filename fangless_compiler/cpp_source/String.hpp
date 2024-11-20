@@ -5,6 +5,7 @@
 #include <cctype>
 #include <climits>
 #include <string>
+#include <compare>
 
 #include "Number.hpp"
 #include "Object.hpp"
@@ -102,10 +103,23 @@ class String : public Object {
     throw std::runtime_error("'str' object attributes are read-only");
   }
 
-  bool operator<(const String& other) const { return value_ < other.value_; }
-  bool operator>(const String& other) const { return value_ > other.value_; }
-  bool operator<=(const String& other) const { return value_ <= other.value_; }
-  bool operator>=(const String& other) const { return value_ >= other.value_; }
+  bool operator<(const String& other) const
+  {
+    return value_ < other.value_;
+  }
+  bool operator>(const String& other) const
+  {
+    return value_ > other.value_;
+  }
+  bool operator<=(const String& other) const
+  {
+    return value_ <= other.value_;
+  }
+  bool operator>=(const String& other) const
+  {
+    return value_ >= other.value_;
+  }
+
 
   char operator[](int index) const {
     int actual_index = index;

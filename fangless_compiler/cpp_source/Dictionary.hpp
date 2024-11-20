@@ -29,6 +29,7 @@ public:
     }
 
     bool equals(const Object& other) const override {
+        std::cout << "sup" << std::endl;
         if (auto* mapObj = dynamic_cast<const Dictionary*>(&other)) {
             return elements_ == mapObj->elements_;
         }
@@ -57,6 +58,7 @@ public:
 
     std::shared_ptr<Object> get(std::shared_ptr<Object> key) const {
         auto it = elements_.find(key);
+
         if (it == elements_.end()) {
             throw std::runtime_error("KeyError: " + key->toString());
         }

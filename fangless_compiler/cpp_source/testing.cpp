@@ -1,9 +1,11 @@
 #include <iostream>
+#include <limits>
 
 #include "Number.hpp"
 #include "String.hpp"
 #include "List.hpp"
 #include "Dictionary.hpp"
+#include "Tuple.hpp"
 
 void printResult(const std::string& op, const Object& result) {
   std::cout << op << ": " << result << std::endl;
@@ -171,9 +173,10 @@ void testLists() {
 void testDictionaries() {
     printSection("Basic Dictionary Operations");
     auto dict = std::make_shared<Dictionary>();
-    
+
+    auto intKey = std::make_shared<String>("int");
     // Add different types of values
-    dict->set(std::make_shared<String>("int"), std::make_shared<Int>(42));
+    dict->set(intKey, std::make_shared<Int>(42));
     dict->set(std::make_shared<String>("float"), std::make_shared<Float>(3.14));
     dict->set(std::make_shared<String>("string"), std::make_shared<String>("hello"));
     
@@ -193,12 +196,11 @@ void testDictionaries() {
     printSection("Access and Modification");
     // Wrap key access in try-catch
     try {
-        auto key = std::make_shared<String>("int");
-        auto value = dict->get(key);
+        auto value = dict->get(intKey);
         std::cout << "Get 'int': " << *value << std::endl;
         
         // Modify value
-        dict->set(key, std::make_shared<Int>(100));
+        dict->set(intKey, std::make_shared<Int>(100));
         std::cout << "After modification: " << *dict << std::endl;
     } catch (const std::runtime_error& e) {
         std::cout << "Error accessing key: " << e.what() << std::endl;
@@ -226,11 +228,91 @@ void testDictionaries() {
     std::cout << "Empty dictionary bool value: " << bool(*empty_dict) << std::endl;
 }
 
+void testTuple()
+{
+    printSection("Tuple Creation and Basic Operations");
+
+    // Create a Tuple with three elements
+    auto tuple1 = Tuple<3>(
+        std::make_shared<Int>(42),
+        std::make_shared<String>("hello"),
+        std::make_shared<Float>(3.14)
+    );
+
+    std::cout << "Tuple1: " << tuple1.toString() << std::endl;
+
+    // Access elements
+    std::cout << "First element: " << *tuple1[0] << std::endl;
+    std::cout << "Second element: " << *tuple1[1] << std::endl;
+    std::cout << "Third element: " << *tuple1[2] << std::endl;
+
+    printSection("Tuple Equality Testing");
+
+    // Create another Tuple with the same elements
+    auto tuple2 = Tuple<3>(
+        std::make_shared<Int>(42),
+        std::make_shared<String>("hello"),
+        std::make_shared<Float>(3.14)
+    );
+
+    // Check equality
+    std::cout << "Tuple1 == Tuple2: " << tuple1.equals(tuple2) << std::endl;
+
+    // Create a different Tuple
+    auto tuple3 = Tuple<3>(
+        std::make_shared<Int>(42),
+        std::make_shared<String>("world"),
+        std::make_shared<Float>(3.14)
+    );
+
+    std::cout << "Tuple1 == Tuple3: " << tuple1.equals(tuple3) << std::endl;
+
+    printSection("Tuple Hashing");
+
+    // Check hash
+    std::cout << "Hash of Tuple1: " << tuple1.hash() << std::endl;
+    std::cout << "Hash of Tuple2: " << tuple2.hash() << std::endl;
+    std::cout << "Hash of Tuple3: " << tuple3.hash() << std::endl;
+
+    printSection("Empty Tuple");
+
+    // Create an empty Tuple
+    auto emptyTuple = Tuple<0>();
+    std::cout << "Empty Tuple: " << emptyTuple.toString() << std::endl;
+    std::cout << "Empty Tuple toBool: " << emptyTuple.toBool() << std::endl;
+
+    printSection("Iterator Testing");
+
+    // Iterate over Tuple1
+    std::cout << "Iterating over Tuple1: ";
+    for (const auto& element : tuple1) {
+        if (element) {
+            std::cout << element->toString() << " ";
+        } else {
+            std::cout << "null ";
+        }
+    }
+
+    std::cout << std::endl;
+
+    // Invalid access
+    printSection("Error Handling");
+
+    std::cout << "Accessing invalid index: 5 for tuple of size ( " << tuple1.size() << " )" << std::endl;
+
+    const auto invalidElement = tuple1[5];
+    if (invalidElement == nullptr) {
+        std::cout << "Expected Behaviour: Invalid index found." << std::endl;
+    } else {
+        std::cout << "Unexpected Behaviour: " << invalidElement->toString() << std::endl;
+    }
+}
+
 int main() {
-  testNumbers();
-  testStrings();
-  testLists();
-  // not working
-  testDictionaries();
-  return 0;
+    testNumbers();
+    testStrings();
+    testLists();
+    testTuple();
+    testDictionaries();
+    return 0;
 }

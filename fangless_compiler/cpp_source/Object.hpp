@@ -26,8 +26,11 @@ class Object {
   virtual void setAttr(const std::string& name,
                        std::shared_ptr<Object> value) = 0;
 
-  bool operator==(const Object& other) const { return equals(other); }
-  operator bool() const { return toBool(); }
+  bool operator==(const Object& other) const
+  {
+      return equals(other);
+  }
+  explicit operator bool() const { return toBool(); }
 
   // Add iostream operator
   friend std::ostream& operator<<(std::ostream& os, const Object& obj) {
