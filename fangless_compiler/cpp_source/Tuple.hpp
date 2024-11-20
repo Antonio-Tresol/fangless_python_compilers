@@ -15,7 +15,7 @@ concept SharedObject = std::is_convertible<T, std::shared_ptr<Object>>::value;
 
 template <std::size_t ElementAmount>
 class Tuple final : public Object {
-    std::array<std::shared_ptr<Object>, ElementAmount> elements_;
+    const std::array<std::shared_ptr<Object>, ElementAmount> elements_;
 
 public:
     template <typename... Args>

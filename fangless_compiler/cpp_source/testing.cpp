@@ -196,6 +196,7 @@ void testDictionaries() {
     printSection("Access and Modification");
     // Wrap key access in try-catch
     try {
+        intKey = std::make_shared<String>("int");
         auto value = dict->get(intKey);
         std::cout << "Get 'int': " << *value << std::endl;
         
