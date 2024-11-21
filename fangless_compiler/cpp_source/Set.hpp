@@ -6,144 +6,142 @@
 #define SET_HPP
 
 #include <algorithm>
-#include <set>
 #include <ranges>
+#include <set>
 
-#include "Object.hpp"
 #include "Iterable.hpp"
+#include "Object.hpp"
 
+class Set final : public Object {
+  std::set<std::shared_ptr<Object>, ObjectComparator> elements_{};
 
-class Set final : public Object
-{
-    std::set<std::shared_ptr<Object>, ObjectComparator> elements_ {};
-public:
-    std::string type() const override { return "Set"; }
+ public:
+  std::string type() const override { return "Set"; }
 
-    std::string toString() const override
-    {
-        std::string result = "{";
-        bool first = true;
+  std::string toString() const override {
+    std::string result = "{";
+    bool first = true;
 
-        for (const auto& element : elements_) {
-            if (!first) result += ", ";
-            result += element->toString();
-            first = false;
-        }
-
-        return result + "}";
-    };
-
-    bool equals(const Object& other) const override {
-        auto* otherPtr = dynamic_cast<const Set*>(&other);
-        if (!otherPtr) return false;
-
-        std::map<std::shared_ptr<Object>, std::shared_ptr<Object>, ObjectComparator> elements;
-        std::ranges::transform(elements_,
-                               std::inserter(elements, elements.end()),
-                               [](const std::shared_ptr<Object>& element)
-                               {
-                                   return std::make_pair(element, element);
-                               });
-
-        const size_t size = elements.size();
-        for (const auto& object : otherPtr->elements_)
-        {
-            elements[object] = object;
-        }
-
-        return size == elements.size();
+    for (const auto& element : elements_) {
+      if (!first) result += ", ";
+      result += element->toString();
+      first = false;
     }
 
-    size_t hash() const override {
-        std::size_t hash = 0;
+    return result + "}";
+  };
 
-        for (const auto& element : elements_) {
-            try {
-                hash ^= element->hash();
-            } catch (...) {
-                throw std::runtime_error("An object in the Tuple is not hashable. Tuple is therefore not hashable.");
-            }
-        }
+  bool equals(const Object& other) const override {
+    auto* otherPtr = dynamic_cast<const Set*>(&other);
+    if (!otherPtr) return false;
 
-        return hash;
+    std::map<std::shared_ptr<Object>, std::shared_ptr<Object>, ObjectComparator>
+        elements;
+    std::ranges::transform(elements_, std::inserter(elements, elements.end()),
+                           [](const std::shared_ptr<Object>& element) {
+                             return std::make_pair(element, element);
+                           });
+
+    const size_t size = elements.size();
+    for (const auto& object : otherPtr->elements_) {
+      elements[object] = object;
     }
 
-    bool toBool() const override { return !elements_.empty(); }
+    return size == elements.size();
+  }
 
-    bool isinstance(const std::string& type) const override {
-        return type == "set" || type == "object";
+  size_t hash() const override {
+    std::size_t hash = 0;
+
+    for (const auto& element : elements_) {
+      try {
+        hash ^= element->hash();
+      } catch (...) {
+        throw std::runtime_error(
+            "An object in the Tuple is not hashable. Tuple is therefore not "
+            "hashable.");
+      }
     }
 
-    std::shared_ptr<Object> getAttr(const std::string& name) const override {
-        throw std::runtime_error("'set' object has no attribute '" + name + "'");
-    }
+    return hash;
+  }
 
-    void setAttr(const std::string& name,
-                         std::shared_ptr<Object> value) override {
-        throw std::runtime_error("'set' object attributes are read-only");
-    }
+  bool toBool() const override { return !elements_.empty(); }
 
-    // STL enabling methods for use with algorithms
-    auto begin() { return elements_.begin(); }
-    auto end() { return elements_.end(); }
+  bool isinstance(const std::string& type) const override {
+    return type == "set" || type == "object";
+  }
 
-    // Const iterator support
-    auto begin() const { return elements_.begin(); }
-    auto end() const { return elements_.end(); }
+  std::shared_ptr<Object> getAttr(const std::string& name) const override {
+    throw std::runtime_error("'set' object has no attribute '" + name + "'");
+  }
 
-    auto cbegin() const { return elements_.cbegin(); }
-    auto cend() const { return elements_.cend(); }
+  void setAttr(const std::string& name,
+               std::shared_ptr<Object> value) override {
+    throw std::runtime_error("'set' object attributes are read-only");
+  }
 
-    // set functions
-    size_t size() const { return elements_.size(); }
+  // STL enabling methods for use with algorithms
+  auto begin() { return elements_.begin(); }
+  auto end() { return elements_.end(); }
 
-    bool exists(const std::shared_ptr<Object>& obj) const
-    {
-        return elements_.contains(obj);
-    }
+  // Const iterator support
+  auto begin() const { return elements_.begin(); }
+  auto end() const { return elements_.end(); }
 
-    void add(const std::shared_ptr<Object>& obj)
-    {
-        elements_.insert(obj);
-    }
+  auto cbegin() const { return elements_.cbegin(); }
+  auto cend() const { return elements_.cend(); }
 
-    std::shared_ptr<Set> operator|(const Set& other) const {
-        auto result = std::make_shared<Set>();
-        std::vector<std::shared_ptr<Object>> temp;
+  // set functions
+  size_t size() const { return elements_.size(); }
 
-        std::ranges::set_union(elements_, other.elements_, std::back_inserter(temp));
-        result->elements_.insert(temp.begin(), temp.end());
-        return result;
-    }
+  bool exists(const std::shared_ptr<Object>& obj) const {
+    return elements_.contains(obj);
+  }
 
-    std::shared_ptr<Set> operator&(const Set& other) const {
-        auto result = std::make_shared<Set>();
-        std::vector<std::shared_ptr<Object>> temp;
+  void add(const std::shared_ptr<Object>& obj) { elements_.insert(obj); }
 
-        std::ranges::set_intersection(elements_, other.elements_, std::back_inserter(temp));
-        result->elements_.insert(temp.begin(), temp.end());
-        return result;
-    }
+  std::shared_ptr<Set> operator|(const Set& other) const {
+    auto result = std::make_shared<Set>();
+    std::vector<std::shared_ptr<Object>> temp;
 
-    std::shared_ptr<Set> operator^(const Set& other) const {
-        auto result = std::make_shared<Set>();
-        std::vector<std::shared_ptr<Object>> temp;
+    std::ranges::set_union(elements_, other.elements_,
+                           std::back_inserter(temp));
+    result->elements_.insert(temp.begin(), temp.end());
+    return result;
+  }
 
-        std::ranges::set_symmetric_difference(elements_, other.elements_, std::back_inserter(temp));
-        result->elements_.insert(temp.begin(), temp.end());
-        return result;
-    }
+  std::shared_ptr<Set> operator&(const Set& other) const {
+    auto result = std::make_shared<Set>();
+    std::vector<std::shared_ptr<Object>> temp;
 
-    std::shared_ptr<Set> operator-(const Set& other) const {
-        auto result = std::make_shared<Set>();
-        std::vector<std::shared_ptr<Object>> temp;
+    std::ranges::set_intersection(elements_, other.elements_,
+                                  std::back_inserter(temp));
+    result->elements_.insert(temp.begin(), temp.end());
+    return result;
+  }
 
-        std::ranges::set_difference(elements_, other.elements_, std::back_inserter(temp));
-        result->elements_.insert(temp.begin(), temp.end());
-        return result;
-    }
+  std::shared_ptr<Set> operator^(const Set& other) const {
+    auto result = std::make_shared<Set>();
+    std::vector<std::shared_ptr<Object>> temp;
 
-    void clear() { elements_.clear(); }
+    std::ranges::set_symmetric_difference(elements_, other.elements_,
+                                          std::back_inserter(temp));
+    result->elements_.insert(temp.begin(), temp.end());
+    return result;
+  }
+
+  std::shared_ptr<Set> operator-(const Set& other) const {
+    auto result = std::make_shared<Set>();
+    std::vector<std::shared_ptr<Object>> temp;
+
+    std::ranges::set_difference(elements_, other.elements_,
+                                std::back_inserter(temp));
+    result->elements_.insert(temp.begin(), temp.end());
+    return result;
+  }
+
+  void clear() { elements_.clear(); }
 };
 
-#endif //SET_HPP
+#endif  // SET_HPP

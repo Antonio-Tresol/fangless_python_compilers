@@ -1,5 +1,7 @@
 #include <iostream>
 #include <limits>
+#include <vector>
+#include <functional>
 
 #include "Number.hpp"
 #include "String.hpp"
@@ -85,8 +87,8 @@ void testStrings() {
   auto s2 = std::make_shared<String>("World");
   auto s3 = std::make_shared<String>("Hello");
 
-  std::cout << "s1: " << s1 << std::endl;
-  std::cout << "s2: " << s2 << std::endl;
+  std::cout << "s1: " << *s1 << std::endl;
+  std::cout << "s2: " << *s2 << std::endl;
   std::cout << "s1 == s3: " << (*s1 == *s3) << std::endl;
   std::cout << "Empty string bool: " << bool(String("")) << std::endl;
 
@@ -423,14 +425,29 @@ void testSet() {
     std::cout << "Set1 after clearing: " << set1->toString() << std::endl;
     std::cout << "Set1 size after clearing: " << set1->size() << std::endl;
 }
+int main(int argc, char** argv) {
+    std::vector<std::function<void()>> tests {
+        testNumbers,
+        testStrings,
+        testLists,
+        testTuple,
+        testDictionaries,
+        testSet
+    };
 
-int main() {
-    testNumbers();
-    testStrings();
-    testLists();
-    testTuple();
-    testDictionaries();
-    testSet();
+    if (argc == 2) {
+        size_t testNumber = std::stoi(std::string(argv[1]));
+
+        if (testNumber >= tests.size()) {
+            std::cerr << "Test number " << std::to_string(testNumber)
+                << " given when test amount is " << std::to_string(tests.size());
+            return 1;
+        }
+
+        tests[testNumber]();
+    } else {
+        for (auto& test : tests) test();
+    }
 
     return 0;
 }

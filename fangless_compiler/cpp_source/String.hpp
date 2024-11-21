@@ -4,8 +4,8 @@
 #include <algorithm>
 #include <cctype>
 #include <climits>
-#include <string>
 #include <compare>
+#include <string>
 
 #include "Number.hpp"
 #include "Object.hpp"
@@ -102,9 +102,7 @@ class String : public Object {
     throw std::runtime_error("'str' object attributes are read-only");
   }
 
-
-  std::strong_ordering compare (const Object& other) const override
-  {
+  std::strong_ordering compare(const Object& other) const override {
     auto* strObj = dynamic_cast<const String*>(&other);
     if (strObj == nullptr) return Object::compare(other);
     auto& otherRef = *strObj;

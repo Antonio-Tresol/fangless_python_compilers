@@ -1,7 +1,7 @@
 #ifndef OBJECT_HPP
 #define OBJECT_HPP
 
-#include <iostream>  // Add this include for std::ostream
+#include <iostream>
 #include <memory>
 #include <string>
 
@@ -12,13 +12,13 @@ class Object {
 
   virtual std::string type() const = 0;
 
-  virtual std::string toString() const = 0;  // __str__
+  virtual std::string toString() const = 0;
 
-  virtual bool equals(const Object& other) const = 0;  // __eq__
-  virtual size_t hash() const = 0;                     // __hash__
+  virtual bool equals(const Object& other) const = 0;
 
-  // Python truthiness
-  virtual bool toBool() const = 0;  // __bool__
+  virtual size_t hash() const = 0;
+
+  virtual bool toBool() const = 0;
 
   virtual bool isinstance(const std::string& type) const = 0;
 
@@ -44,11 +44,10 @@ class Object {
       return compare(other);
   }
 
-  // Add iostream operator
   friend std::ostream& operator<<(std::ostream& os, const Object& obj) {
     os << obj.toString();
     return os;
   }
 };
 
-#endif  // OBJECT_HPP
+#endif
