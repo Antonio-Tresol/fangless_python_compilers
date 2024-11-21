@@ -4,6 +4,7 @@
 
 #ifndef ITERABLE_HPP
 #define ITERABLE_HPP
+#include <memory>
 
 struct ObjectComparator {
   bool operator()(const std::shared_ptr<Object>& obj1,

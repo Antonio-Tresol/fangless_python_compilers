@@ -8,6 +8,8 @@
 
 #include "Object.hpp"
 
+constexpr double DELTA = 1e-9;
+
 class Number : public Object {
  private:
   std::variant<int, double> value_;
@@ -15,6 +17,13 @@ class Number : public Object {
  public:
   explicit Number(int value) : value_(value) {}
   explicit Number(double value) : value_(value) {}
+
+  static std::shared_ptr<Number> spawn(int value) {
+    return std::make_shared<Number>(value);
+  }
+  static std::shared_ptr<Number> spawn(double value) {
+    return std::make_shared<Number>(value);
+  }
 
   std::string type() const override {
     return std::holds_alternative<int>(value_) ? "int" : "float";
@@ -44,7 +53,7 @@ class Number : public Object {
             if constexpr (std::is_same_v<A, double> ||
                           std::is_same_v<B, double>) {
               return std::abs(static_cast<double>(a) - static_cast<double>(b)) <
-                     1e-9;
+                     DELTA;
             } else {
               return a == b;
             }
@@ -165,7 +174,7 @@ class Number : public Object {
     }
     return std::strong_ordering::greater;
   }
-
+  
   bool isFinite() const {
     return std::visit(
         [](auto&& arg) -> bool {
@@ -200,6 +209,23 @@ class Number : public Object {
           return false;
         },
         value_);
+  }
+
+  int getInt() const {
+    return std::visit(
+        [](auto&& arg) -> int {
+          using T = std::decay_t<decltype(arg)>;
+          if constexpr (std::is_same_v<T, double>) {
+            return static_cast<int>(arg);
+          }
+          return arg;
+        },
+        value_);
+  }
+
+  double getDouble() const {
+    return std::visit(
+        [](auto&& arg) -> double { return static_cast<double>(arg); }, value_);
   }
 };
 

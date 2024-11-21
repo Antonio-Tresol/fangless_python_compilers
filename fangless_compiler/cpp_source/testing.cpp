@@ -18,12 +18,51 @@ void printSection(const std::string& title) {
   std::cout << "\n=== " << title << " ===\n";
 }
 
+std::ostream& operator<<(std::ostream& os, const std::shared_ptr<Object>& obj) {
+    return os << *obj;
+}
+
+std::ostream& operator<<(std::ostream& os, const std::shared_ptr<const Object>& obj) {
+    return os << *obj;
+}
+
+std::ostream& operator<<(std::ostream& os, const std::shared_ptr<Number>& obj) {
+    return os << *obj;
+}
+std::ostream& operator<<(std::ostream& os, const std::shared_ptr<String>& obj) {
+    return os << *obj;
+}
+std::ostream& operator<<(std::ostream& os, const std::shared_ptr<Tuple<1>>& obj) {
+    return os << *obj;
+}
+
+std::ostream& operator<<(std::ostream& os, const std::shared_ptr<Tuple<2>>& obj) {
+    return os << *obj;
+}
+
+std::ostream& operator<<(std::ostream& os, const std::shared_ptr<Tuple<3>>& obj) {
+    return os << *obj;
+}
+
+
+std::ostream& operator<<(std::ostream& os, const std::shared_ptr<List>& obj) {
+    return os << *obj;
+}
+
+std::ostream& operator<<(std::ostream& os, const std::shared_ptr<Set>& obj) {
+    return os << *obj;
+}
+
+std::ostream& operator<<(std::ostream& os, const std::shared_ptr<Dictionary>& obj) {
+    return os << *obj;
+}
+
 void testNumbers() {
     printSection("Number Creation and Type Checking");
-    auto n1 = std::make_shared<Number>(10);
-    auto n2 = std::make_shared<Number>(3);
-    auto n3 = std::make_shared<Number>(10.5);
-    auto n4 = std::make_shared<Number>(3.2);
+    auto n1 = Number::spawn(10);
+    auto n2 = Number::spawn(3);
+    auto n3 = Number::spawn(10.5);
+    auto n4 = Number::spawn(3.2);
 
     std::cout << "n1 type: " << n1->type() << std::endl;
     std::cout << "n3 type: " << n3->type() << std::endl;
@@ -34,7 +73,7 @@ void testNumbers() {
     printResult("10 + 3", *(*n1 + *n2));
     printResult("10 - 3", *(*n1 - *n2));
     printResult("10 * 3", *(*n1 * *n2));
-    printResult("10 / 3", *(*n1 / *n2));  // Should return float
+    printResult("10 / 3", *(*n1 / *n2)); 
 
     printSection("Float Operations");
     printResult("10.5 + 3.2", *(*n3 + *n4));
@@ -56,9 +95,9 @@ void testNumbers() {
     std::cout << "10.5 >= 10: " << (*n3 >= *n1) << std::endl;
 
     printSection("Special Float Values");
-    auto inf_pos = std::make_shared<Number>(std::numeric_limits<double>::infinity());
-    auto inf_neg = std::make_shared<Number>(-std::numeric_limits<double>::infinity());
-    auto nan = std::make_shared<Number>(std::numeric_limits<double>::quiet_NaN());
+    auto inf_pos = Number::spawn(std::numeric_limits<double>::infinity());
+    auto inf_neg = Number::spawn(-std::numeric_limits<double>::infinity());
+    auto nan = Number::spawn(std::numeric_limits<double>::quiet_NaN());
 
     printResult("inf", *inf_pos);
     printResult("-inf", *inf_neg);
@@ -82,348 +121,465 @@ void testNumbers() {
 }
 
 void testStrings() {
-  printSection("Basic String Operations");
-  auto s1 = std::make_shared<String>("Hello");
-  auto s2 = std::make_shared<String>("World");
-  auto s3 = std::make_shared<String>("Hello");
+    printSection("1. String Creation");
+    auto s1 = String::spawn("Hello");
+    auto s2 = String::spawn("World");
+    auto s3 = String::spawn("Hello");
+    
+    std::cout << "s1: \"" << s1 << "\"\n";
+    std::cout << "s2: \"" << s2 << "\"\n";
+    std::cout << "s3: \"" << s3 << "\"\n";
+    std::cout << "s1 == s3: " << (*s1 == *s3) << "\n";
 
-  std::cout << "s1: " << *s1 << std::endl;
-  std::cout << "s2: " << *s2 << std::endl;
-  std::cout << "s1 == s3: " << (*s1 == *s3) << std::endl;
-  std::cout << "Empty string bool: " << bool(String("")) << std::endl;
+    printSection("2. Case Transformations");
+    std::cout << "Original:  \"" << s1 << "\"\n";
+    std::cout << "Upper:     \"" << s1->upper() << "\"\n";
+    std::cout << "Lower:     \"" << s1->lower() << "\"\n";
 
-  printSection("String Methods");
-  auto upper = s1->upper();
-  auto lower = s2->lower();
-  auto spaces = std::make_shared<String>("  trim me  ");
-  auto stripped = spaces->strip();
+    printSection("3. Whitespace Handling");
+    auto spaces = String::spawn("  trim me  ");
+    std::cout << "Original: \"" << spaces << "\"\n";
+    std::cout << "Stripped: \"" << spaces->strip() << "\"\n";
 
-  std::cout << "Upper: " << *upper << std::endl;
-  std::cout << "Lower: " << *lower << std::endl;
-  std::cout << "Strip: '" << *stripped << "'" << std::endl;
+    printSection("4. String Operations");
+    std::cout << "Concatenation:\n";
+    std::cout << "  \"" << s1 << "\" + \"" << s2 << "\" = \"" 
+              << (*s1 + *s2) << "\"\n";
+    
+    std::cout << "Repetition:\n";
+    std::cout << "  \"" << s1 << "\" * 3 = \"" 
+              << (*s1 * Number(3)) << "\"\n";
 
-  printSection("String Operations");
-  auto concatenated = *s1 + *s2;
-  auto repeated = *s1 * 3;
+    printSection("5. String Methods");
+    std::cout << "String: \"" << s1 << "\"\n";
+    std::cout << "Starts with 'He': " << s1->startswith(String::spawn("He")) << "\n";
+    std::cout << "Ends with 'lo': " << s1->endswith(String::spawn("lo")) << "\n";
+    
+    printSection("6. String Replacement");
+    auto oldStr = String::spawn("l");
+    auto newStr = String::spawn("L");
+    std::cout << "Original:  \"" << s1 << "\"\n";
+    std::cout << "Replace '" << oldStr << "' with '" << newStr << "': \"" 
+              << s1->replace(*oldStr, *newStr) << "\"\n";
 
-  std::cout << "Concatenated: " << *concatenated << std::endl;
-  std::cout << "Repeated: " << *repeated << std::endl;
+    printSection("7. String Comparisons");
+    std::cout << "\"" << s1 << "\" < \"" << s2 << "\": " << (*s1 < *s2) << "\n";
+    std::cout << "\"" << s2 << "\" > \"" << s1 << "\": " << (*s2 > *s1) << "\n";
 
-  printSection("String Methods");
-  std::cout << "Starts with 'He': " << s1->startswith(String("He"))
-            << std::endl;
-  std::cout << "Ends with 'ld': " << s2->endswith(String("ld")) << std::endl;
+    printSection("8. Error Cases");
+    try {
+        std::cout << "Testing setAttr('something')...\n";
+        s1->setAttr("something", s2);
+    } catch (const std::runtime_error& e) {
+        std::cout << "Error (expected): " << e.what() << "\n";
+    }
 
-  auto replaced = s1->replace(String("l"), String("L"));
-  std::cout << "Replace 'l' with 'L': " << *replaced << std::endl;
+    try {
+        std::cout << "Testing getAttr('nonexistent')...\n";
+        s1->getAttr("nonexistent");
+    } catch (const std::runtime_error& e) {
+        std::cout << "Error (expected): " << e.what() << "\n";
+    }
+ printSection("9. String Indexing");
+    std::cout << "String: \"" << s1 << "\"\n";
+    std::cout << "s1[0]: '" << s1->at(Number(0)) << "'\n";
+    std::cout << "s1[4]: '" << s1->at(Number(4)) << "'\n";
+    std::cout << "s1[-1]: '" << s1->at(Number(-1)) << "'\n";  // Last character
+    
+    try {
+        std::cout << "Testing out of bounds index...\n";
+        s1->at(Number(10));
+    } catch (const std::out_of_range& e) {
+        std::cout << "Error (expected): " << e.what() << "\n";
+    }
 
-  printSection("Comparisons");
-  std::cout << "s1 < s2: " << (*s1 < *s2) << std::endl;
-  std::cout << "s1 > s2: " << (*s1 > *s2) << std::endl;
-
-  printSection("Error Handling");
-  try {
-    s1->setAttr("something", s2);
-  } catch (const std::runtime_error& e) {
-    std::cout << "Expected error: " << e.what() << std::endl;
-  }
-
-  try {
-    s1->getAttr("nonexistent");
-  } catch (const std::runtime_error& e) {
-    std::cout << "Expected error: " << e.what() << std::endl;
-  }
+    printSection("10. String Slicing");
+    auto hello = String::spawn("Hello World");
+    std::cout << "String: \"" << hello << "\"\n";
+    std::cout << "hello[0:5]: \"" << (*hello)[Slice(0, 5)] << "\"\n";    // "Hello"
+    std::cout << "hello[6:]: \"" << (*hello)[Slice(6, INT_MAX)] << "\"\n";  // "World"
+    std::cout << "hello[:5]: \"" << hello->slice(Slice(0, 5)) << "\"\n";     // "Hello"
+    std::cout << "hello[-5:]: \"" << (*hello)[Slice(-5, INT_MAX)] << "\"\n"; // "World"
+    std::cout << "hello[-5:-1]: \"" << (*hello)[Slice(-5, -1)] << "\"\n";    // "Worl"
+    
+    // Empty slice tests
+    std::cout << "Empty slice hello[5:2]: \"" << (*hello)[Slice(5, 2)] << "\"\n";
+    std::cout << "Empty string slice: \"" << (*hello)[Slice(hello->len(), INT_MAX)] << "\"\n";
 }
+
+
 
 void testLists() {
-    printSection("List Creation and Basic Operations");
-    auto list1 = std::make_shared<List>();
-    list1->append(std::make_shared<Number>(1));
-    list1->append(std::make_shared<String>("hello"));
-    list1->append(std::make_shared<Number>(3.14));
+    printSection("1. Basic List Operations");
+    auto list1 = List::spawn();
+    list1->append(Number::spawn(1));
+    list1->append(String::spawn("hello"));
+    list1->append(Number::spawn(3.14));
+    std::cout << "Created list with [1, 'hello', 3.14]:\n";
+    std::cout << "  Actual: " << *list1 << std::endl;
+    std::cout << "  Is non-empty (true): " << std::boolalpha << bool(*list1) << std::endl;
 
-    std::cout << "List1: " << *list1 << std::endl;
-    std::cout << "List1 bool value: " << bool(*list1) << std::endl;
+    printSection("2. List Extension");
+    auto list2 = List::spawn(); 
+    list2->append(Number::spawn(42));
+    list2->append(String::spawn("world"));
+    std::cout << "Original lists:\n";
+    std::cout << "  List1: " << list1 << std::endl;
+    std::cout << "  List2: " << list2 << std::endl;
+    list1->extend(list2);
+    std::cout << "After extending List1 with List2:\n";
+    std::cout << "  Expected: [1, 'hello', 3.14, 42, 'world']\n";
+    std::cout << "  Actual:   " << list1 << std::endl;
 
-    printSection("List Extension");
-    auto list2 = std::make_shared<List>();
-    list2->append(std::make_shared<Number>(42));
-    list2->append(std::make_shared<String>("world"));
-
-    std::cout << "List2: " << *list2 << std::endl;
-    list1->extend(*list2);
-    std::cout << "List1 after extend: " << *list1 << std::endl;
-
-    printSection("Pop Operations");
+    printSection("3. Pop Operations");
+    std::cout << "Original list: " << list1 << std::endl;
     auto popped = list1->pop();
-    std::cout << "Popped from end: " << *popped << std::endl;
-    std::cout << "List after pop: " << *list1 << std::endl;
+    std::cout << "Pop from end:\n";
+    std::cout << "  Popped value: " << popped << std::endl;
+    std::cout << "  Remaining list: " << list1 << std::endl;
+    
+    popped = list1->pop(Number::spawn(0));
+    std::cout << "Pop from start:\n";
+    std::cout << "  Popped value: " << popped << std::endl;
+    std::cout << "  Remaining list: " << list1 << std::endl;
 
-    popped = list1->pop(0);
-    std::cout << "Popped from start: " << *popped << std::endl;
-    std::cout << "List after pop(0): " << *list1 << std::endl;
+    printSection("4. List Equality");
+    auto list3 = List::spawn();
+    auto list4 = List::spawn(); 
+    list3->append(Number::spawn(42));
+    list4->append(Number::spawn(42));
+    std::cout << "Comparing equal lists [42] == [42]:\n";
+    std::cout << "  Expected: true\n";
+    std::cout << "  Actual: " << (*list3 == *list4) << std::endl;
 
-    printSection("Equality Testing");
-    auto list3 = std::make_shared<List>();
-    list3->append(std::make_shared<Number>(42));
-    auto list4 = std::make_shared<List>();
-    list4->append(std::make_shared<Number>(42));
+    printSection("5. List Operations");
+    std::cout << "5.1 Concatenation:\n";
+    auto listExtended = *list1 + *list4;
+    std::cout << "  List1 + [42]: " << listExtended << std::endl;
+    
+    std::cout << "\n5.2 Repetition:\n";
+    auto listRepeated = List::spawn();
+    listRepeated->append(Number::spawn(1));
+    listRepeated->append(Number::spawn(2));
+    listRepeated->append(Number::spawn(3));
+    std::cout << "  Original: " << listRepeated << std::endl;
+    auto repeated = *listRepeated * Number(3);
+    std::cout << "  Times 3: " << repeated << std::endl;
 
-    std::cout << "list3 == list4: " << (*list3 == *list4) << std::endl;
+    printSection("6. List Modifications");
+    std::cout << "6.1 Reverse:\n";
+    std::cout << "  Before: " << listRepeated << std::endl;
+    listRepeated->reverse();
+    std::cout << "  After:  " << listRepeated << std::endl;
 
-    printSection("Exception Handling");
+    std::cout << "\n6.2 Sort:\n";
+    std::cout << "  Before: " << repeated << std::endl;
+    repeated->sort();
+    std::cout << "  After:  " << repeated << std::endl;
+
+    std::cout << "\n6.3 Remove:\n";
+    std::cout << "  Before: " << listRepeated << std::endl;
+    listRepeated->remove(Number::spawn(2));
+    std::cout << "  After removing 2: " << listRepeated << std::endl;
+
+    printSection("7. Error Handling");
     try {
-        auto empty_list = std::make_shared<List>();
+        auto empty_list = List::spawn();
+        std::cout << "Attempting to pop from empty list..." << std::endl;
         empty_list->pop();
     } catch (const std::runtime_error& e) {
-        std::cout << "Expected error: " << e.what() << std::endl;
+        std::cout << "✓ Caught expected error: " << e.what() << std::endl;
     }
 
     try {
-        list1->pop(999);
+        std::cout << "Attempting to pop at index 999..." << std::endl;
+        list1->pop(Number::spawn(999));
     } catch (const std::out_of_range& e) {
-        std::cout << "Expected error: " << e.what() << std::endl;
+        std::cout << "✓ Caught expected error: " << e.what() << std::endl;
     }
 
-    printSection("Slicing");
-    auto big_list = std::make_shared<List>();
+    printSection("8. Slicing Operations");
+    auto big_list = List::spawn();
     for(int i = 0; i < 5; i++) {
-        big_list->append(std::make_shared<Number>(i));
+        big_list->append(Number::spawn(i));
     }
+    std::cout << "Original list: " << big_list << std::endl;
+    std::cout << "Slicing results:\n";
+    std::cout << "  [1:3]:  " << (*big_list)[Slice(1,3)] << std::endl;
+    std::cout << "  [-2:]:  " << (*big_list)[Slice(-2, INT_MAX)] << std::endl;
+    std::cout << "  [:3]:   " << big_list->slice(Slice(0, 3)) << std::endl;
+    std::cout << "  [0]:  " << (*big_list)[Number(0)] << std::endl;
 
-    std::cout << "Original list: " << *big_list << std::endl;
-    std::cout << "Slice [1:3]: " << *(*big_list)[Slice(1,3)] << std::endl;
-    std::cout << "Slice [-2:]: " << *(*big_list)[Slice(-2, INT_MAX)] << std::endl;
-    std::cout << "Slice [:3]: " << *(*big_list)[Slice(0, 3)] << std::endl;
+    printSection("9. Complex List Operations");
+    auto complexList = List::spawn();
+    complexList->append(Number::spawn(1));
+    complexList->append(String::spawn("hello"));
+    complexList->append(Number::spawn(3.14));
+
+    auto dict = Dictionary::spawn();
+    dict->set(String::spawn("int"), Number::spawn(42));
+    dict->set(String::spawn("float"), Number::spawn(3.14));
+    dict->set(String::spawn("str"), String::spawn("hello"));
+    
+    complexList->append(dict);
+    std::cout << "Complex list with mixed types including dictionary:\n";
+    std::cout << "  " << complexList << std::endl;
 }
-
 void testDictionaries() {
-    printSection("Basic Dictionary Operations");
-    auto dict = std::make_shared<Dictionary>();
+    printSection("1. Dictionary Creation and Basic Operations");
+    auto dict = Dictionary::spawn();
+    
+    std::cout << "Creating dictionary with key-value pairs:\n";
+    std::cout << "Adding: {'int': 42, 'float': 3.14, 'str': 'hello'}\n";
+    
+    dict->set(String::spawn("int"), Number::spawn(42));
+    dict->set(String::spawn("float"), Number::spawn(3.14));
+    dict->set(String::spawn("str"), String::spawn("hello"));
 
-    auto intKey = std::make_shared<String>("int");
-    // Add different types of values
-    dict->set(intKey, std::make_shared<Number>(42));
-    dict->set(std::make_shared<String>("float"), std::make_shared<Number>(3.14));
-    dict->set(std::make_shared<String>("string"), std::make_shared<String>("hello"));
+    std::cout << "Result:  " << dict << "\n";
 
-    // Create and add a list
-    auto list = std::make_shared<List>();
-    list->append(std::make_shared<Number>(1));
-    list->append(std::make_shared<String>("two"));
-    dict->set(std::make_shared<String>("list"), list);
+    printSection("2. Complex Value Types");
+    std::cout << "Adding list [1, 'two'] with key 'list'\n";
+    auto list = List::spawn();
+    list->append(Number::spawn(1));
+    list->append(String::spawn("two"));
+    dict->set(String::spawn("list"), list);
+    std::cout << "After adding list: " << dict << "\n";
 
-    std::cout << "Dictionary: " << *dict << std::endl;
+    printSection("3. Dictionary Methods");
+    std::cout << "Original dict: " << dict << "\n";
+    std::cout << "Keys   → " << dict->keys() << "\n";
+    std::cout << "Values → " << dict->values() << "\n";
+    std::cout << "Items  → " << dict->items() << "\n";
 
-    printSection("Dictionary Methods");
-    std::cout << "Keys: " << *(dict->keys()) << std::endl;
-    std::cout << "Values: " << *(dict->values()) << std::endl;
-    std::cout << "Items: " << *(dict->items()) << std::endl;
-
-    printSection("Access and Modification");
-    // Wrap key access in try-catch
+    printSection("4. Access and Modification");
     try {
-        intKey = std::make_shared<String>("int");
-        auto value = dict->get(intKey);
-        std::cout << "Get 'int': " << *value << std::endl;
-
-        // Modify value
-        dict->set(intKey, std::make_shared<Number>(100));
-        std::cout << "After modification: " << *dict << std::endl;
+        auto intKey = String::spawn("int");
+        std::cout << "Getting value for key 'int':\n";
+        std::cout << "  Before: " << dict->get(intKey) << "\n";
+        
+        std::cout << "Modifying 'int' value to 100\n";
+        dict->set(intKey, Number::spawn(100));
+        std::cout << "  After:  " << dict->get(intKey) << "\n";
     } catch (const std::runtime_error& e) {
-        std::cout << "Error accessing key: " << e.what() << std::endl;
+        std::cout << "❌ Error: " << e.what() << "\n";
     }
 
-    printSection("Dictionary Merging");
-    auto dict2 = std::make_shared<Dictionary>();
-    dict2->set(std::make_shared<String>("new_key"), std::make_shared<Number>(999));
-
+    printSection("5. Dictionary Operations");
+    auto dict2 = Dictionary::spawn();
+    dict2->set(String::spawn("new_key"), Number::spawn(999));
+    
+    std::cout << "dict1: " << dict << "\n";
+    std::cout << "dict2: " << dict2 << "\n";
+    std::cout << "Merging dictionaries (dict1 | dict2):\n";
     auto merged = *dict | *dict2;
-    std::cout << "Merged dictionary: " << *merged << std::endl;
+    std::cout << "Result: " << merged << "\n";
 
-    printSection("Error Handling");
+    printSection("6. Error Handling");
     try {
-        // Try to get non-existent key
-        dict->get(std::make_shared<String>("nonexistent"));
-        std::cout << "This should not print" << std::endl;
+        std::cout << "Attempting to get nonexistent key...\n";
+        dict->get(String::spawn("nonexistent"));
+        std::cout << "❌ This should not print\n";
     } catch (const std::runtime_error& e) {
-        std::cout << "Expected error: " << e.what() << std::endl;
+        std::cout << "✓ Caught expected error: " << e.what() << "\n";
     }
 
-    // Test empty dictionary
-    auto empty_dict = std::make_shared<Dictionary>();
-    std::cout << "Empty dictionary: " << *empty_dict << std::endl;
-    std::cout << "Empty dictionary bool value: " << bool(*empty_dict) << std::endl;
+    printSection("7. Special Cases");
+    auto empty_dict = Dictionary::spawn();
+    std::cout << "Empty dictionary:\n";
+    std::cout << "  toString(): " << empty_dict << "\n";
+    std::cout << "  bool():     " << std::boolalpha << bool(*empty_dict) << "\n";
+    
+    try {
+        std::cout << "Attempting to use unhashable key (List)...\n";
+        dict->set(list, String::spawn("value"));
+    } catch (const std::runtime_error& e) {
+        std::cout << "✓ Caught expected error: " << e.what() << "\n";
+    }
+
+    printSection("8. Dictionary Comparison");
+    auto dict3 = Dictionary::spawn();
+    dict3->set(String::spawn("int"), Number::spawn(42));
+    
+    auto dict4 = Dictionary::spawn();
+    dict4->set(String::spawn("int"), Number::spawn(42));
+    
+    std::cout << "Comparing identical dictionaries:\n";
+    std::cout << "dict3: " << dict3 << "\n";
+    std::cout << "dict4: " << dict4 << "\n";
+    std::cout << "dict3 == dict4: " << std::boolalpha << (*dict3 == *dict4) << "\n";
 }
 
-void testTuple()
-{
-    printSection("Tuple Creation and Basic Operations");
-
+void testTuple() {
+    printSection("1. Tuple Creation and Basic Operations");
+    
     // Create a Tuple with three elements
-    auto tuple1 = Tuple<3>(
-        std::make_shared<Number>(42),
-        std::make_shared<String>("hello"),
-        std::make_shared<Number>(3.14)
+    auto tuple1 = Tuple<3>::spawn(
+        Number::spawn(42),
+        String::spawn("hello"),
+        Number::spawn(3.14)
     );
 
-    std::cout << "Tuple1: " << tuple1.toString() << std::endl;
+    std::cout << "Created tuple with (42, 'hello', 3.14):\n";
+    std::cout << "  Expected: (42, 'hello', 3.14)\n";
+    std::cout << "  Actual:   " << tuple1 << "\n";
 
-    // Access elements
-    std::cout << "First element: " << *tuple1[0] << std::endl;
-    std::cout << "Second element: " << *tuple1[1] << std::endl;
-    std::cout << "Third element: " << *tuple1[2] << std::endl;
+    std::cout << "\nElement Access:\n";
+    std::cout << "  [0] Expected: 42\n";
+    std::cout << "      Actual:   " << (*tuple1)[Number::spawn(0)] << "\n";
 
-    printSection("Tuple Equality Testing");
+    std::cout << "  [1] Expected: hello\n";
+    std::cout << "      Actual:   " << *tuple1->at(Number(1)) << "\n";
+    std::cout << "  [2] Expected: 3.14\n";
+    std::cout << "      Actual:   " << *tuple1->at(Number(2)) << "\n";
 
-    // Create another Tuple with the same elements
-    auto tuple2 = Tuple<3>(
-        std::make_shared<Number>(42),
-        std::make_shared<String>("hello"),
-        std::make_shared<Number>(3.14)
+    printSection("2. Tuple Equality Testing");
+    auto tuple2 = Tuple<3>::spawn(
+        Number::spawn(42),
+        String::spawn("hello"),
+        Number::spawn(3.14)
+    );
+    
+    auto tuple3 = Tuple<3>::spawn(
+        Number::spawn(42),
+        String::spawn("world"),  // Different value
+        Number::spawn(3.14)
     );
 
-    // Check equality
-    std::cout << "Tuple1 == Tuple2: " << tuple1.equals(tuple2) << std::endl;
+    std::cout << "Comparing identical tuples:\n";
+    std::cout << "  tuple1: " << tuple1 << "\n";
+    std::cout << "  tuple2: " << tuple2 << "\n";
+    std::cout << "  tuple1 == tuple2: " << (*tuple1 == *tuple2) << "\n";
 
-    // Create a different Tuple
-    auto tuple3 = Tuple<3>(
-        std::make_shared<Number>(42),
-        std::make_shared<String>("world"),
-        std::make_shared<Number>(3.14)
-    );
+    std::cout << "\nComparing different tuples:\n";
+    std::cout << "  tuple1: " << tuple1 << "\n";
+    std::cout << "  tuple3: " << tuple3 << "\n";
+    std::cout << "  tuple1 == tuple3: " << (*tuple1 == *tuple3) << "\n";
 
-    std::cout << "Tuple1 == Tuple3: " << tuple1.equals(tuple3) << std::endl;
+    printSection("3. Tuple Hashing");
+    std::cout << "Hash values for equal tuples should be equal:\n";
+    std::cout << "  Hash(tuple1): " << tuple1->hash() << "\n";
+    std::cout << "  Hash(tuple2): " << tuple2->hash() << "\n";
+    std::cout << "  Hashes equal: " << (tuple1->hash() == tuple2->hash()) << "\n";
 
-    printSection("Tuple Hashing");
+    printSection("4. Empty Tuple");
+    auto emptyTuple = Tuple<0>::spawn();
+    std::cout << "Empty tuple representation:\n";
+    std::cout << "  Expected: ()\n";
+    std::cout << "  Actual:   " << emptyTuple << "\n";
+    std::cout << "  Bool value (should be false): " << (bool(*emptyTuple)) << "\n";
 
-    // Check hash
-    std::cout << "Hash of Tuple1: " << tuple1.hash() << std::endl;
-    std::cout << "Hash of Tuple2: " << tuple2.hash() << std::endl;
-    std::cout << "Hash of Tuple3: " << tuple3.hash() << std::endl;
-
-    printSection("Empty Tuple");
-
-    // Create an empty Tuple
-    auto emptyTuple = Tuple<0>();
-    std::cout << "Empty Tuple: " << emptyTuple.toString() << std::endl;
-    std::cout << "Empty Tuple toBool: " << emptyTuple.toBool() << std::endl;
-
-    printSection("Iterator Testing");
-
-    // Iterate over Tuple1
-    std::cout << "Iterating over Tuple1: ";
-    for (const auto& element : tuple1) {
+    printSection("5. Iterator Testing");
+    std::cout << "Iterating over tuple (42, 'hello', 3.14):\n";
+    std::cout << "  Elements: ";
+    for (const auto& element : *tuple1) {
         if (element) {
-            std::cout << element->toString() << " ";
+            std::cout << element << " ";
         } else {
             std::cout << "null ";
         }
     }
+    std::cout << "\n";
 
-    std::cout << std::endl;
-
-    // Invalid access
-    printSection("Error Handling");
-
-    std::cout << "Accessing invalid index: 5 for tuple of size ( " << tuple1.size() << " )" << std::endl;
-
+    printSection("6. Error Handling");
+    std::cout << "Testing invalid index access:\n";
+    std::cout << "  Tuple size: " << tuple1->count() << "\n";
     try {
-        // Try to get non-existent key
-        const auto invalidElement = tuple1[5];
-        std::cout << "This should not print" << std::endl;
+        std::cout << "  Accessing index 5..." << "\n";
+        const auto invalidElement = tuple1->at(Number::spawn(5));
+        std::cout << "❌ Should not reach here\n";
     } catch (const std::runtime_error& e) {
-        std::cout << "Expected error: " << e.what() << std::endl;
+        std::cout << "✓ Caught expected error: " << e.what() << "\n";
     }
 }
 
 
 void testSet() {
-    printSection("Set Creation and Basic Operations");
+    printSection("1. Set Creation and Basic Operations");
+    auto set1 = Set::spawn();
+    set1->add(Number::spawn(1));
+    set1->add(Number::spawn(2));
+    set1->add(String::spawn("hello"));
 
-    // Create a Set and add elements
-    auto set1 = std::make_shared<Set>();
-    set1->add(std::make_shared<Number>(1));
-    set1->add(std::make_shared<Number>(2));
-    set1->add(std::make_shared<String>("hello"));
+    std::cout << "Created set with {1, 2, 'hello'}:\n";
+    std::cout << "  Expected: {1, 2, 'hello'}\n";
+    std::cout << "  Actual:   " << set1 << "\n";
+    std::cout << "  Count:    " << set1->count() << " (Expected: 3)\n";
 
-    std::cout << "Set1: " << set1->toString() << std::endl;
-    std::cout << "Set1 size: " << set1->size() << std::endl;
+    printSection("2. Membership Testing");
+    std::cout << "Testing membership:\n";
+    std::cout << "  Contains 1:      " << (set1->exists(Number::spawn(1))) << "\n";
+    std::cout << "  Contains 'world': " << (set1->exists(String::spawn("world"))) << "\n";
 
-    // Check existence of elements
-    std::cout << "Set1 contains 1: " << set1->exists(std::make_shared<Number>(1)) << std::endl;
-    std::cout << "Set1 contains 'world': " << set1->exists(std::make_shared<String>("world")) << std::endl;
+    printSection("3. Duplicate Handling");
+    std::cout << "Adding duplicate element (1):\n";
+    std::cout << "  Before: " << set1 << "\n";
+    set1->add(Number::spawn(1));
+    std::cout << "  After:  " << set1 << " (should be unchanged)\n";
 
-    // Add duplicate elements
-    set1->add(std::make_shared<Number>(1));
-    std::cout << "Set1 after adding duplicate: " << set1->toString() << std::endl;
+    printSection("4. Set Operations");
+    auto set2 = Set::spawn();
+    set2->add(Number::spawn(3));
+    set2->add(String::spawn("world"));
+    
+    std::cout << "Set1: " << set1 << "\n";
+    std::cout << "Set2: " << set2 << "\n";
 
-    printSection("Set Union Operation");
+    std::cout << "\nUnion Operation (|):\n";
+    std::cout << "  Expected: {1, 2, 'hello', 3, 'world'}\n";
+    std::cout << "  Actual:   " << (*set1 | *set2) << "\n";
 
-    // Create another set
-    auto set2 = std::make_shared<Set>();
-    set2->add(std::make_shared<Number>(3));
-    set2->add(std::make_shared<String>("world"));
+    std::cout << "\nIntersection Operation (&):\n";
+    std::cout << "  Expected: {}\n";
+    std::cout << "  Actual:   " << (*set1 & *set2) << "\n";
 
-    std::cout << "Set2: " << set2->toString() << std::endl;
+    std::cout << "\nDifference Operation (-):\n";
+    std::cout << "  Expected: {1, 2, 'hello'}\n";
+    std::cout << "  Actual:   " << (*set1 - *set2) << "\n";
 
-    // Perform union
-    auto unionSet = *set1 | *set2;
-    std::cout << "Union of Set1 and Set2: " << unionSet->toString() << std::endl;
+    std::cout << "\nSymmetric Difference Operation (^):\n";
+    std::cout << "  Expected: {1, 2, 'hello', 3, 'world'}\n";
+    std::cout << "  Actual:   " << (*set1 ^ *set2) << "\n";
 
-    printSection("Set Intersection Operation");
+    printSection("5. Set Equality");
+    auto set3 = Set::spawn();
+    set3->add(Number::spawn(1));
+    set3->add(Number::spawn(2));
+    set3->add(String::spawn("hello"));
 
-    // Perform intersection
-    auto intersectionSet = *set1 & *set2;
-    std::cout << "Intersection of Set1 and Set2: " << intersectionSet->toString() << std::endl;
+    std::cout << "Comparing identical sets:\n";
+    std::cout << "  Set1: " << set1 << "\n";
+    std::cout << "  Set3: " << set3 << "\n";
+    std::cout << "  Equal: " << (set1->equals(*set3) ? "✓" : "❌") << "\n";
 
-    printSection("Set Difference Operation");
+    std::cout << "\nHash consistency check:\n";
+    std::cout << "  Hash(Set1) == Hash(Set3): " 
+              << (set1->hash() == set3->hash() ? "✓" : "❌") << "\n";
 
-    // Perform difference
-    auto differenceSet = *set1 - *set2;
-    std::cout << "Difference of Set1 and Set2: " << differenceSet->toString() << std::endl;
-
-    printSection("Set Symmetric Difference Operation");
-
-    // Perform symmetric difference
-    auto symmetricDifferenceSet = *set1 ^ *set2;
-    std::cout << "Symmetric Difference of Set1 and Set2: " << symmetricDifferenceSet->toString() << std::endl;
-
-    printSection("Set Equality and Hashing");
-
-    // Check equality
-    auto set3 = std::make_shared<Set>();
-    set3->add(std::make_shared<Number>(1));
-    set3->add(std::make_shared<Number>(2));
-    set3->add(std::make_shared<String>("hello"));
-
-    std::cout << "Set1 == Set3: " << set1->equals(*set3) << std::endl;
-
-    // Check hash
-    std::cout << "Hash of Set1: " << set1->hash() << std::endl;
-    std::cout << "Hash of Set3: " << set3->hash() << std::endl;
-
-    printSection("Error Handling");
-
-    // Access and set attributes
+    printSection("6. Error Handling");
     try {
+        std::cout << "Testing getAttr('nonexistent')...\n";
         set1->getAttr("nonexistent");
+        std::cout << "❌ Should have thrown\n";
     } catch (const std::runtime_error& e) {
-        std::cout << "Expected error: " << e.what() << std::endl;
+        std::cout << "✓ Caught expected error: " << e.what() << "\n";
     }
 
     try {
-        set1->setAttr("key", std::make_shared<Number>(42));
+        std::cout << "\nTesting setAttr('key', 42)...\n";
+        set1->setAttr("key", Number::spawn(42));
+        std::cout << "❌ Should have thrown\n";
     } catch (const std::runtime_error& e) {
-        std::cout << "Expected error: " << e.what() << std::endl;
+        std::cout << "✓ Caught expected error: " << e.what() << "\n";
     }
 
-    printSection("Set Clearing");
-
-    // Clear the set
+    printSection("7. Set Clearing");
+    std::cout << "Before clear: " << set1 << "\n";
     set1->clear();
-    std::cout << "Set1 after clearing: " << set1->toString() << std::endl;
-    std::cout << "Set1 size after clearing: " << set1->size() << std::endl;
+    std::cout << "After clear:\n";
+    std::cout << "  Expected: {}\n";
+    std::cout << "  Actual:   " << set1 << "\n";
+    std::cout << "  Count:    " << set1->count() << " (Expected: 0)\n";
 }
 int main(int argc, char** argv) {
     std::vector<std::function<void()>> tests {

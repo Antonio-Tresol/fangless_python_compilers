@@ -17,6 +17,10 @@ class String : public Object {
  public:
   explicit String(const std::string& value) : value_(value) {}
 
+  static std::shared_ptr<String> spawn(const std::string& value) {
+    return std::make_shared<String>(value);
+  }
+
   std::string type() const override { return "str"; }
 
   std::string toString() const override { return value_; }
@@ -66,23 +70,46 @@ class String : public Object {
            suffix.value_;
   }
 
-  std::shared_ptr<String> replace(const String& old_str,
-                                  const String& new_str) const {
+  bool endswith(std::shared_ptr<String> suffix) const {
+    return endswith(*suffix);
+  }
+
+  bool startswith(const std::shared_ptr<String>& prefix) const {
+    return startswith(*prefix);
+  }
+
+  std::shared_ptr<String> replace(const String& oldStr,
+                                  const String& newStr) const {
     std::string result = value_;
     size_t pos = 0;
-    while ((pos = result.find(old_str.value_, pos)) != std::string::npos) {
-      result.replace(pos, old_str.value_.length(), new_str.value_);
-      pos += new_str.value_.length();
+    while ((pos = result.find(oldStr.value_, pos)) != std::string::npos) {
+      result.replace(pos, oldStr.value_.length(), newStr.value_);
+      pos += newStr.value_.length();
     }
     return std::make_shared<String>(result);
+  }
+
+  std::shared_ptr<String> replace(std::shared_ptr<String> oldStr,
+                                  std::shared_ptr<String> newStr) const {
+    return replace(*oldStr, *newStr);
   }
 
   std::shared_ptr<String> operator+(const String& other) const {
     return std::make_shared<String>(value_ + other.value_);
   }
 
-  std::shared_ptr<String> operator*(int n) const {
+  std::shared_ptr<String> operator*(const Number& number) const {
     std::string result;
+    int n = number.getInt();
+    for (int i = 0; i < n; ++i) {
+      result += value_;
+    }
+    return std::make_shared<String>(result);
+  }
+    
+  std::shared_ptr<String> operator*(std::shared_ptr<Number> number) const {
+    std::string result;
+    int n = number->getInt();
     for (int i = 0; i < n; ++i) {
       result += value_;
     }
@@ -96,7 +123,9 @@ class String : public Object {
     if (name == "strip") return std::make_shared<String>(strip()->toString());
     throw std::runtime_error("'str' object has no attribute '" + name + "'");
   }
-
+  std::shared_ptr<Number> len() const {
+    return std::make_shared<Number>(static_cast<int>(value_.size()));
+  }
   void setAttr(const std::string& name,
                std::shared_ptr<Object> value) override {
     throw std::runtime_error("'str' object attributes are read-only");
@@ -110,14 +139,26 @@ class String : public Object {
     return value_ <=> otherRef.value_;
   }
 
-  char operator[](int index) const {
+  std::shared_ptr<String> operator[](const Number& pos) const {
+    int index = pos.getInt();
     int actual_index = index;
     if (index < 0) actual_index += value_.size();
 
     if (actual_index < 0 || actual_index >= static_cast<int>(value_.size())) {
       throw std::out_of_range("string index out of range");
     }
-    return value_[actual_index];
+    return std::make_shared<String>(std::string{value_[actual_index]});
+  }
+
+  std::shared_ptr<String> operator[](std::shared_ptr<Number> pos) const {
+    int index = pos->getInt();
+    int actual_index = index;
+    if (index < 0) actual_index += value_.size();
+
+    if (actual_index < 0 || actual_index >= static_cast<int>(value_.size())) {
+      throw std::out_of_range("string index out of range");
+    }
+    return std::make_shared<String>(std::string{value_[actual_index]});
   }
 
   std::shared_ptr<String> operator[](const Slice& slice) const {
@@ -139,6 +180,49 @@ class String : public Object {
 
     return std::make_shared<String>(value_.substr(start, end - start));
   }
+
+  std::shared_ptr<String> at(const Number& pos) const {
+    int index = pos.getInt();
+    int actual_index = index;
+    if (index < 0) actual_index += value_.size();
+
+    if (actual_index < 0 || actual_index >= static_cast<int>(value_.size())) {
+      throw std::out_of_range("string index out of range");
+    }
+    return std::make_shared<String>(std::string{value_[actual_index]});
+  }
+
+  std::shared_ptr<String> at(std::shared_ptr<Number> pos) const {
+    int index = pos->getInt();
+    int actual_index = index;
+    if (index < 0) actual_index += value_.size();
+
+    if (actual_index < 0 || actual_index >= static_cast<int>(value_.size())) {
+      throw std::out_of_range("string index out of range");
+    }
+    return std::make_shared<String>(std::string{value_[actual_index]});
+  }
+
+  std::shared_ptr<String> slice(const Slice& slice) const {
+    int start = slice.start;
+    int end = slice.end;
+
+    if (start == INT_MAX) start = 0;
+    if (end == INT_MAX) end = value_.size();
+
+    if (start < 0) start += value_.size();
+    if (end < 0) end += value_.size();
+
+    start = std::clamp(start, 0, static_cast<int>(value_.size()));
+    end = std::clamp(end, 0, static_cast<int>(value_.size()));
+
+    if (start >= end) {
+      return std::make_shared<String>("");
+    }
+
+    return std::make_shared<String>(value_.substr(start, end - start));
+  }
+
   auto begin() { return value_.begin(); }
   auto end() { return value_.end(); }
   auto begin() const { return value_.begin(); }

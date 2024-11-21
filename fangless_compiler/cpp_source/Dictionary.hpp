@@ -17,6 +17,10 @@ class Dictionary : public Object {
 
   std::string type() const override { return "dict"; }
 
+  static std::shared_ptr<Dictionary> spawn() {
+    return std::make_shared<Dictionary>();
+  }
+
   std::string toString() const override {
     std::string result = "{";
     bool first = true;
@@ -45,7 +49,6 @@ class Dictionary : public Object {
     return type == "dict" || type == "object";
   }
 
-  // Python dict methods
   void set(std::shared_ptr<Object> key, std::shared_ptr<Object> value) {
     if (!key->hash()) {
       throw std::runtime_error("unhashable type: '" + key->type() + "'");
@@ -135,7 +138,6 @@ class Dictionary : public Object {
     return it->second;
   }
 
-  // Merge operators (Python 3.9+)
   std::shared_ptr<Dictionary> operator|(const Dictionary& other) const {
     auto result = std::make_shared<Dictionary>(*this);
     for (const auto& [key, value] : other.elements_) {
@@ -151,7 +153,6 @@ class Dictionary : public Object {
     return *this;
   }
 
-  // Comparison operators
   bool operator==(const Dictionary& other) const {
     return elements_ == other.elements_;
   }

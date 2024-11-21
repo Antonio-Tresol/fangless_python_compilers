@@ -17,7 +17,7 @@ class Set final : public Object {
 
  public:
   std::string type() const override { return "Set"; }
-
+  static std::shared_ptr<Set> spawn() { return std::make_shared<Set>(); }
   std::string toString() const override {
     std::string result = "{";
     bool first = true;
@@ -30,7 +30,7 @@ class Set final : public Object {
 
     return result + "}";
   };
-
+  Number len() const { return Number(static_cast<int>(elements_.size())); }
   bool equals(const Object& other) const override {
     auto* otherPtr = dynamic_cast<const Set*>(&other);
     if (!otherPtr) return false;
@@ -93,7 +93,7 @@ class Set final : public Object {
   auto cend() const { return elements_.cend(); }
 
   // set functions
-  size_t size() const { return elements_.size(); }
+  size_t count() const { return elements_.size(); }
 
   bool exists(const std::shared_ptr<Object>& obj) const {
     return elements_.contains(obj);
@@ -101,6 +101,70 @@ class Set final : public Object {
 
   void add(const std::shared_ptr<Object>& obj) { elements_.insert(obj); }
 
+  void discard(std::shared_ptr<Object> object) {
+    auto it = std::find(elements_.begin(), elements_.end(), object);
+
+    if (it != elements_.end()) {
+      elements_.erase(it);
+    }
+  }
+
+  std::shared_ptr<Object> pop() {
+    std::shared_ptr<Object> object = *(std::prev(elements_.end()));
+    elements_.erase(std::prev(elements_.end()));
+
+    return object;
+  }
+
+  void remove(std::shared_ptr<Object> object) {
+    auto it = std::find(elements_.begin(), elements_.end(), object);
+
+    if (it != elements_.end()) {
+      elements_.erase(it);
+    } else {
+      throw std::runtime_error(object->toString() + " not in set");
+    }
+  }
+
+  bool isDisjoint(const std::shared_ptr<Set> other) {
+    return !((*this & *other)->count());
+  }
+
+  bool operator<=(const std::shared_ptr<Set> other) {
+    return !((*this - *other)->count());
+  }
+
+  bool operator<(const std::shared_ptr<Set> other) {
+    return (*this <= *other) && *this != *other;
+  }
+
+  bool operator>=(const std::shared_ptr<Set> other) {
+    return !((*other - *this)->count());
+  }
+
+  bool operator>(const std::shared_ptr<Set> other) {
+    return (*this >= other) && *this != *other;
+  }
+
+  bool isDisjoint(const Set& other) const {
+      return !(*this & other)->count();
+  }
+  
+  bool operator<=(const Set& other) const {
+      return !(*this - other)->count();
+  }
+  
+  bool operator<(const Set& other) const {
+      return (*this <= other) && *this != other;
+  }
+  
+  bool operator>=(const Set& other) const {
+      return !(other - *this)->count();
+  }
+  
+  bool operator>(const Set& other) const {
+      return (*this >= other) && *this != other;
+  } 
   std::shared_ptr<Set> operator|(const Set& other) const {
     auto result = std::make_shared<Set>();
     std::vector<std::shared_ptr<Object>> temp;
@@ -111,6 +175,17 @@ class Set final : public Object {
     return result;
   }
 
+  std::shared_ptr<Set> operator|=(const Set& other) {
+    std::vector<std::shared_ptr<Object>> temp;
+
+    std::ranges::set_union(elements_, other.elements_,
+                           std::back_inserter(temp));
+
+    elements_.clear();
+    elements_.insert(temp.begin(), temp.end());
+    return std::shared_ptr<Set>(this);
+  }
+
   std::shared_ptr<Set> operator&(const Set& other) const {
     auto result = std::make_shared<Set>();
     std::vector<std::shared_ptr<Object>> temp;
@@ -119,6 +194,15 @@ class Set final : public Object {
                                   std::back_inserter(temp));
     result->elements_.insert(temp.begin(), temp.end());
     return result;
+  }
+  std::shared_ptr<Set> operator&=(const Set& other) {
+    std::vector<std::shared_ptr<Object>> temp;
+
+    std::ranges::set_intersection(elements_, other.elements_,
+                                  std::back_inserter(temp));
+    elements_.clear();
+    elements_.insert(temp.begin(), temp.end());
+    return std::shared_ptr<Set>(this);
   }
 
   std::shared_ptr<Set> operator^(const Set& other) const {
@@ -131,6 +215,16 @@ class Set final : public Object {
     return result;
   }
 
+  std::shared_ptr<Set> operator^=(const Set& other) {
+    std::vector<std::shared_ptr<Object>> temp;
+
+    std::ranges::set_symmetric_difference(elements_, other.elements_,
+                                          std::back_inserter(temp));
+    elements_.clear();
+    elements_.insert(temp.begin(), temp.end());
+    return std::shared_ptr<Set>(this);
+  }
+
   std::shared_ptr<Set> operator-(const Set& other) const {
     auto result = std::make_shared<Set>();
     std::vector<std::shared_ptr<Object>> temp;
@@ -139,6 +233,15 @@ class Set final : public Object {
                                 std::back_inserter(temp));
     result->elements_.insert(temp.begin(), temp.end());
     return result;
+  }
+
+  std::shared_ptr<Set> operator-=(const Set& other) {
+    std::vector<std::shared_ptr<Object>> temp;
+    std::ranges::set_difference(elements_, other.elements_,
+                                std::back_inserter(temp));
+    elements_.clear();
+    elements_.insert(temp.begin(), temp.end());
+    return std::shared_ptr<Set>(this);
   }
 
   void clear() { elements_.clear(); }

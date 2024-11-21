@@ -3,19 +3,39 @@
 
 #include <algorithm>
 #include <climits>
+#include <ranges>
 #include <stdexcept>
 #include <vector>
-#include <ranges>
+
+#include "Number.hpp"
 #include "Object.hpp"
 #include "Slice.hpp"
 
 using std::views::iota;
+
 class List : public Object {
   std::vector<std::shared_ptr<Object>> elements_;
 
  public:
   List() = default;
   List(std::initializer_list<std::shared_ptr<Object>> init) : elements_(init) {}
+
+  static std::shared_ptr<List> spawn(
+      std::initializer_list<std::shared_ptr<Object>> init) {
+    return std::make_shared<List>(init);
+  }
+  static std::shared_ptr<List> spawn() { return std::make_shared<List>(); }
+
+  bool hasSingleType() const {
+    std::string type = elements_[0]->type();
+    for (auto i : iota(1, static_cast<int>(elements_.size()))) {
+      if (elements_[i]->type() != type) {
+        return false;
+      }
+    }
+
+    return true;
+  }
 
   std::string type() const override { return "list"; }
 
@@ -32,13 +52,12 @@ class List : public Object {
     if (auto* listObj = dynamic_cast<const List*>(&other)) {
       if (elements_.size() != listObj->elements_.size()) return false;
 
-      for (auto i: iota(0, static_cast<int32_t>(elements_.size()))) {
-        if (elements_[i] != listObj->elements_[i]) return false;
+      for (auto i : iota(0, static_cast<int32_t>(elements_.size()))) {
+        if (*elements_[i] != *listObj->elements_[i]) return false;
       }
-      
+
       return true;
     }
-
     return false;
   }
 
@@ -55,29 +74,103 @@ class List : public Object {
   // List specific methods
   void append(std::shared_ptr<Object> item) { elements_.push_back(item); }
 
+  void clear() { elements_.clear(); }
+
   void extend(const List& other) {
     elements_.insert(elements_.end(), other.elements_.begin(),
                      other.elements_.end());
   }
 
-  std::shared_ptr<Object> pop(int index = -1) {
+  void extend(std::shared_ptr<List> other) {
+    elements_.insert(elements_.end(), other->elements_.begin(),
+                     other->elements_.end());
+  }
+
+  std::shared_ptr<Number> index(std::shared_ptr<Object> object) const {
+    for (auto i : iota(0, static_cast<int>(elements_.size()))) {
+      if (*elements_[i] == *object) {
+        return std::make_shared<Number>(i);
+      }
+    }
+    throw std::runtime_error(object->toString() + " not in list");
+  }
+
+  void insert(std::shared_ptr<Number> index, std::shared_ptr<Object> object) {
+    elements_.insert(elements_.begin() + index->getInt(), object);
+  }
+
+  void insert(const Number& index, std::shared_ptr<Object> object) {
+    elements_.insert(elements_.begin() + index.getInt(), object);
+  }
+
+  std::shared_ptr<Object> pop(std::shared_ptr<Number> index) {
     if (elements_.empty()) {
       throw std::runtime_error("pop from empty list");
     }
-
-    if (index < 0) index += elements_.size();
-    if (index < 0 || size_t(index) >= elements_.size()) {
+    int indexNum = index->getInt();
+    if (indexNum < 0) indexNum += elements_.size();
+    if (indexNum < 0 || static_cast<size_t>(indexNum) >= elements_.size()) {
       throw std::out_of_range("list index out of range");
     }
 
-    auto item = elements_[index];
-    elements_.erase(elements_.begin() + index);
+    auto item = elements_[indexNum];
+    elements_.erase(elements_.begin() + indexNum);
     return item;
+  }
+
+  std::shared_ptr<Object> pop(const Number& index = Number(-1)) {
+    if (elements_.empty()) {
+      throw std::runtime_error("pop from empty list");
+    }
+    int indexNum = index.getInt();
+    if (indexNum < 0) indexNum += elements_.size();
+    if (indexNum < 0 || static_cast<size_t>(indexNum) >= elements_.size()) {
+      throw std::out_of_range("list index out of range");
+    }
+
+    auto item = elements_[indexNum];
+    elements_.erase(elements_.begin() + indexNum);
+    return item;
+  }
+
+  void remove(std::shared_ptr<Object> object) {
+    auto it = std::find_if(elements_.begin(), elements_.end(),
+                           [&object](const std::shared_ptr<Object>& element) {
+                             return element->equals(*object);
+                           });
+
+    if (it != elements_.end()) {
+      elements_.erase(it);
+    } else {
+      throw std::runtime_error(object->toString() + " not in list");
+    }
   }
 
   void reverse() { std::reverse(elements_.begin(), elements_.end()); }
 
-  size_t size() const { return elements_.size(); }
+  void sort() {
+    static constexpr auto sortFunc = [](std::shared_ptr<Object> i,
+                                        std::shared_ptr<Object> j) {
+      return *i < *j;
+    };
+
+    if (!hasSingleType()) {
+      throw std::runtime_error(
+          "Sort not supported on lists with more than one type");
+    }
+
+    std::sort(elements_.begin(), elements_.end(), sortFunc);
+  }
+
+  std::shared_ptr<Number> count() const {
+    return std::make_shared<Number>(static_cast<int>(elements_.size()));
+  }
+
+
+  std::shared_ptr<Number> len() const {
+    return std::make_shared<Number>(static_cast<int>(elements_.size()));
+  }
+
 
   // Attribute access
   std::shared_ptr<Object> getAttr(const std::string& name) const override {
@@ -117,6 +210,29 @@ class List : public Object {
     return result;
   }
 
+  std::shared_ptr<List> slice(const Slice& slice) const {
+    int start = slice.start;
+    int end = slice.end;
+
+    if (start == INT_MAX) start = 0;
+    if (end == INT_MAX) end = elements_.size();
+
+    if (start < 0) start += elements_.size();
+    if (end < 0) end += elements_.size();
+
+    start = std::clamp(start, 0, static_cast<int>(elements_.size()));
+    end = std::clamp(end, 0, static_cast<int>(elements_.size()));
+
+    auto result = std::make_shared<List>();
+
+    for (int i = start; i < end; ++i) {
+      result->append(elements_[i]);
+    }
+
+    return result;
+  }
+
+  // List arithmetic and comparison operators
   std::shared_ptr<List> operator+(const List& other) const {
     auto result = std::make_shared<List>();
     result->elements_ = elements_;
@@ -125,7 +241,8 @@ class List : public Object {
     return result;
   }
 
-  std::shared_ptr<List> operator*(int n) const {
+  std::shared_ptr<List> operator*(const Number& number) const {
+    int n = number.getInt();
     if (n <= 0) return std::make_shared<List>();
 
     auto result = std::make_shared<List>();
@@ -136,13 +253,26 @@ class List : public Object {
     return result;
   }
 
-  List& operator+=(const List& other) {
-    elements_.insert(elements_.end(), other.elements_.begin(),
-                     other.elements_.end());
-    return *this;
+  std::shared_ptr<List> operator*(std::shared_ptr<Number> number) const {
+    int n = number->getInt();
+    if (n <= 0) return std::make_shared<List>();
+
+    auto result = std::make_shared<List>();
+    for (int i = 0; i < n; ++i) {
+      result->elements_.insert(result->elements_.end(), elements_.begin(),
+                               elements_.end());
+    }
+    return result;
   }
 
-  List& operator*=(int n) {
+  std::shared_ptr<List> operator+=(const List& other) {
+    elements_.insert(elements_.end(), other.elements_.begin(),
+                     other.elements_.end());
+    return std::shared_ptr<List>(this);
+  }
+
+  std::shared_ptr<List> operator*=(const Number& number) {
+    int n = number.getInt();
     if (n <= 0) {
       elements_.clear();
     } else {
@@ -151,7 +281,20 @@ class List : public Object {
         elements_.insert(elements_.end(), original.begin(), original.end());
       }
     }
-    return *this;
+    return std::shared_ptr<List>(this);
+  }
+
+  std::shared_ptr<List> operator*=(std::shared_ptr<Number> number) {
+    int n = number->getInt();
+    if (n <= 0) {
+      elements_.clear();
+    } else {
+      auto original = elements_;
+      for (int i = 1; i < n; ++i) {
+        elements_.insert(elements_.end(), original.begin(), original.end());
+      }
+    }
+    return std::shared_ptr<List>(this);
   }
 
   bool operator<(const List& other) const {
@@ -168,20 +311,40 @@ class List : public Object {
 
   bool operator>=(const List& other) const { return !(*this < other); }
 
-  std::shared_ptr<Object> operator[](int index) const {
-    if (index < 0) index += elements_.size();
-    if (index < 0 || size_t(index) >= elements_.size()) {
+  std::shared_ptr<Object> operator[](std::shared_ptr<Number> index) const {
+    int indexNum = index->getInt();
+    if (indexNum < 0) indexNum += elements_.size();
+    if (indexNum < 0 || static_cast<size_t>(indexNum) >= elements_.size()) {
       throw std::out_of_range("list index out of range");
     }
-    return elements_[index];
+    return elements_[indexNum];
   }
 
-  std::shared_ptr<Object>& operator[](int index) {
-    if (index < 0) index += elements_.size();
-    if (index < 0 || size_t(index) >= elements_.size()) {
+  std::shared_ptr<Object> at(std::shared_ptr<Number> index) const {
+    int indexNum = index->getInt();
+    if (indexNum < 0) indexNum += elements_.size();
+    if (indexNum < 0 || static_cast<size_t>(indexNum) >= elements_.size()) {
       throw std::out_of_range("list index out of range");
     }
-    return elements_[index];
+    return elements_[indexNum];
+  }
+
+  std::shared_ptr<Object> at(const Number& index) const {
+    int indexNum = index.getInt();
+    if (indexNum < 0) indexNum += elements_.size();
+    if (indexNum < 0 || static_cast<size_t>(indexNum) >= elements_.size()) {
+      throw std::out_of_range("list index out of range");
+    }
+    return elements_[indexNum];
+  }
+
+  std::shared_ptr<Object> operator[](const Number& index) const {
+    int indexNum = index.getInt();
+    if (indexNum < 0) indexNum += elements_.size();
+    if (indexNum < 0 || static_cast<size_t>(indexNum) >= elements_.size()) {
+      throw std::out_of_range("list index out of range");
+    }
+    return elements_[indexNum];
   }
 
   List& operator=(const List& other) {
