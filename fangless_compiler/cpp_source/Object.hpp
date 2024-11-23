@@ -26,18 +26,21 @@ class Object {
 
   virtual bool toBool() const = 0;
 
-  virtual bool isinstance(const std::string& type) const = 0;
+  virtual bool isInstance(const std::string& type) const = 0;
 
   virtual std::shared_ptr<Object> getAttr(const std::string& name) const = 0;
   virtual void setAttr(const std::string& name,
                        std::shared_ptr<Object> value) = 0;
 
   bool operator==(const Object& other) const { return equals(other); }
-
   explicit operator bool() const { return toBool(); }
 
   virtual std::strong_ordering compare(const Object& other) const {
     return toString() <=> other.toString();
+  }
+
+  std::strong_ordering operator<=>(std::shared_ptr<Object> other) const {
+    return compare(*other);
   }
 
   std::strong_ordering operator<=>(const Object& other) const {
@@ -48,6 +51,10 @@ class Object {
   friend std::ostream& operator<<(std::ostream& os, const Object& obj) {
     os << obj.toString();
     return os;
+  }
+
+  bool isNone() const {
+    return type() == "None";
   }
 };
 

@@ -39,13 +39,14 @@ class Dictionary : public Object {
     return false;
   }
 
+  
   size_t hash() const override {
     throw std::runtime_error("unhashable type: 'dict'");
   }
 
   bool toBool() const override { return !elements_.empty(); }
 
-  bool isinstance(const std::string& type) const override {
+  bool isInstance(const std::string& type) const override {
     return type == "dict" || type == "object";
   }
 

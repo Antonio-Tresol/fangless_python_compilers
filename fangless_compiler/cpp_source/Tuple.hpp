@@ -19,8 +19,6 @@ concept SharedObject = std::is_convertible<T, std::shared_ptr<Object>>::value;
 
 template <std::size_t ElementAmount>
 class Tuple final : public Object {
-  const std::array<std::shared_ptr<Object>, ElementAmount> elements_;
-
  public:
   template <typename... Args>
     requires(SharedObject<Args> && ...)
@@ -34,6 +32,20 @@ class Tuple final : public Object {
   static std::shared_ptr<Tuple<sizeof...(Args)>> spawn(Args... args) {
     return std::make_shared<Tuple<sizeof...(Args)>>(args...);
   }
+
+  explicit Tuple(const std::vector<std::shared_ptr<Object>>& vec) {
+    if (vec.size() != ElementAmount) {
+      throw std::runtime_error("Vector size must match tuple size");
+    }
+    std::copy(vec.begin(), vec.end(), elements_.begin());
+  }
+
+  static std::shared_ptr<Tuple<ElementAmount>> from_vector(
+      const std::vector<std::shared_ptr<Object>>& vec) {
+    return std::make_shared<Tuple<ElementAmount>>(vec);
+  }
+
+  std::array<std::shared_ptr<Object>, ElementAmount> elements_;
   std::string type() const override { return "tuple"; }
 
   std::string toString() const override {
@@ -62,7 +74,7 @@ class Tuple final : public Object {
 
     return false;
   }
-
+  
   size_t hash() const override {
     std::size_t hash = 0;
 
@@ -82,7 +94,7 @@ class Tuple final : public Object {
   // Python truthiness
   bool toBool() const override { return !elements_.empty(); }
 
-  bool isinstance(const std::string& type) const override {
+  bool isInstance(const std::string& type) const override {
     return type == "tuple" || type == "object";
   }
 
@@ -186,6 +198,27 @@ class Tuple final : public Object {
     }
 
     return result;
+  }
+
+  template <size_t OtherSize>
+  std::shared_ptr<Tuple<ElementAmount + OtherSize>> operator+(
+      const Tuple<OtherSize>& other) const {
+    std::vector<std::shared_ptr<Object>> combined;
+    combined.reserve(ElementAmount + OtherSize);
+
+    // Combine elements from both tuples
+    combined.insert(combined.end(), elements_.begin(), elements_.end());
+    combined.insert(combined.end(), other.elements_.begin(),
+                    other.elements_.end());
+
+    return Tuple<ElementAmount + OtherSize>::from_vector(combined);
+  }
+
+  // Overload for shared_ptr version
+  template <size_t OtherSize>
+  std::shared_ptr<Tuple<ElementAmount + OtherSize>> operator+(
+      const std::shared_ptr<Tuple<OtherSize>>& other) const {
+    return (*this) + (*other);
   }
 
  private:

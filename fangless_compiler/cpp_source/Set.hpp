@@ -50,6 +50,7 @@ class Set final : public Object {
     return size == elements.size();
   }
 
+
   size_t hash() const override {
     std::size_t hash = 0;
 
@@ -68,7 +69,7 @@ class Set final : public Object {
 
   bool toBool() const override { return !elements_.empty(); }
 
-  bool isinstance(const std::string& type) const override {
+  bool isInstance(const std::string& type) const override {
     return type == "set" || type == "object";
   }
 

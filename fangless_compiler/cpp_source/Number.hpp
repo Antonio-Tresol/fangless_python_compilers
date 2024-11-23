@@ -6,6 +6,7 @@
 #include <string>
 #include <variant>
 
+#include "Bool.hpp"
 #include "Object.hpp"
 
 constexpr double DELTA = 1e-9;
@@ -17,11 +18,20 @@ class Number : public Object {
  public:
   explicit Number(int value) : value_(value) {}
   explicit Number(double value) : value_(value) {}
-
-  static std::shared_ptr<Number> spawn(int value) {
-    return std::make_shared<Number>(value);
+  explicit Number(const Number& other) : value_(other.value_) {}
+  explicit Number(const Bool& other) : value_(other.toBool() ? 1 : 0) {}
+  explicit Number(std::shared_ptr<Object> obj) {
+    if (auto* numObj = dynamic_cast<Number*>(obj.get())) {
+      value_ = numObj->value_;
+    } else if (auto* boolObj = dynamic_cast<Bool*>(obj.get())) {
+      value_ = boolObj->toBool() ? 1 : 0;
+    } else {
+      throw std::runtime_error("Cannot convert object to number");
+    }
   }
-  static std::shared_ptr<Number> spawn(double value) {
+
+  template <typename T>
+  static std::shared_ptr<Number> spawn(T value) {
     return std::make_shared<Number>(value);
   }
 
@@ -84,7 +94,7 @@ class Number : public Object {
         value_);
   }
 
-  bool isinstance(const std::string& type) const override {
+  bool isInstance(const std::string& type) const override {
     if (type == "object") return true;
     if (type == "int") return std::holds_alternative<int>(value_);
     if (type == "float") return std::holds_alternative<double>(value_);
@@ -149,16 +159,46 @@ class Number : public Object {
         },
         value_, other.value_);
   }
+  std::shared_ptr<Number> operator%(const Number& other) const {
+    return std::visit(
+        [](auto&& a, auto&& b) -> std::shared_ptr<Number> {
+          using A = std::decay_t<decltype(a)>;
+          using B = std::decay_t<decltype(b)>;
+
+          if constexpr (std::is_same_v<A, double> ||
+                        std::is_same_v<B, double>) {
+            throw std::runtime_error(
+                "Modulo operation not supported on floats");
+          } else {
+            if (b == 0) {
+              throw std::runtime_error("Division by zero");
+            }
+            return std::make_shared<Number>(a % b);
+          }
+        },
+        value_, other.value_);
+  }
 
   std::shared_ptr<Number> operator/(const Number& other) const {
     return std::visit(
         [](auto&& a, auto&& b) -> std::shared_ptr<Number> {
+          using B = std::decay_t<decltype(b)>;
+
+          if constexpr (std::is_same_v<B, double>) {
+            if (std::abs(b) < DELTA) {
+              throw std::runtime_error("Division by zero");
+            }
+          } else {
+            if (b == 0) {
+              throw std::runtime_error("Division by zero");
+            }
+          }
+
           return std::make_shared<Number>(static_cast<double>(a) /
                                           static_cast<double>(b));
         },
         value_, other.value_);
   }
-
   std::strong_ordering compare(const Object& other) const override {
     if (auto* numObj = dynamic_cast<const Number*>(&other)) {
       return std::visit(
@@ -174,7 +214,7 @@ class Number : public Object {
     }
     return std::strong_ordering::greater;
   }
-  
+
   bool isFinite() const {
     return std::visit(
         [](auto&& arg) -> bool {

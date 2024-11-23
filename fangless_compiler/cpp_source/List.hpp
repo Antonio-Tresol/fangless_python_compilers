@@ -61,13 +61,20 @@ class List : public Object {
     return false;
   }
 
+  bool equals(std::shared_ptr<Object> other) const {
+    if (auto* listObj = dynamic_cast<List*>(other.get())) {
+      return equals(*listObj);
+    }
+    return false;
+  }
+
   size_t hash() const override {
     throw std::runtime_error("unhashable type: 'list'");
   }
 
   bool toBool() const override { return !elements_.empty(); }
 
-  bool isinstance(const std::string& type) const override {
+  bool isInstance(const std::string& type) const override {
     return type == "list" || type == "object";
   }
 
