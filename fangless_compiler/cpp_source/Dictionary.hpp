@@ -21,6 +21,17 @@ class Dictionary : public Object {
     return std::make_shared<Dictionary>();
   }
 
+  static std::shared_ptr<Dictionary> spawn(
+      std::initializer_list<
+          std::pair<std::shared_ptr<Object>, std::shared_ptr<Object>>>
+          init) {
+    auto result = std::make_shared<Dictionary>();
+    for (const auto& [key, value] : init) {
+      result->elements_[key] = value;
+    }
+    return result;
+  }
+
   std::string toString() const override {
     std::string result = "{";
     bool first = true;

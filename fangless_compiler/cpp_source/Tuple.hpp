@@ -33,6 +33,15 @@ class Tuple final : public Object {
     return std::make_shared<Tuple<sizeof...(Args)>>(args...);
   }
 
+  static std::shared_ptr<Tuple<ElementAmount>> spawn(
+      std::initializer_list<std::shared_ptr<Object>> init) {
+    if (init.size() != ElementAmount) {
+      throw std::runtime_error("Initializer list size must match tuple size");
+    }
+    return std::make_shared<Tuple<ElementAmount>>(
+        std::vector<std::shared_ptr<Object>>(init.begin(), init.end()));
+  }
+
   explicit Tuple(const std::vector<std::shared_ptr<Object>>& vec) {
     if (vec.size() != ElementAmount) {
       throw std::runtime_error("Vector size must match tuple size");
@@ -74,7 +83,7 @@ class Tuple final : public Object {
 
     return false;
   }
-  
+
   size_t hash() const override {
     std::size_t hash = 0;
 

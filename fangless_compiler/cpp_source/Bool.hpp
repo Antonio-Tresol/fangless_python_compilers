@@ -3,6 +3,7 @@
 
 #include <memory>
 
+#include "Number.hpp"
 #include "Object.hpp"
 class Bool : public Object {
   bool value_;
@@ -58,58 +59,54 @@ class Bool : public Object {
   }
 
   //========Operators========//
-  // std::shared_ptr<Bool> operator!() const { return Bool::spawn(!value_); }
+  std::shared_ptr<Bool> operator!() const { return Bool::spawn(!value_); }
 
-  // std::shared_ptr<Bool> operator&&(const Object& other) const {
-  //   return Bool::spawn(value_ && other.toBool());
-  // }
+  std::shared_ptr<Bool> operator&&(const Object& other) const {
+    return Bool::spawn(value_ && other.toBool());
+  }
 
-  // std::shared_ptr<Bool> operator||(const Object& other) const {
-  //   return Bool::spawn(value_ || other.toBool());
-  // }
+  std::shared_ptr<Bool> operator||(const Object& other) const {
+    return Bool::spawn(value_ || other.toBool());
+  }
 
-  // std::shared_ptr<Bool> operator==(const Object& other) const {
-  //   return Bool::spawn(value_ == other.toBool());
-  // }
+  std::shared_ptr<Bool> operator==(const Object& other) const {
+    return Bool::spawn(value_ == other.toBool());
+  }
 
-  // std::shared_ptr<Number> operator+(const Number& other) const {
-  //   return Number::spawn(value_ + other.getInt());
-  // }
+  std::shared_ptr<Number> operator+(const Number& other) const {
+    return Number::spawn(value_ + other.getInt());
+  }
 
-  // std::shared_ptr<Number> operator-(const Number& other) const {
-  //   return Number::spawn(value_ - other.getInt());
-  // }
+  std::shared_ptr<Number> operator-(const Number& other) const {
+    return Number::spawn(value_ - other.getInt());
+  }
 
-  // std::shared_ptr<Number> operator*(const Number& other) const {
-  //   return Number::spawn(value_ * other.getInt());
-  // }
+  std::shared_ptr<Number> operator*(const Number& other) const {
+    return Number::spawn(value_ * other.getInt());
+  }
 
-  // std::shared_ptr<Number> operator/(const Number& other) const {
-  //   return Number::spawn(value_ / other.getInt());
-  // }
+  std::shared_ptr<Number> operator/(const Number& other) const {
+    return Number::spawn(value_ / other.getInt());
+  }
 
-  // std::shared_ptr<Number> operator%(const Number& other) const {
-  //   return Number::spawn(value_ % other.getInt());
-  // }
-
-  // bool isInstance(const std::string& type) const override {
-  //   return type == "Bool" || type == "Object";
-  // }
+  std::shared_ptr<Number> operator%(const Number& other) const {
+    return Number::spawn(value_ % other.getInt());
+  }
 };
 
 // Helper function to spawn a new Bool object on operator overloads
-// std::shared_ptr<Bool> operator!(std::shared_ptr<Bool> obj) {
-//   return obj->operator!();
-// }
+std::shared_ptr<Bool> operator!(std::shared_ptr<Bool> obj) {
+  return obj->operator!();
+}
 
-// std::shared_ptr<Bool> operator&&(std::shared_ptr<Bool> obj,
-// std::shared_ptr<Object> other) {
-//   return *obj && *other;
-// }
+std::shared_ptr<Bool> operator&&(std::shared_ptr<Bool> obj,
+                                 std::shared_ptr<Object> other) {
+  return *obj && *other;
+}
 
-// std::shared_ptr<Bool> operator||(std::shared_ptr<Bool> obj,
-// std::shared_ptr<Object> other) {
-//   return *obj || *other;
-// }
+std::shared_ptr<Bool> operator||(std::shared_ptr<Bool> obj,
+                                 std::shared_ptr<Object> other) {
+  return *obj || *other;
+}
 
 #endif  // BOOL_HPP

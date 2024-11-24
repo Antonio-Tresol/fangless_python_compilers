@@ -25,6 +25,7 @@ class List : public Object {
       std::initializer_list<std::shared_ptr<Object>> init) {
     return std::make_shared<List>(init);
   }
+  
   static std::shared_ptr<List> spawn() { return std::make_shared<List>(); }
 
   bool hasSingleType() const {
