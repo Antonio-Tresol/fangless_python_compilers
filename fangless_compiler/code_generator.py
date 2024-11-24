@@ -5,7 +5,9 @@ from abstract_syntax_tree.operator_node import (
     OperatorNode,
     OperatorType,
 )
-
+from abstract_syntax_tree.name_node import (
+    NameNode,
+)
 
 class FanglessGenerator:
     def __init__(self) -> None:
@@ -42,6 +44,7 @@ class FanglessGenerator:
             "<=": self.visit_direct_binary,
             ">": self.visit_direct_binary,
             ">=": self.visit_direct_binary,
+            "<<": self.visit_direct_binary,
             ">>": self.visit_direct_binary,
             "and": self.visit_direct_binary,
             "or": self.visit_direct_binary,
@@ -63,10 +66,7 @@ class FanglessGenerator:
             if not isinstance(subtree, (list, dict, tuple, set, int, float, str, bool, type(None))):
                 statements += self.operator_handlers[subtree.operator](subtree)
             elif not is_standalone:
-                if isinstance(subtree, (int, str, float, bool)):
-                    statements += create_basic_instance(subtree)
-                else:
-                    statements += ""
+                statements += create_instance(subtree)
 
             if is_standalone:
                 statements += ";\n"
@@ -165,6 +165,11 @@ class FanglessGenerator:
         right_child = tree.get_right_operand()
         right_child = self.visit_tree([right_child])
 
+        if tree.operator == "and":
+            tree.operator = "&&"
+        elif tree.operator == "or":
+            tree.operator = "||"
+
         if tree.parenthesis:
             return (f"({left_child} "
             f"{tree.operator} "
@@ -181,24 +186,42 @@ class FanglessGenerator:
     # tipos de arboles (Operator type)
 
 
-def is_leaf(node: Any) -> bool:
-    if not isinstance(node, Node):
-        if isinstance(node, (int, str, float, bool, None)):
-            return True
-        if isinstance(node, dict):
-            return all(not isinstance(value, OperatorNode) for value in node.values())
-        if isinstance(node, (list, tuple, set)):
-            return all(not isinstance(value, OperatorNode) for value in node)
+def create_instance(instance) -> str:
+    if isinstance(instance, (int, str, float, bool, type(None), NameNode)):
+        return create_basic_instance(instance)
+    return create_structure_instance(instance)
 
-    return node.is_leaf()
 
 def create_basic_instance(instance) -> str:
+    if isinstance(instance, bool):
+        return f"Bool::spawn({instance})"
+    if isinstance(instance, str):
+        return f'String::spawn("{instance}")'
+    if isinstance(instance, type(None)):
+        return f'None::spawn("{instance}")'
     if isinstance(instance, (int, float)):
         return f"Number::spawn({instance})"
-    elif isinstance(instance, (str)):
-        return f"String::spawn({instance})"
-    else:
-        return f"Bool::spawn({instance})"
+
+    return f"{instance.id}"
+
 
 def create_structure_instance(instance) -> str:
-    pass
+    elements = "{"
+    if isinstance(instance, dict):
+        for key, value in instance.items():
+            elements += f"{"{"} {create_instance(key)}, {create_instance(value)} {"}"}, "
+    else:
+        for element in instance:
+            elements += f"{create_instance(element)}, "
+
+    elements = elements[:-2]
+    elements += "}"
+
+    if isinstance(instance, dict):
+        return f"Dictionary::spawn({elements})"
+    if isinstance(instance, tuple):
+        return f"Tuple<{len(instance)}>::spawn({elements})"
+    if isinstance(instance, set):
+        return f"Set::spawn({elements})"
+
+    return f"List::spawn({elements})"
