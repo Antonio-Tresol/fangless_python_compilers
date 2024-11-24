@@ -58,4 +58,9 @@ class Object {
   }
 };
 
+std::ostream& operator<<(std::ostream& os, const std::shared_ptr<Object>& obj) {
+  return os << *obj;
+}
+
+
 #endif

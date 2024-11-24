@@ -6,7 +6,6 @@
 #include <string>
 #include <variant>
 
-#include "Bool.hpp"
 #include "Object.hpp"
 
 constexpr double DELTA = 1e-9;
@@ -19,14 +18,12 @@ class Number : public Object {
   explicit Number(int value) : value_(value) {}
   explicit Number(double value) : value_(value) {}
   explicit Number(const Number& other) : value_(other.value_) {}
-  explicit Number(const Bool& other) : value_(other.toBool() ? 1 : 0) {}
+  explicit Number(const Object& other) : value_(other.toBool() ? 1 : 0) {}
   explicit Number(std::shared_ptr<Object> obj) {
     if (auto* numObj = dynamic_cast<Number*>(obj.get())) {
       value_ = numObj->value_;
-    } else if (auto* boolObj = dynamic_cast<Bool*>(obj.get())) {
-      value_ = boolObj->toBool() ? 1 : 0;
     } else {
-      throw std::runtime_error("Cannot convert object to number");
+      value_ = obj->toBool() ? 1 : 0;
     }
   }
 
@@ -268,5 +265,34 @@ class Number : public Object {
         [](auto&& arg) -> double { return static_cast<double>(arg); }, value_);
   }
 };
+
+std::shared_ptr<Number> operator+(const std::shared_ptr<Number>& a,
+                                  const std::shared_ptr<Number>& b) {
+  return *a + *b;
+}
+
+std::shared_ptr<Number> operator-(const std::shared_ptr<Number>& a,
+                                  const std::shared_ptr<Number>& b) {
+  return *a - *b;
+}
+
+std::shared_ptr<Number> operator*(const std::shared_ptr<Number>& a,
+                                  const std::shared_ptr<Number>& b) {
+  return *a * *b;
+}
+
+std::shared_ptr<Number> operator/(const std::shared_ptr<Number>& a,
+                                  const std::shared_ptr<Number>& b) {
+  return *a / *b;
+}
+
+std::shared_ptr<Number> operator%(const std::shared_ptr<Number>& a,
+                                  const std::shared_ptr<Number>& b) {
+  return *a % *b;
+}
+
+std::ostream& operator<<(std::ostream& os, const std::shared_ptr<Number>& obj) {
+  return os << *obj;
+}
 
 #endif  // NUMBER_HPP

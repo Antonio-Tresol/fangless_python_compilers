@@ -231,4 +231,17 @@ class Tuple final : public Object {
   }
 };
 
+template <size_t Size>
+std::ostream& operator<<(std::ostream& os,
+                         const std::shared_ptr<Tuple<Size>>& obj) {
+  return os << *obj;
+}
+
+template <size_t Size>
+std::shared_ptr<Tuple<Size + Size>> operator+(
+    const std::shared_ptr<Tuple<Size>>& a,
+    const std::shared_ptr<Tuple<Size>>& b) {
+  return *a + *b;
+}
+
 #endif  // TUPLE_HPP

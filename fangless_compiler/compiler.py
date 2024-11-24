@@ -35,11 +35,12 @@ def main() -> None:
     compiler = FanglessCompiler()
     generated_code = compiler.compile()
     # format the cpp generated using clang-format
-    Path("temp.cpp").write_text(generated_code, encoding="utf-8")
+    cpp_file_path = Path("fangless_compiler/cpp_source/temp.cpp")
+    cpp_file_path.write_text(generated_code, encoding="utf-8")
     # Run clang-format on the temporary file
     try:
         result = subprocess.run(  # noqa: S603 input is not from user
-            ["/usr/bin/clang-format", str(Path("temp.cpp"))],
+            ["/usr/bin/clang-format", "fangless_compiler/cpp_source/temp.cpp"],
             capture_output=True,
             text=True,
             check=True,
@@ -61,7 +62,9 @@ def main() -> None:
         if common.VERBOSE_COMPILER:
             print("Formatted code:")
             print(result.stdout)
+        cpp_file_path.write_text(result.stdout, encoding="utf-8")
         return result.stdout
+
 
 if __name__ == "__main__":
     main()

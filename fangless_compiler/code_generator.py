@@ -35,12 +35,16 @@ class FanglessGenerator:
             "%": self.visit_direct_binary,
             "&": self.visit_direct_binary,
             "|": self.visit_direct_binary,
+            "^": self.visit_direct_binary,
             "==": self.visit_direct_binary,
             "!=": self.visit_direct_binary,
             "<": self.visit_direct_binary,
             "<=": self.visit_direct_binary,
             ">": self.visit_direct_binary,
             ">=": self.visit_direct_binary,
+            ">>": self.visit_direct_binary,
+            "and": self.visit_direct_binary,
+            "or": self.visit_direct_binary,
         }
 
         self.symbol_table = {}

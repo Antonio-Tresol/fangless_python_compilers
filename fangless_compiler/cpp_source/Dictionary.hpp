@@ -39,7 +39,6 @@ class Dictionary : public Object {
     return false;
   }
 
-  
   size_t hash() const override {
     throw std::runtime_error("unhashable type: 'dict'");
   }
@@ -170,4 +169,8 @@ class Dictionary : public Object {
   }
 };
 
+std::ostream& operator<<(std::ostream& os,
+                         const std::shared_ptr<Dictionary>& obj) {
+  return os << *obj;
+}
 #endif  // DICTIONARY_HPP

@@ -16,3 +16,4 @@ fangless_compiler/__pycache__/*
 fangless_compiler/abstract_syntax_tree/__pycache__/*
 tests/__pycache__/*
 *.txt
+.vscode/settings.json

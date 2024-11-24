@@ -18,103 +18,6 @@ void printSection(const std::string& title) {
   std::cout << "\n=== " << title << " ===\n";
 }
 
-std::ostream& operator<<(std::ostream& os, const std::shared_ptr<Object>& obj) {
-  return os << *obj;
-}
-
-std::ostream& operator<<(std::ostream& os,
-                         const std::shared_ptr<const Object>& obj) {
-  return os << *obj;
-}
-
-std::ostream& operator<<(std::ostream& os, const std::shared_ptr<Number>& obj) {
-  return os << *obj;
-}
-std::ostream& operator<<(std::ostream& os, const std::shared_ptr<String>& obj) {
-  return os << *obj;
-}
-
-template <size_t Size>
-std::ostream& operator<<(std::ostream& os,
-                         const std::shared_ptr<Tuple<Size>>& obj) {
-  return os << *obj;
-}
-
-std::ostream& operator<<(std::ostream& os, const std::shared_ptr<List>& obj) {
-  return os << *obj;
-}
-
-std::ostream& operator<<(std::ostream& os, const std::shared_ptr<Set>& obj) {
-  return os << *obj;
-}
-
-std::ostream& operator<<(std::ostream& os,
-                         const std::shared_ptr<Dictionary>& obj) {
-  return os << *obj;
-}
-
-std::shared_ptr<Number> operator+(const std::shared_ptr<Number>& a,
-                                  const std::shared_ptr<Number>& b) {
-  return *a + *b;
-}
-
-std::shared_ptr<Number> operator-(const std::shared_ptr<Number>& a,
-                                  const std::shared_ptr<Number>& b) {
-  return *a - *b;
-}
-
-std::shared_ptr<Number> operator*(const std::shared_ptr<Number>& a,
-                                  const std::shared_ptr<Number>& b) {
-  return *a * *b;
-}
-
-std::shared_ptr<Number> operator/(const std::shared_ptr<Number>& a,
-                                  const std::shared_ptr<Number>& b) {
-  return *a / *b;
-}
-
-std::shared_ptr<Number> operator%(const std::shared_ptr<Number>& a,
-                                  const std::shared_ptr<Number>& b) {
-  return *a % *b;
-}
-
-std::shared_ptr<String> operator+(const std::shared_ptr<String>& a,
-                                  const std::shared_ptr<String>& b) {
-  return *a + *b;
-}
-std::shared_ptr<String> operator*(const std::shared_ptr<String>& a,
-                                  const std::shared_ptr<Number>& b) {
-  return *a * *b;
-}
-std::shared_ptr<List> operator+(const std::shared_ptr<List>& a,
-                                const std::shared_ptr<List>& b) {
-  return *a + *b;
-}
-std::shared_ptr<List> operator*(const std::shared_ptr<List>& a,
-                                const std::shared_ptr<Number>& b) {
-  return *a * *b;
-}
-
-std::shared_ptr<Set> operator|(const std::shared_ptr<Set>& a,
-                               const std::shared_ptr<Set>& b) {
-  return *a | *b;
-}
-
-std::shared_ptr<Set> operator+(const std::shared_ptr<Set>& a,
-                               const std::shared_ptr<Set>& b) {
-  return *a | *b;
-}
-
-template <size_t Size>
-std::shared_ptr<Tuple<Size + Size>> operator+(
-    const std::shared_ptr<Tuple<Size>>& a,
-    const std::shared_ptr<Tuple<Size>>& b) {
-  return *a + *b;
-}
-// std::shared_ptr<Bool> operator==(const std::shared_ptr<Object>& a, const
-// std::shared_ptr<Object>& b) {
-//     return a->equals(*b) ? Bool::spawn(1) : Bool::spawn(0);
-// }
 void printResult(const std::string& op, const Object& result) {
   std::cout << op << ": " << result << std::endl;
 }
@@ -280,6 +183,7 @@ void testBool() {
             << (b1->compare(*num) == std::strong_ordering::less ? "✓" : "❌")
             << "\n";
 }
+
 void testNumbers() {
   printSection("Number Creation and Type Checking");
   auto n1 = Number::spawn(10);
@@ -555,6 +459,7 @@ void testLists() {
   std::cout << "Complex list with mixed types including dictionary:\n";
   std::cout << "  " << complexList << std::endl;
 }
+
 void testDictionaries() {
   printSection("1. Dictionary Creation and Basic Operations");
   auto dict = Dictionary::spawn();
@@ -813,6 +718,7 @@ void testSet() {
   std::cout << "  Actual:   " << set1 << "\n";
   std::cout << "  Count:    " << set1->count() << " (Expected: 0)\n";
 }
+
 void testNone() {
   printSection("1. None Singleton Pattern");
   auto none1 = None::spawn();
@@ -894,6 +800,7 @@ void testNone() {
   std::cout << "  Consistent hash: "
             << (none1->hash() == none2->hash() ? "✓" : "❌") << "\n";
 }
+
 void testClass() {
     const std::string BLUE = "\033[34m";
     const std::string CYAN = "\033[36m";
@@ -980,6 +887,7 @@ void testClass() {
                  << mro[i]->serialize(1) << RESET << "\n";
     }
 }
+
 void testComplexClasses() {
     const std::string BLUE = "\033[34m";
     const std::string CYAN = "\033[36m";
@@ -1067,8 +975,9 @@ try {
                      e.what());
     }
 }
-// Helper to define a method
+
 int main(int argc, char** argv) {
+  
   std::vector<std::function<void()>> tests{
       testNumbers,      testBool, testStrings,   testLists, testTuple,
       testDictionaries, testSet,  testFunctions, testNone, testClass, testComplexClasses};

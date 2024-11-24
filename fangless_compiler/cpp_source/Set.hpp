@@ -50,7 +50,6 @@ class Set final : public Object {
     return size == elements.size();
   }
 
-
   size_t hash() const override {
     std::size_t hash = 0;
 
@@ -147,25 +146,19 @@ class Set final : public Object {
     return (*this >= other) && *this != *other;
   }
 
-  bool isDisjoint(const Set& other) const {
-      return !(*this & other)->count();
-  }
-  
-  bool operator<=(const Set& other) const {
-      return !(*this - other)->count();
-  }
-  
+  bool isDisjoint(const Set& other) const { return !(*this & other)->count(); }
+
+  bool operator<=(const Set& other) const { return !(*this - other)->count(); }
+
   bool operator<(const Set& other) const {
-      return (*this <= other) && *this != other;
+    return (*this <= other) && *this != other;
   }
-  
-  bool operator>=(const Set& other) const {
-      return !(other - *this)->count();
-  }
-  
+
+  bool operator>=(const Set& other) const { return !(other - *this)->count(); }
+
   bool operator>(const Set& other) const {
-      return (*this >= other) && *this != other;
-  } 
+    return (*this >= other) && *this != other;
+  }
   std::shared_ptr<Set> operator|(const Set& other) const {
     auto result = std::make_shared<Set>();
     std::vector<std::shared_ptr<Object>> temp;
@@ -248,4 +241,97 @@ class Set final : public Object {
   void clear() { elements_.clear(); }
 };
 
+std::ostream& operator<<(std::ostream& os, const std::shared_ptr<Set>& obj) {
+  return os << *obj;
+}
+
+std::shared_ptr<Set> operator|(const std::shared_ptr<Set>& a,
+                               const std::shared_ptr<Set>& b) {
+  return *a | *b;
+}
+
+std::shared_ptr<Set> operator+(const std::shared_ptr<Set>& a,
+                               const std::shared_ptr<Set>& b) {
+  return *a | *b;
+}
+
+std::shared_ptr<Set> operator&(const std::shared_ptr<Set>& a,
+                               const std::shared_ptr<Set>& b) {
+  return *a & *b;
+}
+
+std::shared_ptr<Set> operator^(const std::shared_ptr<Set>& a,
+                               const std::shared_ptr<Set>& b) {
+  return *a ^ *b;
+}
+
+std::shared_ptr<Set> operator-(const std::shared_ptr<Set>& a,
+                               const std::shared_ptr<Set>& b) {
+  return *a - *b;
+}
+
+std::shared_ptr<Set> operator+=(const std::shared_ptr<Set>& a,
+                                const std::shared_ptr<Set>& b) {
+  return *a |= *b;
+}
+
+std::shared_ptr<Set> operator-=(const std::shared_ptr<Set>& a,
+                                const std::shared_ptr<Set>& b) {
+  return *a -= *b;
+}
+
+std::shared_ptr<Set> operator^=(const std::shared_ptr<Set>& a,
+                                const std::shared_ptr<Set>& b) {
+  return *a ^= *b;
+}
+
+std::shared_ptr<Set> operator&=(const std::shared_ptr<Set>& a,
+                                const std::shared_ptr<Set>& b) {
+  return *a &= *b;
+}
+
+std::shared_ptr<Set> operator|(const std::shared_ptr<Set>& a,
+                               const Set& b) {
+  return *a | b;
+}
+
+std::shared_ptr<Set> operator+(const std::shared_ptr<Set>& a,
+                               const Set& b) {
+  return *a | b;
+}
+
+std::shared_ptr<Set> operator&(const std::shared_ptr<Set>& a,
+                               const Set& b) {
+  return *a & b;
+}
+
+std::shared_ptr<Set> operator^(const std::shared_ptr<Set>& a,
+                               const Set& b) {
+  return *a ^ b;
+}
+
+std::shared_ptr<Set> operator-(const std::shared_ptr<Set>& a,
+                               const Set& b) {
+  return *a - b;
+}
+
+std::shared_ptr<Set> operator+=(const std::shared_ptr<Set>& a,
+                                const Set& b) {
+  return *a |= b;
+}
+
+std::shared_ptr<Set> operator-=(const std::shared_ptr<Set>& a,
+                                const Set& b) {
+  return *a -= b;
+}
+
+std::shared_ptr<Set> operator^=(const std::shared_ptr<Set>& a,
+                                const Set& b) {
+  return *a ^= b;
+}
+
+std::shared_ptr<Set> operator&=(const std::shared_ptr<Set>& a,
+                                const Set& b) {
+  return *a &= b;
+}
 #endif  // SET_HPP

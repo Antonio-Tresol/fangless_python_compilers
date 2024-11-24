@@ -18,6 +18,7 @@ class List : public Object {
 
  public:
   List() = default;
+  List(const List& other) : elements_(other.elements_) {}
   List(std::initializer_list<std::shared_ptr<Object>> init) : elements_(init) {}
 
   static std::shared_ptr<List> spawn(
@@ -173,11 +174,9 @@ class List : public Object {
     return std::make_shared<Number>(static_cast<int>(elements_.size()));
   }
 
-
   std::shared_ptr<Number> len() const {
     return std::make_shared<Number>(static_cast<int>(elements_.size()));
   }
-
 
   // Attribute access
   std::shared_ptr<Object> getAttr(const std::string& name) const override {
@@ -360,8 +359,20 @@ class List : public Object {
     }
     return *this;
   }
-
-  List(const List& other) : elements_(other.elements_) {}
 };
+
+std::ostream& operator<<(std::ostream& os, const std::shared_ptr<List>& obj) {
+  return os << *obj;
+}
+
+std::shared_ptr<List> operator+(const std::shared_ptr<List>& a,
+                                const std::shared_ptr<List>& b) {
+  return *a + *b;
+}
+
+std::shared_ptr<List> operator*(const std::shared_ptr<List>& a,
+                                const std::shared_ptr<Number>& b) {
+  return *a * *b;
+}
 
 #endif  // LIST_HPP

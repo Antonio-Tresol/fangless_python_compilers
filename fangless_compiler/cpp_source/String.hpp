@@ -7,10 +7,10 @@
 #include <compare>
 #include <string>
 
+#include "Bool.hpp"
 #include "Number.hpp"
 #include "Object.hpp"
 #include "Slice.hpp"
-#include "Bool.hpp"
 
 class String : public Object {
   std::string value_;
@@ -24,7 +24,7 @@ class String : public Object {
 
   std::string type() const override { return "str"; }
 
-  std::string toString() const override { return "'"+ value_+"'"; }
+  std::string toString() const override { return "'" + value_ + "'"; }
 
   bool equals(const Object& other) const override {
     if (auto* strObj = dynamic_cast<const String*>(&other)) {
@@ -480,5 +480,20 @@ class String : public Object {
     return Bool::spawn(hasUpper);
   };
 };
+
+std::ostream& operator<<(std::ostream& os, const std::shared_ptr<String>& obj) {
+  return os << *obj;
+}
+
+std::shared_ptr<String> operator+(const std::shared_ptr<String>& a,
+                                  const std::shared_ptr<String>& b) {
+  return *a + *b;
+}
+
+std::shared_ptr<String> operator*(const std::shared_ptr<String>& a,
+                                  const std::shared_ptr<Number>& b) {
+  return *a * *b;
+}
+
 
 #endif  // STRING_HPP
