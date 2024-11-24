@@ -568,7 +568,7 @@ def p_name_assignation(token_list: yacc.YaccProduction) -> None:
             stack.append(token_list[1])
         symbol_table[token_list[1]] = VARIABLE
         # the name left
-        assignation.set_left_operand(token_list[1])
+        assignation.set_left_operand(NameNode(token_list[1]))
         # the value right
         assignation.set_right_operand(token_list[3])
         token_list[0] = assignation
@@ -1123,6 +1123,7 @@ def p_mixed_argument_list(token_list: yacc.YaccProduction) -> None:
 def p_complete_argument_list(token_list: yacc.YaccProduction) -> None:
     """complete_argument_list   :   L_PARENTHESIS argument_list COMMA R_PARENTHESIS
                                 |   L_PARENTHESIS argument_list R_PARENTHESIS
+                                |   L_PARENTHESIS default_argument_list COMMA R_PARENTHESIS
                                 |   L_PARENTHESIS default_argument_list R_PARENTHESIS
                                 |   L_PARENTHESIS mixed_argument_list R_PARENTHESIS
                                 |   L_PARENTHESIS R_PARENTHESIS
