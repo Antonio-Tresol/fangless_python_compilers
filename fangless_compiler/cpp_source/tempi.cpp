@@ -2,22 +2,7 @@
 // Kenneth Villalobos
 #include "Headers.hpp"
 int main() {
-  Set::spawn({Number::spawn(1), Number::spawn(2), Number::spawn(3)}) |
-      Set::spawn(
-          {Number::spawn(4), String::spawn("string"), String::spawn("bro")});
-  Tuple<3>::spawn({Number::spawn(1), Number::spawn(2), Number::spawn(3)}) ||
-      Tuple<3>::spawn(
-          {Number::spawn(4), String::spawn("bro"), String::spawn("string")});
-  List::spawn({Number::spawn(1)}) +
-      List::spawn(
-          {Number::spawn(4), String::spawn("bro"), String::spawn("string"),
-           Dictionary::spawn(
-               {{String::spawn("my_tupla"),
-                 Tuple<3>::spawn(
-                     {Number::spawn(1), Number::spawn(2), Number::spawn(3)})},
-                {String::spawn("my_dict"),
-                 Dictionary::spawn(
-                     {{String::spawn("key"), String::spawn("value")}})}})});
-  ;
+  auto a = Number::spawn(5);
+  a = Number::spawn(6);
   return 0;
 }

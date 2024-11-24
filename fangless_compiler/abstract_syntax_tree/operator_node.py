@@ -13,6 +13,7 @@ class OperatorType(Enum):
     ATTRIBUTE_CALL = "attribute_call"
     SLICING = "slicing"
     INDEXING = "indexing"
+    VAR_DECLARATION = "var_declaration"
     ASSIGNATION = "="
     UNPACK_ASSIGNATION = "unpack_assign"
     RETURN = "return"

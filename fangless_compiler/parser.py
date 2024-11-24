@@ -516,10 +516,35 @@ def p_assignation_value(token_list: yacc.YaccProduction) -> None:
     """assignation_value    :   binary_operation
                             |   unary_operation
                             |   scalar_statement
-                            |   completed_general_series
+                            |   completed_assignation_series
     """
-    # they are all ready packed, send it up
+    # they are already packed, send it up
     token_list[0] = token_list[1]
+
+
+def p_completed_assignation_series(token_list: yacc.YaccProduction) -> None:
+    """completed_assignation_series   :   assignation_series COMMA
+                                      |   assignation_series
+    """
+    token_list[0] = token_list[1]
+
+
+def p_assignation_series(token_list: yacc.YaccProduction) -> None:
+    """assignation_series   :   assignation_series COMMA literal
+                            |   assignation_series_start
+    """
+    if len(token_list) == 2:
+        token_list[0] = token_list[1]
+        return
+
+    series = token_list[1]
+    series.append(token_list[3])
+    token_list[0] = series
+
+
+def p_assignation_series_start(token_list: yacc.YaccProduction) -> None:
+    """assignation_series_start   :   literal COMMA literal"""
+    token_list[0] = [token_list[1], token_list[3]]
 
 
 def p_dot_assignation(token_list: yacc.YaccProduction) -> None:
@@ -561,19 +586,34 @@ def p_name_assignation(token_list: yacc.YaccProduction) -> None:
                         |   NAME EQUAL assignation_value
     """
     name = token_list[1]
-    assignation = OperatorNode(OperatorType.ASSIGNATION)
+    assignation: OperatorNode = NIL_NODE
     # if we have a var declaration or a name
     if not isinstance(name, tuple):
+        operation = OperatorType.ASSIGNATION
+
         if symbol_table[token_list[1]] is None:
             stack.append(token_list[1])
+            operation = OperatorType.VAR_DECLARATION
+
+        assignation = OperatorNode(operation)
         symbol_table[token_list[1]] = VARIABLE
+
         # the name left
         assignation.set_left_operand(NameNode(token_list[1]))
         # the value right
         assignation.set_right_operand(token_list[3])
         token_list[0] = assignation
-    else:  # when we have a name equal series
+    # when we have a name equal series
+    else:
         root, last_tree = name
+
+        operation = (
+            OperatorType.ASSIGNATION 
+            if last_tree.get_right_operand().id in symbol_table 
+            else OperatorType.VAR_DECLARATION
+        )
+        assignation = OperatorNode(operation)
+
         # the leaves of the tree are the names so far
         for name_node in root.get_leaves():
             if symbol_table[name_node.id] is None:
@@ -592,16 +632,30 @@ def p_name_assignation(token_list: yacc.YaccProduction) -> None:
 def p_name_equal_series(token_list: yacc.YaccProduction) -> None:
     """name_equal_series   : name_equal_series EQUAL NAME
                            | NAME EQUAL NAME
-    """
-    new_tree = OperatorNode(OperatorType.ASSIGNATION)
+    """    
+    new_tree: OperatorNode = NIL_NODE
+
     # if we are starting the name series
     if token_list.slice[1].type == "NAME":
+        operation = (
+            OperatorType.ASSIGNATION 
+            if token_list[1] in symbol_table 
+            else OperatorType.VAR_DECLARATION
+        )
+        new_tree = OperatorNode(operation)
         new_tree.set_left_operand(NameNode(identifier=token_list[1]))
         new_tree.set_right_operand(NameNode(identifier=token_list[3]))
         token_list[0] = (new_tree, new_tree)
     else:  # when we already have a series
         tree = token_list[1]
         root, last_tree = tree
+
+        operation = (
+            OperatorType.ASSIGNATION 
+            if last_tree.get_right_operand().id in symbol_table 
+            else OperatorType.VAR_DECLARATION
+        )
+        new_tree = OperatorNode(operation)
 
         new_tree.set_left_operand(last_tree.get_right_operand())
         new_tree.set_right_operand(NameNode(identifier=token_list[3]))

@@ -18,7 +18,9 @@ class List : public Object {
 
  public:
   List() = default;
+
   List(const List& other) : elements_(other.elements_) {}
+
   List(std::initializer_list<std::shared_ptr<Object>> init) : elements_(init) {}
 
   static std::shared_ptr<List> spawn(
@@ -27,17 +29,6 @@ class List : public Object {
   }
 
   static std::shared_ptr<List> spawn() { return std::make_shared<List>(); }
-
-  bool hasSingleType() const {
-    std::string type = elements_[0]->type();
-    for (auto i : iota(1, static_cast<int>(elements_.size()))) {
-      if (elements_[i]->type() != type) {
-        return false;
-      }
-    }
-
-    return true;
-  }
 
   std::string type() const override { return "list"; }
 
@@ -48,6 +39,17 @@ class List : public Object {
       if (i < elements_.size() - 1) result += ", ";
     }
     return result + "]";
+  }
+
+  bool hasSingleType() const {
+    std::string type = elements_[0]->type();
+    for (auto i : iota(1, static_cast<int>(elements_.size()))) {
+      if (elements_[i]->type() != type) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   bool equals(const Object& other) const override {

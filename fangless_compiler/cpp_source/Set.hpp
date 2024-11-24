@@ -13,11 +13,10 @@
 #include "Object.hpp"
 
 class Set final : public Object {
-  std::set<std::shared_ptr<Object>, ObjectComparator> elements_{};
+  std::set<std::shared_ptr<Object>, ObjectComparator> elements_ {};
 
  public:
   Set() = default;
-  std::string type() const override { return "Set"; }
 
   Set(std::initializer_list<std::shared_ptr<Object>> init) : elements_(init) {}
 
@@ -27,6 +26,8 @@ class Set final : public Object {
       std::initializer_list<std::shared_ptr<Object>> init) {
     return std::make_shared<Set>(init);
   }
+
+  std::string type() const override { return "Set"; }
 
   std::string toString() const override {
     std::string result = "{";
@@ -40,6 +41,28 @@ class Set final : public Object {
 
     return result + "}";
   };
+
+
+
+  bool equals(const Object& other) const override {
+    auto* otherPtr = dynamic_cast<const Set*>(&other);
+    if (!otherPtr) return false;
+
+    std::map<std::shared_ptr<Object>, std::shared_ptr<Object>, ObjectComparator>
+        elements;
+    std::ranges::transform(elements_, std::inserter(elements, elements.end()),
+                           [](const std::shared_ptr<Object>& element) {
+                             return std::make_pair(element, element);
+                           });
+
+    const size_t size = elements.size();
+    for (const auto& object : otherPtr->elements_) {
+      elements[object] = object;
+    }
+
+    return size == elements.size();
+  }
+
   std::strong_ordering compare(const Object& other) const override {
     // If types differ, fall back to base comparison
     if (type() != other.type()) {
@@ -91,28 +114,8 @@ class Set final : public Object {
     return std::strong_ordering::equal;
   }
 
-  Number len() const { return Number(static_cast<int>(elements_.size())); }
+  Number len() const { return Number(static_cast<int64_t>(elements_.size())); }
 
-  bool equals(const Object& other) const override {
-    auto* otherPtr = dynamic_cast<const Set*>(&other);
-    if (!otherPtr) return false;
-
-    std::map<std::shared_ptr<Object>, std::shared_ptr<Object>, ObjectComparator>
-        elements;
-    std::ranges::transform(elements_, std::inserter(elements, elements.end()),
-                           [](const std::shared_ptr<Object>& element) {
-                             return std::make_pair(element, element);
-                           });
-
-    const size_t size = elements.size();
-    for (const auto& object : otherPtr->elements_) {
-      elements[object] = object;
-    }
-
-    return size == elements.size();
-  }
-
-  bool equals(std::shared_ptr<Object> other) const { return equals(*other); }
   friend bool operator==(const Set& lhs, const Set& rhs) {
     return lhs.equals(rhs);
   }
@@ -130,13 +133,14 @@ class Set final : public Object {
   }
 
   friend bool operator==(const std::shared_ptr<Object>& lhs, const Set& rhs) {
-    return rhs.equals(lhs);
+    return rhs.equals(*lhs);
   }
 
   friend bool operator==(const std::shared_ptr<Object>& lhs,
                          const std::shared_ptr<Set>& rhs) {
-    return rhs->equals(lhs);
+    return rhs->equals(*lhs);
   }
+
   size_t hash() const override {
     std::size_t hash = 0;
 
@@ -194,19 +198,19 @@ class Set final : public Object {
 
   void add(const std::shared_ptr<Object>& obj) { elements_.insert(obj); }
 
+  std::shared_ptr<Object> pop() {
+    std::shared_ptr<Object> object = *(std::prev(elements_.end()));
+    elements_.erase(std::prev(elements_.end()));
+
+    return object;
+  }
+
   void discard(std::shared_ptr<Object> object) {
     auto it = std::find(elements_.begin(), elements_.end(), object);
 
     if (it != elements_.end()) {
       elements_.erase(it);
     }
-  }
-
-  std::shared_ptr<Object> pop() {
-    std::shared_ptr<Object> object = *(std::prev(elements_.end()));
-    elements_.erase(std::prev(elements_.end()));
-
-    return object;
   }
 
   void remove(std::shared_ptr<Object> object) {
@@ -219,10 +223,14 @@ class Set final : public Object {
     }
   }
 
+  void clear() { elements_.clear(); }
+
   bool isDisjoint(const std::shared_ptr<Set> other) {
     return !((*this & *other)->count());
   }
 
+  bool isDisjoint(const Set& other) const { return !(*this & other)->count(); }
+  
   bool operator<=(const std::shared_ptr<Set> other) {
     return !((*this - *other)->count());
   }
@@ -239,8 +247,6 @@ class Set final : public Object {
     return (*this >= other) && *this != *other;
   }
 
-  bool isDisjoint(const Set& other) const { return !(*this & other)->count(); }
-
   bool operator<=(const Set& other) const { return !(*this - other)->count(); }
 
   bool operator<(const Set& other) const {
@@ -252,6 +258,7 @@ class Set final : public Object {
   bool operator>(const Set& other) const {
     return (*this >= other) && *this != other;
   }
+
   std::shared_ptr<Set> operator|(const Set& other) const {
     auto result = std::make_shared<Set>();
     std::vector<std::shared_ptr<Object>> temp;
@@ -331,7 +338,6 @@ class Set final : public Object {
     return std::shared_ptr<Set>(this);
   }
 
-  void clear() { elements_.clear(); }
   friend std::ostream& operator<<(std::ostream& os,
                                   const std::shared_ptr<Set>& obj) {
     return os << *obj;

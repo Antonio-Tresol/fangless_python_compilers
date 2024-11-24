@@ -10,21 +10,29 @@
 
 constexpr double DELTA = 1e-9;
 
+template <typename T>
+concept Numerable = std::is_same_v<T, int64_t> || std::is_same_v<T, double>
+  || std::is_same_v<T, int32_t> || std::is_same_v<T, size_t>;
+
 class Number : public Object {
  private:
-  std::variant<int, double> value_;
+  std::variant<int64_t, double> value_;
 
  public:
-  explicit Number(int value) : value_(value) {}
-  explicit Number(double value) : value_(value) {}
+  template<Numerable TType>
+  explicit Number(const TType& value) : value_(value) {}
+
   explicit Number(const Number& other) : value_(other.value_) {}
+
   explicit Number(const Object& other) : value_(other.toBool() ? 1 : 0) {}
+
   explicit Number(std::shared_ptr<Object> obj) {
     if (auto* numObj = dynamic_cast<Number*>(obj.get())) {
       value_ = numObj->value_;
-    } else {
-      value_ = obj->toBool() ? 1 : 0;
+      return;
     }
+
+    value_ = obj->toBool() ? 1 : 0;
   }
 
   template <typename T>
@@ -33,22 +41,24 @@ class Number : public Object {
   }
 
   std::string type() const override {
-    return std::holds_alternative<int>(value_) ? "int" : "float";
+    return std::holds_alternative<int64_t>(value_) ? "int" : "float";
   }
 
   std::string toString() const override {
     return std::visit(
         [](auto&& arg) -> std::string {
           using T = std::decay_t<decltype(arg)>;
+
           if constexpr (std::is_same_v<T, double>) {
             if (std::isinf(arg)) return arg > 0 ? "inf" : "-inf";
+
             if (std::isnan(arg)) return "nan";
+
             return std::to_string(arg);
           } else {
             return std::to_string(arg);
           }
-        },
-        value_);
+        }, value_);
   }
 
   bool equals(const Object& other) const override {
@@ -57,6 +67,7 @@ class Number : public Object {
           [](auto&& a, auto&& b) -> bool {
             using A = std::decay_t<decltype(a)>;
             using B = std::decay_t<decltype(b)>;
+
             if constexpr (std::is_same_v<A, double> ||
                           std::is_same_v<B, double>) {
               return std::abs(static_cast<double>(a) - static_cast<double>(b)) <
@@ -67,6 +78,7 @@ class Number : public Object {
           },
           value_, numObj->value_);
     }
+
     return false;
   }
 
@@ -130,7 +142,7 @@ class Number : public Object {
 
   bool isInstance(const std::string& type) const override {
     if (type == "object") return true;
-    if (type == "int") return std::holds_alternative<int>(value_);
+    if (type == "int") return std::holds_alternative<int64_t>(value_);
     if (type == "float") return std::holds_alternative<double>(value_);
     return false;
   }
@@ -143,6 +155,77 @@ class Number : public Object {
   void setAttr(const std::string& name,
                std::shared_ptr<Object> value) override {
     throw std::runtime_error("'" + type() + "' object has no attributes");
+  }
+
+    std::strong_ordering compare(const Object& other) const override {
+    if (auto* numObj = dynamic_cast<const Number*>(&other)) {
+      return std::visit(
+          [](auto&& a, auto&& b) -> std::strong_ordering {
+            auto cmp = static_cast<double>(a) <=> static_cast<double>(b);
+            if (cmp == std::partial_ordering::less)
+              return std::strong_ordering::less;
+            if (cmp == std::partial_ordering::greater)
+              return std::strong_ordering::greater;
+            return std::strong_ordering::equal;
+          },
+          value_, numObj->value_);
+    }
+    return std::strong_ordering::greater;
+  }
+
+  // numeric specific methods
+
+  int64_t getInt() const {
+    return std::visit(
+        [](auto&& arg) -> int64_t {
+          using T = std::decay_t<decltype(arg)>;
+          if constexpr (std::is_same_v<T, double>) {
+            return static_cast<int64_t>(arg);
+          }
+          return arg;
+        },
+        value_);
+  }
+
+  double getDouble() const {
+    return std::visit(
+        [](auto&& arg) -> double { return static_cast<double>(arg); }, value_);
+  }
+
+  bool isFinite() const {
+    return std::visit(
+        [](auto&& arg) -> bool {
+          using T = std::decay_t<decltype(arg)>;
+          if constexpr (std::is_same_v<T, double>) {
+            return std::isfinite(arg);
+          }
+          return true;
+        },
+        value_);
+  }
+
+  bool isInf() const {
+    return std::visit(
+        [](auto&& arg) -> bool {
+          using T = std::decay_t<decltype(arg)>;
+          if constexpr (std::is_same_v<T, double>) {
+            return std::isinf(arg);
+          }
+          return false;
+        },
+        value_);
+  }
+
+  bool isNaN() const {
+    return std::visit(
+        [](auto&& arg) -> bool {
+          using T = std::decay_t<decltype(arg)>;
+          if constexpr (std::is_same_v<T, double>) {
+            return std::isnan(arg);
+          }
+          return false;
+        },
+        value_);
   }
 
   // Arithmetic operators
@@ -233,74 +316,7 @@ class Number : public Object {
         },
         value_, other.value_);
   }
-  std::strong_ordering compare(const Object& other) const override {
-    if (auto* numObj = dynamic_cast<const Number*>(&other)) {
-      return std::visit(
-          [](auto&& a, auto&& b) -> std::strong_ordering {
-            auto cmp = static_cast<double>(a) <=> static_cast<double>(b);
-            if (cmp == std::partial_ordering::less)
-              return std::strong_ordering::less;
-            if (cmp == std::partial_ordering::greater)
-              return std::strong_ordering::greater;
-            return std::strong_ordering::equal;
-          },
-          value_, numObj->value_);
-    }
-    return std::strong_ordering::greater;
-  }
 
-  bool isFinite() const {
-    return std::visit(
-        [](auto&& arg) -> bool {
-          using T = std::decay_t<decltype(arg)>;
-          if constexpr (std::is_same_v<T, double>) {
-            return std::isfinite(arg);
-          }
-          return true;
-        },
-        value_);
-  }
-
-  bool isInf() const {
-    return std::visit(
-        [](auto&& arg) -> bool {
-          using T = std::decay_t<decltype(arg)>;
-          if constexpr (std::is_same_v<T, double>) {
-            return std::isinf(arg);
-          }
-          return false;
-        },
-        value_);
-  }
-
-  bool isNaN() const {
-    return std::visit(
-        [](auto&& arg) -> bool {
-          using T = std::decay_t<decltype(arg)>;
-          if constexpr (std::is_same_v<T, double>) {
-            return std::isnan(arg);
-          }
-          return false;
-        },
-        value_);
-  }
-
-  int getInt() const {
-    return std::visit(
-        [](auto&& arg) -> int {
-          using T = std::decay_t<decltype(arg)>;
-          if constexpr (std::is_same_v<T, double>) {
-            return static_cast<int>(arg);
-          }
-          return arg;
-        },
-        value_);
-  }
-
-  double getDouble() const {
-    return std::visit(
-        [](auto&& arg) -> double { return static_cast<double>(arg); }, value_);
-  }
   friend std::shared_ptr<Number> operator+(const std::shared_ptr<Number>& a,
                                            const std::shared_ptr<Number>& b) {
     return *a + *b;

@@ -2,6 +2,9 @@
 #define SLICE_HPP
 class Slice {
  public:
+  int start;
+  int end;
+
   Slice(int start, int end) : start(start), end(end) {};
   
   Slice(std::shared_ptr<Number> start, std::shared_ptr<Number> end)
@@ -15,7 +18,5 @@ class Slice {
   Slice(int start, std::shared_ptr<Number> end)
       : start(start),
         end(end->getInt()) {};
-  int start;
-  int end;
 };
 #endif

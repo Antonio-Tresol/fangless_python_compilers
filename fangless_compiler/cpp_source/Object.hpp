@@ -4,6 +4,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <compare>
 
 // an object interface to mimic python type behaviour
 class Object {

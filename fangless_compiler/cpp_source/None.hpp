@@ -24,8 +24,6 @@ class None : public Object {
 
   std::string toString() const override { return "None"; }
 
-  std::string repr() const { return "None"; }
-
   bool equals(const Object& other) const override {
     return dynamic_cast<const None*>(&other) != nullptr;
   }
@@ -58,7 +56,9 @@ class None : public Object {
   size_t hash() const override { return 0; }
 
   bool toBool() const override { return false; }
+
   bool operator!() const { return toBool(); }
+
   friend bool operator!(const std::shared_ptr<None>& none) {
     return !none->toBool();
   }
@@ -77,6 +77,8 @@ class None : public Object {
     throw std::runtime_error("'NoneType' object has no attribute '" + name +
                              "'");
   }
+
+  std::string repr() const { return "None"; }
 
   // Python-like comparison
   std::strong_ordering compare(const Object& other) const override {

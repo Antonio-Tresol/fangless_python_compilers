@@ -27,6 +27,13 @@ class Tuple final : public Object {
                   "Wrong number of arguments");
   }
 
+  explicit Tuple(const std::vector<std::shared_ptr<Object>>& vec) {
+    if (vec.size() != ElementAmount) {
+      throw std::runtime_error("Vector size must match tuple size");
+    }
+    std::copy(vec.begin(), vec.end(), elements_.begin());
+  }
+
   template <typename... Args>
     requires(SharedObject<Args> && ...)
   static std::shared_ptr<Tuple<sizeof...(Args)>> spawn(Args... args) {
@@ -40,18 +47,6 @@ class Tuple final : public Object {
     }
     return std::make_shared<Tuple<ElementAmount>>(
         std::vector<std::shared_ptr<Object>>(init.begin(), init.end()));
-  }
-
-  explicit Tuple(const std::vector<std::shared_ptr<Object>>& vec) {
-    if (vec.size() != ElementAmount) {
-      throw std::runtime_error("Vector size must match tuple size");
-    }
-    std::copy(vec.begin(), vec.end(), elements_.begin());
-  }
-
-  static std::shared_ptr<Tuple<ElementAmount>> from_vector(
-      const std::vector<std::shared_ptr<Object>>& vec) {
-    return std::make_shared<Tuple<ElementAmount>>(vec);
   }
 
   std::array<std::shared_ptr<Object>, ElementAmount> elements_;
@@ -137,26 +132,6 @@ class Tuple final : public Object {
     return type == "tuple" || type == "object";
   }
 
-  std::shared_ptr<Number> index(std::shared_ptr<Object> object) const {
-    for (auto i : iota(0, static_cast<int>(0, elements_.size()))) {
-      if (*elements_[i] == *object) {
-        return std::make_shared<Number>(i);
-      }
-    }
-    const std::string err = std::string("Error Tuple::index: Coudl not find ") +
-                            " could not find [" + object->toString() + "] in " +
-                            toString();
-    throw std::runtime_error(err);
-  }
-
-  std::shared_ptr<Number> count() const {
-    return std::make_shared<Number>(static_cast<int>(elements_.size()));
-  }
-
-  std::shared_ptr<Number> len() const {
-    return std::make_shared<Number>(static_cast<int>(elements_.size()));
-  }
-
   std::shared_ptr<Object> getAttr(const std::string& name) const override {
     throw std::runtime_error("'tuple' object has no attribute '" + name + "'");
   }
@@ -184,6 +159,26 @@ class Tuple final : public Object {
     return elements_[normalizeIndex(index.getInt())];
   }
 
+  std::shared_ptr<Number> index(std::shared_ptr<Object> object) const {
+    for (auto i : iota(0, static_cast<int>(0, elements_.size()))) {
+      if (*elements_[i] == *object) {
+        return std::make_shared<Number>(i);
+      }
+    }
+    const std::string err = std::string("Error Tuple::index: Coudl not find ") +
+                            " could not find [" + object->toString() + "] in " +
+                            toString();
+    throw std::runtime_error(err);
+  }
+
+  std::shared_ptr<Number> count() const {
+    return std::make_shared<Number>(static_cast<int>(elements_.size()));
+  }
+
+  std::shared_ptr<Number> len() const {
+    return std::make_shared<Number>(static_cast<int>(elements_.size()));
+  }
+
   // at() methods - same behavior as operator[] but clearer intent
   const std::shared_ptr<const Object> at(const Number& index) const {
     return operator[](index);
@@ -192,6 +187,7 @@ class Tuple final : public Object {
   const std::shared_ptr<const Object> at(std::shared_ptr<Number> index) const {
     return operator[](*index);
   }
+
   template <size_t NewSize>
   std::shared_ptr<Tuple<NewSize>> operator[](const Slice& slice) const {
     int start = slice.start;
@@ -258,6 +254,11 @@ class Tuple final : public Object {
   std::shared_ptr<Tuple<ElementAmount + OtherSize>> operator+(
       const std::shared_ptr<Tuple<OtherSize>>& other) const {
     return (*this) + (*other);
+  }
+
+  static std::shared_ptr<Tuple<ElementAmount>> from_vector(
+      const std::vector<std::shared_ptr<Object>>& vec) {
+    return std::make_shared<Tuple<ElementAmount>>(vec);
   }
 
  private:

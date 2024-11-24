@@ -18,8 +18,17 @@ class String : public Object {
  public:
   explicit String(const std::string& value) : value_(value) {}
 
+  String(const String& other) : value_(other.value_) {}
+
   static std::shared_ptr<String> spawn(const std::string& value) {
     return std::make_shared<String>(value);
+  }
+
+  String& operator=(const String& other) {
+    if (this != &other) {
+      value_ = other.value_;
+    }
+    return *this;
   }
 
   std::string type() const override { return "str"; }
@@ -30,8 +39,10 @@ class String : public Object {
     if (auto* strObj = dynamic_cast<const String*>(&other)) {
       return value_ == strObj->value_;
     }
+
     return false;
   }
+
   bool equals(const std::shared_ptr<Object>& other) const {
     return equals(*other);
   }
@@ -62,6 +73,15 @@ class String : public Object {
                          const std::shared_ptr<String>& rhs) {
     return rhs->equals(lhs);
   }
+
+  std::strong_ordering compare(const Object& other) const override {
+    if (other.type() != "str") return Object::compare(other);
+
+    auto* otherBool = dynamic_cast<const String*>(&other);
+
+    return value_ <=> otherBool->value_;
+  }
+
   size_t hash() const override { return std::hash<std::string>{}(value_); }
 
   bool toBool() const override { return !value_.empty(); }
@@ -73,6 +93,24 @@ class String : public Object {
   bool isInstance(const std::string& type) const override {
     return type == "str" || type == "object";
   }
+
+  // Attribute access
+  std::shared_ptr<Object> getAttr(const std::string& name) const override {
+    if (name == "upper") return std::make_shared<String>(upper()->toString());
+    if (name == "lower") return std::make_shared<String>(lower()->toString());
+    if (name == "strip") return std::make_shared<String>(strip()->toString());
+    throw std::runtime_error("'str' object has no attribute '" + name + "'");
+  }
+
+  void setAttr(const std::string& name,
+               std::shared_ptr<Object> value) override {
+    throw std::runtime_error("'str' object attributes are read-only");
+  }
+
+  auto begin() { return value_.begin(); }
+  auto end() { return value_.end(); }
+  auto begin() const { return value_.begin(); }
+  auto end() const { return value_.end(); }
 
   // Python string methods
   std::shared_ptr<String> upper() const {
@@ -120,6 +158,7 @@ class String : public Object {
       result.replace(pos, oldStr.value_.length(), newStr.value_);
       pos += newStr.value_.length();
     }
+
     return std::make_shared<String>(result);
   }
 
@@ -138,6 +177,7 @@ class String : public Object {
     for (int i = 0; i < n; ++i) {
       result += value_;
     }
+
     return std::make_shared<String>(result);
   }
 
@@ -147,30 +187,84 @@ class String : public Object {
     for (int i = 0; i < n; ++i) {
       result += value_;
     }
+
     return std::make_shared<String>(result);
   }
 
-  // Attribute access
-  std::shared_ptr<Object> getAttr(const std::string& name) const override {
-    if (name == "upper") return std::make_shared<String>(upper()->toString());
-    if (name == "lower") return std::make_shared<String>(lower()->toString());
-    if (name == "strip") return std::make_shared<String>(strip()->toString());
-    throw std::runtime_error("'str' object has no attribute '" + name + "'");
-  }
   std::shared_ptr<Number> len() const {
     return std::make_shared<Number>(static_cast<int>(value_.size()));
   }
-  void setAttr(const std::string& name,
-               std::shared_ptr<Object> value) override {
-    throw std::runtime_error("'str' object attributes are read-only");
+
+  std::shared_ptr<Number> count(const String& sub, Number startNum = Number(0),
+                                Number endNum = Number(INT_MAX)) const {
+    int start = startNum.getInt();
+    int end = endNum.getInt();
+    if (end == INT_MAX) end = value_.size();
+    if (start < 0) start += value_.size();
+    if (end < 0) end += value_.size();
+
+    start = std::clamp(start, 0, static_cast<int>(value_.size()));
+    end = std::clamp(end, 0, static_cast<int>(value_.size()));
+
+    if (start > end || sub.value_.empty()) return std::make_shared<Number>(0);
+
+    int count = 0;
+    size_t pos = start;
+    while ((pos = value_.find(sub.value_, pos)) != std::string::npos &&
+           pos < static_cast<size_t>(end)) {
+      count++;
+      pos += sub.value_.length();
+    }
+
+    return std::make_shared<Number>(count);
   }
 
-  std::strong_ordering compare(const Object& other) const override {
-    if (other.type() != "str") return Object::compare(other);
+  std::shared_ptr<Number> count(
+      std::shared_ptr<String> sub,
+      std::shared_ptr<Number> startNum = Number::spawn(0),
+      std::shared_ptr<Number> endNum = Number::spawn(INT_MAX)) const {
+    int start = startNum->getInt();
+    int end = endNum->getInt();
+    if (end == INT_MAX) end = value_.size();
+    if (start < 0) start += value_.size();
+    if (end < 0) end += value_.size();
 
-    auto* otherBool = dynamic_cast<const String*>(&other);
+    start = std::clamp(start, 0, static_cast<int>(value_.size()));
+    end = std::clamp(end, 0, static_cast<int>(value_.size()));
 
-    return value_ <=> otherBool->value_;
+    if (start > end || sub->value_.empty()) return std::make_shared<Number>(0);
+
+    int count = 0;
+    size_t pos = start;
+    while ((pos = value_.find(sub->value_, pos)) != std::string::npos &&
+           pos < static_cast<size_t>(end)) {
+      count++;
+      pos += sub->value_.length();
+    }
+    return std::make_shared<Number>(count);
+  }
+
+  std::shared_ptr<String> at(const Number& pos) const {
+    int index = pos.getInt();
+    int actual_index = index;
+    if (index < 0) actual_index += value_.size();
+
+    if (actual_index < 0 || actual_index >= static_cast<int>(value_.size())) {
+      throw std::out_of_range("string index out of range");
+    }
+    return std::make_shared<String>(std::string{value_[actual_index]});
+  }
+
+  std::shared_ptr<String> at(std::shared_ptr<Number> pos) const {
+    int index = pos->getInt();
+    int actual_index = index;
+    if (index < 0) actual_index += value_.size();
+
+    if (actual_index < 0 || actual_index >= static_cast<int>(value_.size())) {
+      throw std::out_of_range("string index out of range");
+    }
+
+    return std::make_shared<String>(std::string{value_[actual_index]});
   }
 
   std::shared_ptr<String> operator[](const Number& pos) const {
@@ -215,28 +309,6 @@ class String : public Object {
     return std::make_shared<String>(value_.substr(start, end - start));
   }
 
-  std::shared_ptr<String> at(const Number& pos) const {
-    int index = pos.getInt();
-    int actual_index = index;
-    if (index < 0) actual_index += value_.size();
-
-    if (actual_index < 0 || actual_index >= static_cast<int>(value_.size())) {
-      throw std::out_of_range("string index out of range");
-    }
-    return std::make_shared<String>(std::string{value_[actual_index]});
-  }
-
-  std::shared_ptr<String> at(std::shared_ptr<Number> pos) const {
-    int index = pos->getInt();
-    int actual_index = index;
-    if (index < 0) actual_index += value_.size();
-
-    if (actual_index < 0 || actual_index >= static_cast<int>(value_.size())) {
-      throw std::out_of_range("string index out of range");
-    }
-    return std::make_shared<String>(std::string{value_[actual_index]});
-  }
-
   std::shared_ptr<String> slice(const Slice& slice) const {
     int start = slice.start;
     int end = slice.end;
@@ -257,20 +329,6 @@ class String : public Object {
     return std::make_shared<String>(value_.substr(start, end - start));
   }
 
-  auto begin() { return value_.begin(); }
-  auto end() { return value_.end(); }
-  auto begin() const { return value_.begin(); }
-  auto end() const { return value_.end(); }
-
-  String& operator=(const String& other) {
-    if (this != &other) {
-      value_ = other.value_;
-    }
-    return *this;
-  }
-
-  String(const String& other) : value_(other.value_) {}
-
   std::shared_ptr<Number> find(
       std::shared_ptr<String> sub,
       std::shared_ptr<Number> startNum = Number::spawn(0),
@@ -290,6 +348,7 @@ class String : public Object {
     if (pos == std::string::npos || pos >= static_cast<size_t>(end)) {
       return std::make_shared<Number>(-1);
     }
+
     return std::make_shared<Number>(static_cast<int>(pos));
   }
 
@@ -352,29 +411,6 @@ class String : public Object {
     return pos;
   }
 
-  std::shared_ptr<Number> count(const String& sub, Number startNum = Number(0),
-                                Number endNum = Number(INT_MAX)) const {
-    int start = startNum.getInt();
-    int end = endNum.getInt();
-    if (end == INT_MAX) end = value_.size();
-    if (start < 0) start += value_.size();
-    if (end < 0) end += value_.size();
-
-    start = std::clamp(start, 0, static_cast<int>(value_.size()));
-    end = std::clamp(end, 0, static_cast<int>(value_.size()));
-
-    if (start > end || sub.value_.empty()) return std::make_shared<Number>(0);
-
-    int count = 0;
-    size_t pos = start;
-    while ((pos = value_.find(sub.value_, pos)) != std::string::npos &&
-           pos < static_cast<size_t>(end)) {
-      count++;
-      pos += sub.value_.length();
-    }
-    return std::make_shared<Number>(count);
-  }
-
   std::shared_ptr<Number> rfind(
       std::shared_ptr<String> sub,
       std::shared_ptr<Number> startNum = Number::spawn(0),
@@ -394,6 +430,7 @@ class String : public Object {
     if (pos == std::string::npos || pos < static_cast<size_t>(start)) {
       return std::make_shared<Number>(-1);
     }
+
     return std::make_shared<Number>(static_cast<int>(pos));
   }
 
@@ -417,31 +454,6 @@ class String : public Object {
       throw std::runtime_error("substring not found");
     }
     return pos;
-  }
-
-  std::shared_ptr<Number> count(
-      std::shared_ptr<String> sub,
-      std::shared_ptr<Number> startNum = Number::spawn(0),
-      std::shared_ptr<Number> endNum = Number::spawn(INT_MAX)) const {
-    int start = startNum->getInt();
-    int end = endNum->getInt();
-    if (end == INT_MAX) end = value_.size();
-    if (start < 0) start += value_.size();
-    if (end < 0) end += value_.size();
-
-    start = std::clamp(start, 0, static_cast<int>(value_.size()));
-    end = std::clamp(end, 0, static_cast<int>(value_.size()));
-
-    if (start > end || sub->value_.empty()) return std::make_shared<Number>(0);
-
-    int count = 0;
-    size_t pos = start;
-    while ((pos = value_.find(sub->value_, pos)) != std::string::npos &&
-           pos < static_cast<size_t>(end)) {
-      count++;
-      pos += sub->value_.length();
-    }
-    return std::make_shared<Number>(count);
   }
 
   std::shared_ptr<Bool> isalpha() const {
@@ -512,6 +524,7 @@ class String : public Object {
     }
     return Bool::spawn(hasUpper);
   };
+
   friend std::ostream& operator<<(std::ostream& os,
                                   const std::shared_ptr<String>& obj) {
     return os << *obj;
