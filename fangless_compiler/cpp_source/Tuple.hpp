@@ -100,8 +100,38 @@ class Tuple final : public Object {
     return hash;
   }
 
-  // Python truthiness
   bool toBool() const override { return !elements_.empty(); }
+
+  friend bool operator==(const Tuple& lhs, const Tuple& rhs) {
+      return lhs.equals(rhs);
+  }
+  
+  friend bool operator==(std::shared_ptr<Tuple> lhs, std::shared_ptr<Tuple> rhs) {
+      return lhs->equals(*rhs);
+  }
+  
+  friend bool operator==(std::shared_ptr<Tuple> lhs, const Tuple& rhs) {
+      return lhs->equals(rhs);
+  }
+  
+  friend bool operator==(const Tuple& lhs, std::shared_ptr<Tuple> rhs) {
+      return rhs->equals(lhs);
+  }
+  
+  friend bool operator==(const std::shared_ptr<Object>& lhs, const std::shared_ptr<Tuple>& rhs) {
+      return rhs->equals(lhs);
+  }
+  
+  friend bool operator==(const std::shared_ptr<Object>& lhs, const Tuple& rhs) {
+      return rhs.equals(lhs);
+  }
+
+  bool operator!() const { return !toBool(); }
+
+  friend bool operator!(const std::shared_ptr<Tuple>& tuple) {
+    return !tuple->toBool();
+  }
+
 
   bool isInstance(const std::string& type) const override {
     return type == "tuple" || type == "object";
@@ -238,6 +268,7 @@ class Tuple final : public Object {
     }
     return index;
   }
+
 };
 
 template <size_t Size>

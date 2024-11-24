@@ -25,7 +25,7 @@ class List : public Object {
       std::initializer_list<std::shared_ptr<Object>> init) {
     return std::make_shared<List>(init);
   }
-  
+
   static std::shared_ptr<List> spawn() { return std::make_shared<List>(); }
 
   bool hasSingleType() const {
@@ -70,11 +70,70 @@ class List : public Object {
     return false;
   }
 
+  bool equals(const std::shared_ptr<List>& other) const {
+    return equals(*other);
+  }
+
+  friend bool operator==(const List& lhs, const List& rhs) {
+    return lhs.equals(rhs);
+  }
+
+  friend bool operator==(std::shared_ptr<List> lhs, std::shared_ptr<List> rhs) {
+    return lhs->equals(*rhs);
+  }
+
+  friend bool operator==(std::shared_ptr<List> lhs, const List& rhs) {
+    return lhs->equals(rhs);
+  }
+
+  friend bool operator==(const List& lhs, std::shared_ptr<List> rhs) {
+    return rhs->equals(lhs);
+  }
+
+  friend bool operator==(const std::shared_ptr<Object>& lhs,
+                         const std::shared_ptr<List>& rhs) {
+    return rhs->equals(lhs);
+  }
+
+  friend bool operator==(const std::shared_ptr<List>& lhs,
+                         const std::shared_ptr<Object>& rhs) {
+    return lhs->equals(rhs);
+  }
+
+  std::strong_ordering compare(const Object& other) const override {
+    // If types differ, fall back to base comparison
+    if (type() != other.type()) {
+      return Object::compare(other);
+    }
+
+    // Safe downcast since we checked types
+    const auto* other_list = static_cast<const List*>(&other);
+
+    // Compare element by element using toString()
+    size_t min_size = std::min(elements_.size(), other_list->elements_.size());
+
+    for (size_t i = 0; i < min_size; ++i) {
+      // Use string comparison instead of <=>
+      auto lhs = elements_[i]->toString();
+      auto rhs = other_list->elements_[i]->toString();
+      if (lhs < rhs) return std::strong_ordering::less;
+      if (lhs > rhs) return std::strong_ordering::greater;
+    }
+
+    // If all elements up to min_size are equal, shorter list is less
+    return elements_.size() <=> other_list->elements_.size();
+  }
+
   size_t hash() const override {
     throw std::runtime_error("unhashable type: 'list'");
   }
 
   bool toBool() const override { return !elements_.empty(); }
+  bool operator!() const { return !toBool(); }
+  friend bool operator!(const List& list) { return !list.toBool(); }
+  friend bool operator!(const std::shared_ptr<List>& list) {
+    return !list->toBool();
+  }
 
   bool isInstance(const std::string& type) const override {
     return type == "list" || type == "object";
@@ -304,20 +363,6 @@ class List : public Object {
     return std::shared_ptr<List>(this);
   }
 
-  bool operator<(const List& other) const {
-    return std::lexicographical_compare(
-        elements_.begin(), elements_.end(), other.elements_.begin(),
-        other.elements_.end(), [](const auto& a, const auto& b) {
-          return a->toString() < b->toString();
-        });
-  }
-
-  bool operator>(const List& other) const { return other < *this; }
-
-  bool operator<=(const List& other) const { return !(other < *this); }
-
-  bool operator>=(const List& other) const { return !(*this < other); }
-
   std::shared_ptr<Object> operator[](std::shared_ptr<Number> index) const {
     int indexNum = index->getInt();
     if (indexNum < 0) indexNum += elements_.size();
@@ -360,20 +405,21 @@ class List : public Object {
     }
     return *this;
   }
+
+  friend std::ostream& operator<<(std::ostream& os,
+                                  const std::shared_ptr<List>& obj) {
+    return os << *obj;
+  }
+
+  friend std::shared_ptr<List> operator+(const std::shared_ptr<List>& a,
+                                         const std::shared_ptr<List>& b) {
+    return *a + *b;
+  }
+
+  friend std::shared_ptr<List> operator*(const std::shared_ptr<List>& a,
+                                         const std::shared_ptr<Number>& b) {
+    return *a * *b;
+  }
 };
-
-std::ostream& operator<<(std::ostream& os, const std::shared_ptr<List>& obj) {
-  return os << *obj;
-}
-
-std::shared_ptr<List> operator+(const std::shared_ptr<List>& a,
-                                const std::shared_ptr<List>& b) {
-  return *a + *b;
-}
-
-std::shared_ptr<List> operator*(const std::shared_ptr<List>& a,
-                                const std::shared_ptr<Number>& b) {
-  return *a * *b;
-}
 
 #endif  // LIST_HPP

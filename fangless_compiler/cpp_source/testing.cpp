@@ -34,7 +34,7 @@ void testFunctions() {
         return String::spawn("Hello, " + name->toString() + "! You are " +
                              std::to_string(age->getInt()) + " years old.");
       },
-      "greet", {{"age", Number::spawn(0)}}  // Default age
+      "greet", {{"age", Number::spawn(0)}}
   );
 
   printSection("2. Named Arguments Call");
@@ -43,14 +43,14 @@ void testFunctions() {
 
   std::cout << "Testing greet(name='Alice', age=25):\n";
   std::cout << "  Expected: 'Hello, Alice! You are 25 years old.'\n";
-  auto result = (*greet)(kwargs);
+  auto result= greet->call(kwargs);
   std::cout << "  Actual:   " << result << "\n";
 
   printSection("3. Default Arguments");
   Arguments partial_args = {{"name", String::spawn("Bob")}};
   std::cout << "Testing greet with default age:\n";
   std::cout << "  Expected: 'Hello, Bob! You are 0 years old.'\n";
-  auto default_result = (*greet)(partial_args);
+  auto default_result = greet->call(partial_args); 
   std::cout << "  Actual:   " << default_result << "\n";
 
   printSection("4. Positional Arguments");
@@ -95,7 +95,7 @@ void testFunctions() {
 
   std::cout << "Testing calculate(x=10, y=20, operation='multiply'):\n";
   std::cout << "  Expected: 200\n";
-  auto calc_result = (*calculate)(calc_args);
+  auto calc_result = calculate->call(calc_args);
   std::cout << "  Actual:   " << calc_result << "\n";
 }
 
@@ -384,7 +384,7 @@ void testLists() {
   list4->append(Number::spawn(42));
   std::cout << "Comparing equal lists [42] == [42]:\n";
   std::cout << "  Expected: true\n";
-  std::cout << "  Actual: " << (*list3 == *list4) << std::endl;
+  std::cout << "  Actual: " << (list3 == list4) << std::endl;
 
   printSection("5. List Operations");
   std::cout << "5.1 Concatenation:\n";
@@ -626,7 +626,7 @@ void testTuple() {
                                 Number::spawn(3.14));
   std::cout << "Tuple4: " << tuple4 << "\n";
   std::cout << "Tuple5: " << tuple5 << "\n";
-  std::cout << "Tuple4 + Tuple5: " << (*tuple4 + *tuple5) << "\n";
+  std::cout << "Tuple4 + Tuple5: " << (tuple4 + tuple5) << "\n";
 }
 
 void testSet() {

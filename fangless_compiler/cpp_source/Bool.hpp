@@ -3,7 +3,6 @@
 
 #include <memory>
 
-#include "Number.hpp"
 #include "Object.hpp"
 class Bool : public Object {
   bool value_;
@@ -15,6 +14,7 @@ class Bool : public Object {
   Bool(int value_) : value_(bool(value_)) {}
   Bool(Object& obj) : value_(obj.toBool()) {}
   Bool(std::shared_ptr<Object> obj) : value_(obj->toBool()) {}
+  Bool(std::shared_ptr<Bool> obj) : value_(obj->value_) {}
 
   // Static method to spawn a new Bool object
   static std::shared_ptr<Bool> spawn(bool value_) {
@@ -25,7 +25,7 @@ class Bool : public Object {
   std::string type() const override { return "Bool"; }
 
   std::string toString() const override { return value_ ? "True" : "False"; }
-
+  explicit operator bool() const { return value_; }
   bool equals(const Object& other) const override {
     if (other.type() != "Bool") return false;
 
@@ -34,9 +34,36 @@ class Bool : public Object {
     return value_ == otherBool->value_;
   }
 
+  bool operator==(const Bool& other) const { return equals(other); }
+
+  bool operator!=(const Bool& other) const { return !equals(other); }
+
+  friend bool operator==(const Bool& lhs, const Bool& rhs) {
+    return lhs.equals(rhs);
+  }
+
+  friend bool operator==(const std::shared_ptr<Bool>& lhs,
+                         const std::shared_ptr<Bool>& rhs) {
+    return lhs->equals(*rhs);
+  }
+
+  friend bool operator==(const std::shared_ptr<Bool>& lhs, const Bool& rhs) {
+    return lhs->equals(rhs);
+  }
+
+  friend bool operator==(const Bool& lhs, const std::shared_ptr<Bool>& rhs) {
+    return rhs->equals(lhs);
+  }
+
   size_t hash() const override { return std::hash<bool>{}(value_); }
 
   bool toBool() const override { return value_; }
+
+  bool operator!() const { return !value_; }
+
+  friend bool operator!(const std::shared_ptr<Bool>& obj) {
+    return obj->operator!();
+  }
 
   std::shared_ptr<Object> getAttr(const std::string& name) const override {
     throw std::runtime_error("'Bool' object has no attributes");
@@ -54,59 +81,15 @@ class Bool : public Object {
 
     return value_ <=> otherBool->value_;
   }
+
   bool isInstance(const std::string& type) const override {
     return type == "bool" || type == "object";
   }
-
-  //========Operators========//
-  std::shared_ptr<Bool> operator!() const { return Bool::spawn(!value_); }
-
-  std::shared_ptr<Bool> operator&&(const Object& other) const {
-    return Bool::spawn(value_ && other.toBool());
-  }
-
-  std::shared_ptr<Bool> operator||(const Object& other) const {
-    return Bool::spawn(value_ || other.toBool());
-  }
-
-  std::shared_ptr<Bool> operator==(const Object& other) const {
-    return Bool::spawn(value_ == other.toBool());
-  }
-
-  std::shared_ptr<Number> operator+(const Number& other) const {
-    return Number::spawn(value_ + other.getInt());
-  }
-
-  std::shared_ptr<Number> operator-(const Number& other) const {
-    return Number::spawn(value_ - other.getInt());
-  }
-
-  std::shared_ptr<Number> operator*(const Number& other) const {
-    return Number::spawn(value_ * other.getInt());
-  }
-
-  std::shared_ptr<Number> operator/(const Number& other) const {
-    return Number::spawn(value_ / other.getInt());
-  }
-
-  std::shared_ptr<Number> operator%(const Number& other) const {
-    return Number::spawn(value_ % other.getInt());
+  
+  friend std::ostream& operator<<(std::ostream& os,
+                                  const std::shared_ptr<Bool>& obj) {
+    return os << obj->toString();
   }
 };
-
-// Helper function to spawn a new Bool object on operator overloads
-std::shared_ptr<Bool> operator!(std::shared_ptr<Bool> obj) {
-  return obj->operator!();
-}
-
-std::shared_ptr<Bool> operator&&(std::shared_ptr<Bool> obj,
-                                 std::shared_ptr<Object> other) {
-  return *obj && *other;
-}
-
-std::shared_ptr<Bool> operator||(std::shared_ptr<Bool> obj,
-                                 std::shared_ptr<Object> other) {
-  return *obj || *other;
-}
 
 #endif  // BOOL_HPP

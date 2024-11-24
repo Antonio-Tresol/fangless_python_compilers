@@ -38,10 +38,110 @@ class Class : public Object, public std::enable_shared_from_this<Class> {
     return false;
   }
 
+  bool equals(const std::shared_ptr<Object>& other) const {
+    return equals(*other);
+  }
+
+  bool operator==(const Class& other) const { return equals(other); }
+
+  bool operator==(const std::shared_ptr<Class>& other) const {
+    return equals(*other);
+  }
+
+  friend bool operator==(const std::shared_ptr<Class>& lhs,
+                         const std::shared_ptr<Class>& rhs) {
+    return lhs->equals(*rhs);
+  }
+
+  friend bool operator==(const std::shared_ptr<Class>& lhs, const Class& rhs) {
+    return lhs->equals(rhs);
+  }
+
+  friend bool operator==(const Class& lhs, const std::shared_ptr<Class>& rhs) {
+    return rhs->equals(lhs);
+  }
+
+  friend bool operator==(const std::shared_ptr<Object>& lhs, const Class& rhs) {
+    return rhs.equals(*lhs);
+  }
+
+  friend bool operator==(const std::shared_ptr<Object>& lhs,
+                         const std::shared_ptr<Class>& rhs) {
+    return rhs->equals(lhs);
+  }
+
   size_t hash() const override { return std::hash<const Class*>{}(this); }
 
   bool toBool() const override { return true; }
+  bool operator!() const { return false; }
+  friend bool operator!(const std::shared_ptr<Class>& obj) {
+    return !obj->toBool();
+  }
+  std::strong_ordering compare(const Object& other) const override {
+    // If types differ, fall back to base comparison
+    if (type() != other.type()) {
+      return Object::compare(other);
+    }
 
+    // Safe downcast since we checked types
+    const auto* other_class = dynamic_cast<const Class*>(&other);
+    if (!other_class) {
+      return std::strong_ordering::less;  // Consistent ordering for different
+                                          // types
+    }
+
+    // Compare class names first
+    if (auto name_cmp = className_ <=> other_class->className_;
+        name_cmp != std::strong_ordering::equal) {
+      return name_cmp;
+    }
+
+    // If one is instantiated and other isn't, instantiated comes after
+    if (isInstantiated_ != other_class->isInstantiated_) {
+      return isInstantiated_ ? std::strong_ordering::greater
+                             : std::strong_ordering::less;
+    }
+
+    // Compare attributes
+    if (auto size_cmp = attributes_.size() <=> other_class->attributes_.size();
+        size_cmp != std::strong_ordering::equal) {
+      return size_cmp;
+    }
+
+    // Compare attribute names and values
+    std::vector<std::pair<std::string, std::shared_ptr<Object>>> this_attrs(
+        attributes_.begin(), attributes_.end());
+    std::vector<std::pair<std::string, std::shared_ptr<Object>>> other_attrs(
+        other_class->attributes_.begin(), other_class->attributes_.end());
+
+    // Sort by attribute name for consistent comparison
+    auto comp = [](const auto& a, const auto& b) { return a.first < b.first; };
+    std::sort(this_attrs.begin(), this_attrs.end(), comp);
+    std::sort(other_attrs.begin(), other_attrs.end(), comp);
+
+    for (size_t i = 0; i < this_attrs.size(); ++i) {
+      if (auto name_cmp = this_attrs[i].first <=> other_attrs[i].first;
+          name_cmp != std::strong_ordering::equal) {
+        return name_cmp;
+      }
+      if (auto value_cmp = (*this_attrs[i].second) <=> (*other_attrs[i].second);
+          value_cmp != std::strong_ordering::equal) {
+        return value_cmp;
+      }
+    }
+
+    // Compare inheritance hierarchy
+    if (hasParent() != other_class->hasParent()) {
+      return hasParent() ? std::strong_ordering::greater
+                         : std::strong_ordering::less;
+    }
+
+    if (hasParent()) {
+      return parent_->compare(*other_class->parent_);
+    }
+
+    return std::strong_ordering::equal;
+  }
   bool isInstance(const std::string& type) const override {
     if (type == className_) return true;
     if (type == "object") return true;
@@ -167,7 +267,7 @@ class Class : public Object, public std::enable_shared_from_this<Class> {
     return attributes_[name];
   }
   template <typename ReturnType = Object>
-  std::shared_ptr<ReturnType> get(const std::string& attributeName){
+  std::shared_ptr<ReturnType> get(const std::string& attributeName) {
     try {
       auto result = get(attributeName);
       auto typed = std::dynamic_pointer_cast<ReturnType>(result);
@@ -180,11 +280,11 @@ class Class : public Object, public std::enable_shared_from_this<Class> {
       throw std::runtime_error(formatError(e.what()));
     }
   }
-  
+
   std::shared_ptr<Object> method(const std::string& methodName,
                                  const Arguments& args = {}) {
     auto method = std::dynamic_pointer_cast<Function>(getAttr(methodName));
-    if (!method) {
+    if (method == nullptr) {
       throw std::runtime_error("'" + className_ + "': object has no method '" +
                                methodName + "'");
     }
@@ -236,6 +336,11 @@ class Class : public Object, public std::enable_shared_from_this<Class> {
   // Pretty error formatting
   std::string formatError(const std::string& msg) const {
     return "In class '" + className_ + "': " + msg;
+  }
+
+  friend std::ostream& operator<<(std::ostream& os, const Class& obj) {
+    os << obj.toString();
+    return os;
   }
 };
 #endif

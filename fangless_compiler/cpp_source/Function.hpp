@@ -11,7 +11,7 @@ class Function : public Object {
   std::map<std::string, std::shared_ptr<Object>> defaults_;
   static void validateArguments(const Arguments& args) {
     for (const auto& [key, value] : args) {
-      if (!value) {
+      if (value.get() == nullptr) {
         throw std::runtime_error("Null argument value for key: " + key);
       }
     }
@@ -28,6 +28,56 @@ class Function : public Object {
     }
   }
 
+  std::strong_ordering compare(const Object& other) const override {
+    // If types differ, fall back to base comparison
+    if (type() != other.type()) {
+      return Object::compare(other);
+    }
+
+    // Safe downcast since we checked types
+    const auto* other_func = dynamic_cast<const Function*>(&other);
+    if (!other_func) {
+      return std::strong_ordering::less;
+    }
+
+    // Compare function names
+    if (auto name_cmp = name_ <=> other_func->name_;
+        name_cmp != std::strong_ordering::equal) {
+      return name_cmp;
+    }
+
+    // Compare number of default arguments
+    if (auto size_cmp = defaults_.size() <=> other_func->defaults_.size();
+        size_cmp != std::strong_ordering::equal) {
+      return size_cmp;
+    }
+
+    // Compare default arguments
+    std::vector<std::pair<std::string, std::shared_ptr<Object>>> this_defaults(
+        defaults_.begin(), defaults_.end());
+    std::vector<std::pair<std::string, std::shared_ptr<Object>>> other_defaults(
+        other_func->defaults_.begin(), other_func->defaults_.end());
+
+    // Sort for deterministic comparison
+    auto comp = [](const auto& a, const auto& b) { return a.first < b.first; };
+    std::sort(this_defaults.begin(), this_defaults.end(), comp);
+    std::sort(other_defaults.begin(), other_defaults.end(), comp);
+
+    for (size_t i = 0; i < this_defaults.size(); ++i) {
+      if (auto name_cmp = this_defaults[i].first <=> other_defaults[i].first;
+          name_cmp != std::strong_ordering::equal) {
+        return name_cmp;
+      }
+      if (auto value_cmp =
+              (*this_defaults[i].second) <=> (*other_defaults[i].second);
+          value_cmp != std::strong_ordering::equal) {
+        return value_cmp;
+      }
+    }
+
+    // Functions with same name and defaults are considered equal
+    return std::strong_ordering::equal;
+  }
   template <typename T>
   static std::shared_ptr<T> getArg(const Arguments& arguments,
                                    const std::string& name) {
@@ -36,7 +86,7 @@ class Function : public Object {
       throw std::runtime_error("Missing argument: " + name);
     }
     auto result = std::dynamic_pointer_cast<T>(it->second);
-    if (!result) {
+    if (result.get() == nullptr) {
       throw std::runtime_error("Argument '" + name + "' must be of type " +
                                typeid(T).name());
     }
@@ -44,7 +94,6 @@ class Function : public Object {
   }
   std::shared_ptr<Object> operator()(const Arguments& namedArguments) const {
     validateArguments(namedArguments);
-    // Merge default arguments with provided namedArguments
     Arguments arguments = defaults_;
     for (const auto& [key, value] : namedArguments) {
       arguments[key] = value;
@@ -106,6 +155,38 @@ class Function : public Object {
     return false;
   }
 
+  bool equals(const std::shared_ptr<Object>& other) const {
+    return equals(*other);
+  }
+
+  friend bool operator==(const Function& lhs, const Function& rhs) {
+    return lhs.equals(rhs);
+  }
+
+  friend bool operator==(std::shared_ptr<Function> lhs,
+                         std::shared_ptr<Function> rhs) {
+    return lhs->equals(*rhs);
+  }
+
+  friend bool operator==(std::shared_ptr<Function> lhs, const Function& rhs) {
+    return lhs->equals(rhs);
+  }
+
+  friend bool operator==(const Function& lhs, std::shared_ptr<Function> rhs) {
+    return rhs->equals(lhs);
+  }
+
+  friend bool operator==(const std::shared_ptr<Object>& lhs,
+                         const Function& rhs) {
+    return rhs.equals(*lhs);
+  }
+
+  friend bool operator==(const std::shared_ptr<Object>& lhs,
+                         const std::shared_ptr<Function>& rhs) {
+    return rhs->equals(*lhs);
+  }
+  
+
   size_t hash() const override {
     size_t h = std::hash<std::string>{}(name_);
     for (const auto& [key, value] : defaults_) {
@@ -118,6 +199,10 @@ class Function : public Object {
   }
 
   bool toBool() const override { return true; }
+  bool operator!() const { return false; }
+  friend bool operator!(const std::shared_ptr<Function>& func) {
+    return !func->toBool();
+  }
 
   bool isInstance(const std::string& type) const override {
     return type == "function" || type == "object";
@@ -133,6 +218,11 @@ class Function : public Object {
     throw std::runtime_error("'" + type() +
                              "' object attributes are read-only");
   }
+
+  friend std::ostream& operator<<(std::ostream& os, const Function& function) {
+    os << function.toString();
+    return os;
+  }
 };
 
-#endif // FUNCTION_HPP
+#endif  // FUNCTION_HPP

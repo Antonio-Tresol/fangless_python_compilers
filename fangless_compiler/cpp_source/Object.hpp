@@ -29,14 +29,26 @@ class Object {
   virtual bool isInstance(const std::string& type) const = 0;
 
   virtual std::shared_ptr<Object> getAttr(const std::string& name) const = 0;
+
   virtual void setAttr(const std::string& name,
                        std::shared_ptr<Object> value) = 0;
 
-  bool operator==(const Object& other) const { return equals(other); }
+  bool isNone() const { return type() == "None"; }
+
   explicit operator bool() const { return toBool(); }
+  explicit operator std::string() const { return toString(); }
+
+  friend bool operator!(const std::shared_ptr<Object>& obj) {
+    return !obj->toBool();
+  }
 
   virtual std::strong_ordering compare(const Object& other) const {
     return toString() <=> other.toString();
+  }
+
+  virtual std::strong_ordering compare(
+      const std::shared_ptr<Object>& other) const {
+    return compare(*other);
   }
 
   std::strong_ordering operator<=>(std::shared_ptr<Object> other) const {
@@ -48,19 +60,41 @@ class Object {
     return compare(other);
   }
 
+  friend std::strong_ordering operator<=>(const std::shared_ptr<Object>& lhs,
+                                          const std::shared_ptr<Object>& rhs) {
+    return lhs->compare(*rhs);
+  }
+
+  bool operator==(const Object& other) const { return equals(other); }
+
+  bool operator==(const std::shared_ptr<Object>& other) const {
+    return equals(*other);
+  }
+
+  friend bool operator==(const std::shared_ptr<Object>& lhs,
+                         const Object& rhs) {
+    return rhs.equals(*lhs);
+  }
+
+  friend bool operator==(const std::shared_ptr<Object>& lhs,
+                         const std::shared_ptr<Object>& rhs) {
+    return rhs->equals(*lhs);
+  }
+  template<typename ObjectA, typename ObjectB>
+  friend bool operator==(std::shared_ptr<ObjectA>& lhs, 
+                        std::shared_ptr<ObjectB>& rhs) {
+      return lhs->equals(*rhs);
+  }
+  
   friend std::ostream& operator<<(std::ostream& os, const Object& obj) {
     os << obj.toString();
     return os;
   }
 
-  bool isNone() const {
-    return type() == "None";
-  }
 };
 
 std::ostream& operator<<(std::ostream& os, const std::shared_ptr<Object>& obj) {
   return os << *obj;
 }
-
 
 #endif

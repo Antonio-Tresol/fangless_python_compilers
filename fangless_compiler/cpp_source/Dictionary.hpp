@@ -50,11 +50,77 @@ class Dictionary : public Object {
     return false;
   }
 
+  bool equals(const std::shared_ptr<Object>& other) const {
+    return equals(*other);
+  }
+
+  friend bool operator==(const Dictionary& lhs, const Dictionary& rhs) {
+    return lhs.equals(rhs);
+  }
+
+  friend bool operator==(const Dictionary& lhs, const Object& rhs) {
+    return lhs.equals(rhs);
+  }
+
+  friend bool operator==(const Object& lhs, const Dictionary& rhs) {
+    return rhs.equals(lhs);
+  }
+
+  friend bool operator==(const std::shared_ptr<Dictionary>& lhs,
+                         const std::shared_ptr<Dictionary>& rhs) {
+    return lhs->equals(*rhs);
+  }
+
+  friend bool operator==(const std::shared_ptr<Dictionary>& lhs,
+                         const std::shared_ptr<Object>& rhs) {
+    return lhs->equals(*rhs);
+  }
+
+  friend bool operator==(const std::shared_ptr<Object>& lhs,
+                         const std::shared_ptr<Dictionary>& rhs) {
+    return rhs->equals(lhs);
+  }
+
+  std::strong_ordering compare(const Object& other) const override {
+    if (type() != other.type()) {
+      return Object::compare(other);
+    }
+
+    const auto* other_dict = static_cast<const Dictionary*>(&other);
+
+    if (auto cmp = elements_.size() <=> other_dict->elements_.size();
+        cmp != std::strong_ordering::equal) {
+      return cmp;
+    }
+
+    auto it1 = elements_.begin();
+    auto it2 = other_dict->elements_.begin();
+
+    while (it1 != elements_.end()) {
+      if (auto key_cmp = (*it1->first) <=> (*it2->first);
+          key_cmp != std::strong_ordering::equal) {
+        return key_cmp;
+      }
+      if (auto value_cmp = (*it1->second) <=> (*it2->second);
+          value_cmp != std::strong_ordering::equal) {
+        return value_cmp;
+      }
+      ++it1;
+      ++it2;
+    }
+    return std::strong_ordering::equal;
+  }
+
   size_t hash() const override {
     throw std::runtime_error("unhashable type: 'dict'");
   }
 
   bool toBool() const override { return !elements_.empty(); }
+
+  bool operator!() const { return elements_.empty(); }
+  friend bool operator!(const std::shared_ptr<Dictionary>& obj) {
+    return obj->operator!();
+  }
 
   bool isInstance(const std::string& type) const override {
     return type == "dict" || type == "object";
@@ -163,13 +229,6 @@ class Dictionary : public Object {
     }
     return *this;
   }
-
-  bool operator==(const Dictionary& other) const {
-    return elements_ == other.elements_;
-  }
-
-  bool operator!=(const Dictionary& other) const { return !(*this == other); }
-
   Dictionary(const Dictionary& other) : elements_(other.elements_) {}
 
   Dictionary& operator=(const Dictionary& other) {
@@ -178,10 +237,11 @@ class Dictionary : public Object {
     }
     return *this;
   }
+
+  friend std::ostream& operator<<(std::ostream& os,
+                                  const std::shared_ptr<Dictionary>& obj) {
+    return os << *obj;
+  }
 };
 
-std::ostream& operator<<(std::ostream& os,
-                         const std::shared_ptr<Dictionary>& obj) {
-  return os << *obj;
-}
 #endif  // DICTIONARY_HPP

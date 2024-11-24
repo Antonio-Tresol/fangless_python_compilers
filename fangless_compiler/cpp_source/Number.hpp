@@ -70,6 +70,37 @@ class Number : public Object {
     return false;
   }
 
+  bool equals(const std::shared_ptr<Object>& other) const {
+    return equals(*other);
+  }
+
+  friend bool operator==(const Number& lhs, const Number& rhs) {
+    return lhs.equals(rhs);
+  }
+
+  friend bool operator==(std::shared_ptr<Number> lhs,
+                         std::shared_ptr<Number> rhs) {
+    return lhs->equals(*rhs);
+  }
+
+  friend bool operator==(std::shared_ptr<Number> lhs, const Number& rhs) {
+    return lhs->equals(rhs);
+  }
+
+  friend bool operator==(const Number& lhs, std::shared_ptr<Number> rhs) {
+    return rhs->equals(lhs);
+  }
+
+  friend bool operator==(const std::shared_ptr<Object>& lhs,
+                         const Number& rhs) {
+    return rhs.equals(lhs);
+  }
+
+  friend bool operator==(const std::shared_ptr<Object>& lhs,
+                         const std::shared_ptr<Number>& rhs) {
+    return rhs->equals(lhs);
+  }
+
   size_t hash() const override {
     return std::visit(
         [](auto&& arg) -> size_t {
@@ -89,6 +120,12 @@ class Number : public Object {
           }
         },
         value_);
+  }
+
+  bool operator!() const { return !toBool(); }
+  friend bool operator!(const Number& num) { return !num.toBool(); }
+  friend bool operator!(const std::shared_ptr<Number>& num) {
+    return !num->toBool();
   }
 
   bool isInstance(const std::string& type) const override {
@@ -264,35 +301,35 @@ class Number : public Object {
     return std::visit(
         [](auto&& arg) -> double { return static_cast<double>(arg); }, value_);
   }
+  friend std::shared_ptr<Number> operator+(const std::shared_ptr<Number>& a,
+                                           const std::shared_ptr<Number>& b) {
+    return *a + *b;
+  }
+
+  friend std::shared_ptr<Number> operator-(const std::shared_ptr<Number>& a,
+                                           const std::shared_ptr<Number>& b) {
+    return *a - *b;
+  }
+
+  friend std::shared_ptr<Number> operator*(const std::shared_ptr<Number>& a,
+                                           const std::shared_ptr<Number>& b) {
+    return *a * *b;
+  }
+
+  friend std::shared_ptr<Number> operator/(const std::shared_ptr<Number>& a,
+                                           const std::shared_ptr<Number>& b) {
+    return *a / *b;
+  }
+
+  friend std::shared_ptr<Number> operator%(const std::shared_ptr<Number>& a,
+                                           const std::shared_ptr<Number>& b) {
+    return *a % *b;
+  }
+
+  friend std::ostream& operator<<(std::ostream& os,
+                                  const std::shared_ptr<Number>& obj) {
+    return os << *obj;
+  }
 };
-
-std::shared_ptr<Number> operator+(const std::shared_ptr<Number>& a,
-                                  const std::shared_ptr<Number>& b) {
-  return *a + *b;
-}
-
-std::shared_ptr<Number> operator-(const std::shared_ptr<Number>& a,
-                                  const std::shared_ptr<Number>& b) {
-  return *a - *b;
-}
-
-std::shared_ptr<Number> operator*(const std::shared_ptr<Number>& a,
-                                  const std::shared_ptr<Number>& b) {
-  return *a * *b;
-}
-
-std::shared_ptr<Number> operator/(const std::shared_ptr<Number>& a,
-                                  const std::shared_ptr<Number>& b) {
-  return *a / *b;
-}
-
-std::shared_ptr<Number> operator%(const std::shared_ptr<Number>& a,
-                                  const std::shared_ptr<Number>& b) {
-  return *a % *b;
-}
-
-std::ostream& operator<<(std::ostream& os, const std::shared_ptr<Number>& obj) {
-  return os << *obj;
-}
 
 #endif  // NUMBER_HPP
