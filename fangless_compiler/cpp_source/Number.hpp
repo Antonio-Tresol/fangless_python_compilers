@@ -187,6 +187,8 @@ class Number : public Object {
         value_);
   }
 
+  operator int64_t() const { return getInt(); }
+
   double getDouble() const {
     return std::visit(
         [](auto&& arg) -> double { return static_cast<double>(arg); }, value_);

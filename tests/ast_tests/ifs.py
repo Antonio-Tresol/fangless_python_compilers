@@ -6,22 +6,21 @@ else:
     ["a"]
 
 
-
-if ("hola" & 1) and (True | None) > 3:
+if ("hola" == "mundo") and (True or False) or True:
     "Antonio"
-elif (None ^ None ^ "Kenneth") == 0:
-    "Antonio"
-    "Antonio"
-elif ((6.7 + 4.7) & 97.3) > 5:
+elif (None and None and "Kenneth") == False:
     "Antonio"
     "Antonio"
-    "Antonio"
-elif ((84) & 3) < 2:
+elif ((6.7 + 4.7) - 97.3) > 5:
     "Antonio"
     "Antonio"
     "Antonio"
+elif ((84) - 3) < 2:
     "Antonio"
-elif ("Caballito" >> 1) == "Zebra":
+    "Antonio"
+    "Antonio"
+    "Antonio"
+elif "Caballito" == "Zebra":
     "Antonio"
     "Antonio"
     "Antonio"

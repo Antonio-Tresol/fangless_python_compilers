@@ -36,8 +36,8 @@ class Object {
 
   bool isNone() const { return type() == "None"; }
 
-  explicit operator bool() const { return toBool(); }
-  explicit operator std::string() const { return toString(); }
+  operator bool() const { return toBool(); }
+  operator std::string() const { return toString(); }
 
   friend bool operator!(const std::shared_ptr<Object>& obj) {
     return !obj->toBool();
