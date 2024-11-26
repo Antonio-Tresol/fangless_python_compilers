@@ -122,16 +122,24 @@ class FanglessGenerator:
         pass
 
     def visit_slicing(self, tree: OperatorNode) -> None:
-        pass
+        instance = tree.get_adjacent(Operand.INSTANCE)
+        instance = self.visit_tree([instance])
+
+        slice_dict = tree.get_adjacent(Operand.SLICE)
+        start = create_instance(slice_dict[Operand.START])
+        end = create_instance(slice_dict[Operand.END])
+
+        return f"{instance}[Slice({start}, {end})]"
+
 
     def visit_indexing(self, tree: OperatorNode) -> None:
-        left_child = tree.get_left_operand()
-        left_child = self.visit_tree([left_child])
+        instance = tree.get_adjacent(Operand.INSTANCE)
+        instance = self.visit_tree([instance])
 
-        right_child = tree.get_right_operand()
-        right_child = self.visit_tree([right_child])
+        index = tree.get_adjacent(Operand.INDEX)
+        index = self.visit_tree([index])
 
-        return f"{left_child}[{right_child}]"
+        return f"{instance}[{index}]"
 
 
     def visit_assignation(self, tree: OperatorNode) -> str:
