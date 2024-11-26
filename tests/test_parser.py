@@ -43,8 +43,9 @@ def test_positive_cases() -> None:
                 print(f"\n🔍 Testing positive case: {test.name}")
                 content = source.read()
                 positive_parser.parse(content)
-                assert positive_parser.error_count == 0, (
-                    f"\n❌ Expected no errors but found {positive_parser.error_count}"
+                error_count = len(positive_parser.errors)
+                assert error_count == 0, (
+                    f"\n❌ Expected no errors but found {error_count}"
                 )
                 print(f"✅ Test passed: {test.name}")
         except Exception as e:
@@ -62,7 +63,8 @@ def test_negative_cases() -> None:
                 print(f"\n🔍 Testing negative case: {test.name}")
                 content = source.read()
                 negative_parser.parse(content)
-                assert negative_parser.error_count > 0, (
+                error_count = len(negative_parser.errors)
+                assert error_count > 0, (
                     "\n❌ Expected errors but found none"
                 )
                 print(f"✅ Test passed: {test.name}")
@@ -81,8 +83,9 @@ def test_ast_cases() -> None:
                 print(f"\n🔍 Testing AST case: {test.name}")
                 content = source.read()
                 ast_parser.parse(content)
-                assert ast_parser.error_count == 0, (
-                    f"\n❌ Expected no errors but found {ast_parser.error_count}"
+                error_count = len(ast_parser.errors)
+                assert error_count == 0, (
+                    f"\n❌ Expected no errors but found {error_count}"
                 )
                 print(f"✅ Test passed: {test.name}")
         except Exception as e:

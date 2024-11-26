@@ -2,6 +2,7 @@ from ply.lex import Lexer, LexToken
 from collections.abc import Iterable
 import sys
 from common import new_token, VERBOSE_INDENTATION
+from exceptions import IndentationError
 
 NO_INDENT = 0
 MAY_INDENT = 1
@@ -109,17 +110,13 @@ class FanglessIndentationManager:
             # Reset the last_seen_whitespace flag
             last_seen_whitespace = False
 
-            try:
-                # Check for indentation and update the token list accordingly
-                FanglessIndentationManager.check_for_indentation(
-                    token,
-                    depth,
-                    levels,
-                    new_token_list,
-                )
-            except ValueError:
-                print(f"failed on token: {token}")
-                sys.exit()
+            # Check for indentation and update the token list accordingly
+            FanglessIndentationManager.check_for_indentation(
+                token,
+                depth,
+                levels,
+                new_token_list,
+            )
 
         # If there are remaining levels, create dedent tokens for each level
         if len(levels) > 1:
@@ -146,8 +143,11 @@ class FanglessIndentationManager:
 
         if token.must_indent:
             if not (depth > levels[-1]):
-                print(f"Indentation Error on must indent in line no {token.lineno}")
-                raise ValueError
+                error = (
+                    "Indentation Error on must indent "
+                    f"in line no {token.lineno}"
+                )
+                raise IndentationError(error)
 
             if VERBOSE_INDENTATION:
                 print(f"---Token must indent: {token}---")
@@ -161,18 +161,22 @@ class FanglessIndentationManager:
 
             # If the depth is greater than the last level, it's an error
             elif depth > levels[-1]:
-                print(
-                    f"Indentation Error on line start in line no {token.lineno}"
-                    " with depth greater than levels",
+                error = (
+                    "Indentation Error on line start "
+                    f"in line no {token.lineno}"
+                    " with depth greater than levels"
                 )
-                raise ValueError
+                raise IndentationError(error)
 
             # If the depth is less than the last level, we just dedented
             try:
                 i = levels.index(depth)
             except ValueError:
-                print(f"Indentation Error on line start in line no {token.lineno}")
-                raise
+                error = (
+                    "Indentation Error on line start"
+                    f"in line no {token.lineno}"
+                )
+                raise IndentationError(error)
 
             # Pop levels and create dedent tokens until the current depth is reached
             for _ in range(i + 1, len(levels)):

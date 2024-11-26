@@ -17,6 +17,7 @@ from common import (
     be_artistic,
     RAINBOW_ERRORS,
 )
+from exceptions import ParserError
 from collections import defaultdict
 from typing import Any
 
@@ -61,17 +62,16 @@ parser_state_info["functions"] = 0
 parser_state_info["classes"] = 0
 errors: list[str] = []
 
-
 # =============================ERROR CHECKING==================================
 def does_name_exist(token_list: yacc.YaccProduction) -> None:
     if (token_list.slice[1].type == "NAME"
         and symbol_table[token_list[1]] is None):
-        msg = (
+        error = (
                f"--Name: '{token_list[1]}' is not defined "
                f"at {token_list.lineno(1)}--{add_remark()}"
               )
-        errors.append(msg)
-        raise SyntaxError(msg)
+        errors.append(error)
+        raise ParserError(error)
 
 
 def validate_variable_declaration_or_class_scope(
@@ -85,13 +85,13 @@ def validate_variable_declaration_or_class_scope(
         and symbol_table[token_list[1]] is None
         and (token_list[1] != "self" or parser_state_info["classes"] <= 0)
     ):
-        msg = (
+        error = (
             f"--Name: '{token_list[1]}' is not defined at "
             f" line {token_list.lineno(1)}"
             f"--{add_remark()}"
         )
-        errors.append(msg)
-        raise SyntaxError(msg)
+        errors.append(error)
+        raise ParserError(error)
 
 
 def validate_flow_tokens_are_in_context(token_list: yacc.YaccProduction) -> None:
@@ -99,52 +99,52 @@ def validate_flow_tokens_are_in_context(token_list: yacc.YaccProduction) -> None
     # if it is continue or break, check we are in a loop
     if t_type in {"CONTINUE", "BREAK"} and parser_state_info["loops"] <= 0:
         line_number = token_list.lineno(1)
-        msg = (
+        error = (
             f"--Cant call '{token_list[1]}' on this context on line {line_number}"
             f"--{add_remark()}"
         )
-        errors.append(msg)
-        raise SyntaxError(msg)
+        errors.append(error)
+        raise ParserError(error)
     # if it is pass check we are in a loop or inside a functions
     if (
         t_type == "PASS"
         and parser_state_info["loops"] <= 0
         and parser_state_info["functions"] <= 0
     ):
-        msg = (
+        error = (
             f"--Cant call 'pass' on this"
             f" context on line {token_list.lineno(1)}--{add_remark()}"
         )
-        errors.append(msg)
-        raise SyntaxError(msg)
+        errors.append(error)
+        raise ParserError(error)
 
 
 def p_error(token_list: yacc.YaccProduction) -> None:
-    error = f"Parser Error near '{token_list}' in line {token_list.lineno}" 
-    print(error)
+    error = f"Parser Error near '{token_list}' in line {token_list.lineno}"
     errors.append(error)
+    raise ParserError(error)
 
 
 # =================================== BASIC ===================================
 def p_all(token_list: yacc.YaccProduction) -> None:
     """all    :   START_TOKEN statement_group END_TOKEN"""
     if len(undefined_functions) > 0:
-        msg = "--Names:--"
+        error = "--Names:--"
         for function in undefined_functions:
             if symbol_table[function]:
                 continue
-            msg += f"\n'{function}'"
-        msg += f"\n--Were not defined as functions--{add_remark()}"
-        errors.append(msg)
-        raise SyntaxError(msg)
+            error += f"\n'{function}'"
+        error += f"\n--Were not defined as functions--{add_remark()}"
+        errors.append(error)
+        raise ParserError(error)
 
     if len(undefined_classes) > 0:
-        msg = "--Names:"
+        error = "--Names:"
         for function in undefined_functions:
-            msg += f"\n'{function}'"
-        msg += f"\nWere not defined as classes--{add_remark()}"
-        errors.append(msg)
-        raise SyntaxError(msg)
+            error += f"\n'{function}'"
+        error += f"\nWere not defined as classes--{add_remark()}"
+        errors.append(error)
+        raise ParserError(error)
 
     group: list = token_list[2]
     token_list[0] = group
@@ -743,12 +743,12 @@ def p_op_assignation_operand(token_list: yacc.YaccProduction) -> None:
     name = token_list[1]
     if isinstance(name, list):
         if symbol_table[name[1]] is None:
-            msg = (
+            error = (
                 f"--Name: '{name[1]}' is not defined at line {token_list.lineno(1)}"
                 f"--{add_remark()}"
             )
-            errors.append(msg)
-            raise SyntaxError(msg)
+            errors.append(error)
+            raise ParserError(error)
     else:
         does_name_exist(token_list)
 
@@ -796,32 +796,32 @@ def p_hint(token_list: yacc.YaccProduction) -> None:
     """
     hint = token_list[1]
     if token_list.slice[1].type == "NAME" and token_list[1] not in TYPES:
-        msg = (
+        error = (
             f"--TYPE HINTS: '{token_list[1]}' is not a valid type "
             f"on line {token_list.lineno(1)}--{add_remark()}"
         )
-        errors.append(msg)
-        raise SyntaxError(msg)
+        errors.append(error)
+        raise ParserError(error)
     if isinstance(hint, list):
         for type_hint in hint:
             if type_hint not in TYPES:
-                msg = (
+                error = (
                     f"--TYPE HINTS: '{token_list[1]}' is not a "
                     f"valid type on line {token_list.lineno(1)}--{add_remark()}"
                 )
-                errors.append(msg)
-                raise SyntaxError(msg)
+                errors.append(error)
+                raise ParserError(error)
 
 
 def p_container_type(token_list: yacc.YaccProduction) -> None:
     """container_type  : NAME L_BRACKET type_series R_BRACKET"""
     if token_list[1] not in CONTAINER_TYPES:
-        msg = (
+        error = (
             f"--TYPE HINTS: '{token_list[1]}' is not a valid "
             f"container type on line {token_list.lineno(1)}--{add_remark()}"
         )
-        errors.append(msg)
-        raise SyntaxError(msg)
+        errors.append(error)
+        raise ParserError(error)
     token_list[0] = token_list[3]
 
 
@@ -887,12 +887,12 @@ def p_complex_statement(token_list: yacc.YaccProduction) -> None:
 def p_dot_pass(token_list: yacc.YaccProduction) -> None:
     """dot_pass    :   DOT DOT DOT"""
     if parser_state_info["functions"] <= 0:
-        msg = (
+        error = (
             f"--Cant call 'TRIPLE DOT' on this "
             f"context on line {token_list.lineno(1)}--{add_remark()}"
         )
-        errors.append(msg)
-        raise SyntaxError(msg)
+        errors.append(error)
+        raise ParserError(error)
     token_list[0] = OperatorNode(OperatorType.PASS, max_adjacents=0)
 
 
@@ -1098,12 +1098,12 @@ def p_return_statement(token_list: yacc.YaccProduction) -> None:
                         |   RETURN
     """
     if parser_state_info["functions"] <= 0:
-        msg = (
+        error = (
             f"--Cant call RETURN 'on this context "
             f"on line {token_list.lineno(1)}--{add_remark()}"
         )
-        errors.append(msg)
-        raise SyntaxError(msg)
+        errors.append(error)
+        raise ParserError(error)
 
     node = OperatorNode(OperatorType.RETURN)
     if len(token_list) == 3:
@@ -1333,12 +1333,12 @@ def p_class_definition(token_list: yacc.YaccProduction) -> None:
     # TODO(Antonio)
     if len(token_list) == 7:
         if token_list[1] == token_list[3]:
-            msg = (
+            error = (
                     f"--Class: '{token_list[1]}' cannot inherit "
                     f"from themselves on line {token_list.lineno(1)}--{add_remark()}"
                   )
-            errors.append(msg)
-            raise SyntaxError(msg)
+            errors.append(error)
+            raise ParserError(error)
 
         if symbol_table[token_list[3]] is None:
             undefined_classes.add(token_list[3])
@@ -1373,6 +1373,7 @@ class FanglessParser:
             lexer.build()
         self.lexer = lexer
         self.parser = yacc.yacc(start="all", debug=VERBOSE_PARSER)
+        self.errors = errors
         fill_symbol_table_with_builtin_functions(symbol_table)
 
     def parse(self, source_code: str) -> Any:
@@ -1381,19 +1382,4 @@ class FanglessParser:
             lexer=self.lexer,
             debug=VERBOSE_PARSER,
         )
-        self.error_count = len(errors)
-        self.print_errors()
         return parsed_source_code
-
-    def print_errors(self) -> None:
-        if len(errors) > 0:
-            print("\n\n=================================================")
-            remark = (
-                color_msg("horseshit") if not SENSITIVE_PROGRAMMER else "not working"
-            )
-            print(f"Your program is {remark}, here is why:")
-            while len(errors) > 0:
-                print(color_msg(errors.pop(), RAINBOW_ERRORS))
-            if not SENSITIVE_PROGRAMMER:
-                print(color_msg(be_artistic()))
-            print("=================================================\n\n")

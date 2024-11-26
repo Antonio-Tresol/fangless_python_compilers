@@ -6,7 +6,7 @@ from indentation_manager import FanglessIndentationManager
 from collections.abc import Iterable
 from ply import lex
 from common import new_token, TOKENS, RESERVED_WORDS, VERBOSE_LEXER
-
+from exceptions import LexerError
 
 class FanglessLexer:
     # tokens and reserve words definition
@@ -263,4 +263,4 @@ class FanglessLexer:
             f"{colors.TOKEN_NOT_FOUND}: {token.value[0]}, "
             f"at line number {token.lexer.lineno}"
         )
-        raise SyntaxError(error)
+        raise LexerError(error)

@@ -67,11 +67,15 @@ class FanglessGenerator:
         for subtree in tree_list:
             if not isinstance(subtree, (list, dict, tuple, set, int, float, str, bool, type(None), NameNode)):
                 statements += self.operator_handlers[subtree.operator](subtree)
-            elif not is_standalone:
-                statements += create_instance(subtree)
+                if is_standalone:
+                    statements += ";\n"
 
-            if is_standalone:
-                statements += ";\n"
+            else:
+                statements += (
+                    f"// {create_instance(subtree)}\n"
+                    if is_standalone else
+                    create_instance(subtree)
+                )
 
         return statements
 
@@ -121,7 +125,14 @@ class FanglessGenerator:
         pass
 
     def visit_indexing(self, tree: OperatorNode) -> None:
-        pass
+        left_child = tree.get_left_operand()
+        left_child = self.visit_tree([left_child])
+
+        right_child = tree.get_right_operand()
+        right_child = self.visit_tree([right_child])
+
+        return f"{left_child}[{right_child}]"
+
 
     def visit_assignation(self, tree: OperatorNode) -> str:
         left_child = tree.get_left_operand()
@@ -172,7 +183,7 @@ class FanglessGenerator:
 
     def visit_pass(self, tree: OperatorNode) -> str:
         _ = tree
-        return "// we had a pass here, hahhah"
+        return "// There was a pass here"
 
     def visit_break(self, tree: OperatorNode) -> str:
         _ = tree
@@ -220,7 +231,7 @@ def create_basic_instance(instance) -> str:
         return f"Bool::spawn({bool_instance})"
     if isinstance(instance, str):
         return f'String::spawn("{instance}")'
-    if isinstance(instance, type(None)):
+    if instance is None:
         return f'None::spawn()'
     if isinstance(instance, (int, float)):
         return f"Number::spawn({instance})"

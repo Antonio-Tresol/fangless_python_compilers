@@ -35,11 +35,44 @@ def color_msg(msg: str, rainbow: bool = True) -> str:
     return new_msg
 
 
+def color_green(msg: str) -> str:
+    return f"{colors.GREEN}{msg}{colors.RESET}"
+
+
+def color_yellow(msg: str) -> str:
+    return f"{colors.YELLOW}{msg}{colors.RESET}"
+
+
+def print_step(step: str) -> None:
+    print(f"\n{colors.CYAN}=====================================")
+    print(f"\t{step}...")
+    print(f"====================================={colors.RESET}\n")
+
+
+def print_error(error: str) -> None:
+    print(f"\n{colors.RED}-------------- ERROR ----------------")
+    print(f"{error}{colors.RESET}\n")
+
+
+def print_catastrophic_error(error: str, details : str) -> None:
+    print(f"\n{colors.RED}==================================================================================================")
+    remark = (
+        color_msg("horseshit")
+        if not SENSITIVE_PROGRAMMER else 
+        f"{colors.RED}not working{colors.RESET}"
+    )
+    print(f"Your program is {colors.RESET}{remark}{colors.RED}, here is why:\n")
+    print(color_msg(f"Error:\t\t{error}\nDetails:\t{details}", RAINBOW_ERRORS))
+    if not SENSITIVE_PROGRAMMER:
+        print(color_msg(be_artistic()))
+    print(f"{colors.RED}=================================================================================================={colors.RESET}\n")
+
+
 def add_remark() -> str:
     if SENSITIVE_PROGRAMMER:
         return ""
     return (
-        f"\n{choice(error_messages.connectors_tuple)} "
+        f"\nMore details:\t{choice(error_messages.connectors_tuple)} "
         f"you {choice(error_messages.informative_remarks)}!"
     )
 
