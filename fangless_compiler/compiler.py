@@ -12,7 +12,7 @@ from code_generator import FanglessGenerator
 import subprocess
 
 
-OUTPUT_CODE_FILE_PATH = "fangless_compiler/cpp_source/output.cpp"
+OUTPUT_CODE_FILE_PATH = "output/output.cpp"
 OUTPUT_FILE = Path(OUTPUT_CODE_FILE_PATH)
 
 
@@ -86,7 +86,11 @@ class FanglessCompiler:
             cpp_compiler = "/usr/bin/g++"
             flags = ["-O3", "-std=c++20"]
             subprocess.run(
-                [cpp_compiler, *flags, OUTPUT_CODE_FILE_PATH, "-o", "output.out"],
+                [cpp_compiler,
+                 *flags,
+                 OUTPUT_CODE_FILE_PATH,
+                 "-o",
+                 "output/output.out"],
                 capture_output=True,
                 text=True,
                 check=True,
