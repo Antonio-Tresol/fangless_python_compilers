@@ -322,10 +322,11 @@ class Number : public Object {
 
           if constexpr (std::is_same_v<A, double> ||
                         std::is_same_v<B, double>) {
-            double result = static_cast<int64_t>(a) % static_cast<int64_t>(b);
-            return std::make_shared<Number>(result);
+            int quotient = static_cast<int>(a / b);
+            double remainder = a - (static_cast<double>(quotient) * b);
+            return std::make_shared<Number>(remainder);
+
           } else {
-            
             if (b == 0) {
               throw std::runtime_error("Division by zero");
             }
@@ -390,7 +391,7 @@ class Number : public Object {
           }
         }, value_);
         
-    return old_value;
+    return std::make_shared<Number>(old_value);
   }
 
   friend std::shared_ptr<Number> operator~(const std::shared_ptr<Number>& num) {

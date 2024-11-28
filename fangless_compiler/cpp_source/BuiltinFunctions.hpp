@@ -56,9 +56,9 @@ namespace BF {
 
   std::shared_ptr<Bool> any(const std::shared_ptr<Dictionary>& structure) {
     bool hasTrue = false;
-    std::shared_ptr<List> newStructure = structure->keys();
+    std::shared_ptr<List> keys = structure->keys();
 
-    for (auto& item: (*newStructure)) {
+    for (auto& item: (*keys)) {
       hasTrue = hasTrue || item->toBool();
       if (hasTrue) break;
     }
@@ -115,30 +115,56 @@ namespace BF {
 
     if (dividend->isDouble() || divisor->isDouble()) {
       std::shared_ptr<Number> quotient =
-        Number::spawn(((*dividend) / (*divisor))->getDouble());
+        Number::spawn(static_cast<double>(
+          ((*dividend) / (*divisor))->getInt()));
+
       std::shared_ptr<Number> remainder =
         Number::spawn(((*dividend) % (*divisor))->getDouble());
 
       return Tuple::spawn({quotient, remainder});
-      
-    } else {
-      std::shared_ptr<Number> quotient =
-        Number::spawn(((*dividend) / (*divisor))->getInt());
-      std::shared_ptr<Number> remainder =
-        Number::spawn(((*dividend) % (*divisor))->getInt());
+    }
 
-      return Tuple::spawn({quotient, remainder});
-    }    
+    std::shared_ptr<Number> quotient =
+      Number::spawn(((*dividend) / (*divisor))->getInt());
+    std::shared_ptr<Number> remainder =
+      Number::spawn(((*dividend) % (*divisor))->getInt());
+
+    return Tuple::spawn({quotient, remainder});
   }
 
-  template<TIterable TType>
-  std::shared_ptr<List> enumerate(const std::shared_ptr<TType>& structure,
+  std::shared_ptr<List> enumerate(const std::shared_ptr<String>& items,
     std::shared_ptr<Number> start = Number::spawn(0)) {
     std::shared_ptr<List> result = List::spawn();
 
-    for (auto& item : (*structure)) {
+    for (Number i = Number(0); i < *(items->len()); ++i) {
+      result->append(Tuple::spawn({start, (*items)[i]}));
+      start = start + Number::spawn(1);
+    }
+
+    return result;
+  }
+
+  std::shared_ptr<List> enumerate(const std::shared_ptr<Dictionary>& items,
+    std::shared_ptr<Number> start = Number::spawn(0)) {
+    std::shared_ptr<List> result = List::spawn();
+    std::shared_ptr<List> keys = items->keys();
+
+    for (auto& item : (*keys)) {
       result->append(Tuple::spawn({start, item}));
-      start = ++*start;
+      start = start + Number::spawn(1);
+    }
+
+    return result;
+  }
+
+  template<TIterable TType>
+  std::shared_ptr<List> enumerate(const std::shared_ptr<TType>& items,
+    std::shared_ptr<Number> start = Number::spawn(0)) {
+    std::shared_ptr<List> result = List::spawn();
+
+    for (auto& item : (*items)) {
+      result->append(Tuple::spawn({start, item}));
+      start = start + Number::spawn(1);
     }
 
     return result;
@@ -174,6 +200,18 @@ namespace BF {
     return set;
   }
 
+  const std::shared_ptr<Set> frozenset(
+    const std::shared_ptr<Dictionary>& items) {
+    std::shared_ptr<Set> set = Set::spawn();
+    std::shared_ptr<List> keys = items->keys();
+
+    for (auto& item : (*keys)) {
+      set->add(item);
+    }
+
+    return set;
+  }
+
   template<TIterable TType>
   const std::shared_ptr<Set> frozenset(const std::shared_ptr<TType>& items) {
     std::shared_ptr<Set> set = Set::spawn();
@@ -190,12 +228,12 @@ namespace BF {
   }
 
   std::shared_ptr<String> input(const std::shared_ptr<String>& prompt) {
-    std::shared_ptr<String> something;
+    std::string something;
 
-    std::cout << prompt;
-    std::cin >> something;
+    std::cout << **prompt;
+    std::getline(std::cin, something);
 
-    return something;
+    return String::spawn(something);
   }
 
   std::shared_ptr<Number> int_() {
@@ -255,6 +293,10 @@ namespace BF {
     return result;
   }
 
+  const std::shared_ptr<List> list(const std::shared_ptr<Dictionary>& items) {
+    return items->keys();
+  }
+
   template<TIterable TType>
   std::shared_ptr<List> list(const std::shared_ptr<TType>& items) {
     std::shared_ptr<List> result = List::spawn();
@@ -268,12 +310,14 @@ namespace BF {
 
   template<TIterable TType>
   auto max(const std::shared_ptr<TType>& values) {
-    return *(std::max_element(values->begin(), values->end()));
+    std::shared_ptr<List> realValues = list(values);
+    return *(std::max_element(realValues->begin(), realValues->end()));
   }
 
   template<TIterable TType>
   auto min(const std::shared_ptr<TType>& values) {
-    return *(std::min_element(values->begin(), values->end()));
+    std::shared_ptr<List> realValues = list(values);
+    return *(std::min_element(realValues->begin(), realValues->end()));
   }
 
   template <typename BidirectionalIterator>
@@ -377,19 +421,18 @@ namespace BF {
     return result;
   }
 
+  std::shared_ptr<Set> reversed(
+    const std::shared_ptr<Set>& structure) {
+    return structure;
+  }
+
+  std::shared_ptr<Dictionary> reversed(
+    const std::shared_ptr<Dictionary>& structure) {
+    return structure;
+  }
+
   template<TIterable TType>
   std::shared_ptr<TType> reversed(const std::shared_ptr<TType>& structure) {
-    
-    if (structure->type() == std::string("dict")) {      
-      std::shared_ptr<List> result = List::spawn();
-      std::shared_ptr<List> newStructure = structure->keys();
-      std::reverse_copy(
-        newStructure->begin(),
-        newStructure->end(),
-        result->begin());
-      return result;
-    }
-
     std::shared_ptr<TType> result = std::make_shared<TType>();
     std::reverse_copy(
       structure->begin(),
@@ -427,6 +470,17 @@ namespace BF {
     return result;
   }
 
+  std::shared_ptr<Set> set(const std::shared_ptr<Dictionary>& items) {
+    std::shared_ptr<Set> result = Set::spawn();
+    std::shared_ptr<List> keys = items->keys();
+
+    for (auto& item : (*keys)) {
+      result->add(item);
+    }
+
+    return result;
+  }
+
   template<TIterable TType>
   std::shared_ptr<Set> set(const std::shared_ptr<TType>& items) {
     std::shared_ptr<Set> result = Set::spawn();
@@ -438,14 +492,18 @@ namespace BF {
     return result;
   }
 
+  std::shared_ptr<Set> sorted(
+    const std::shared_ptr<Set>& structure) {
+    return structure;
+  }
+
+  std::shared_ptr<Dictionary> sorted(
+    const std::shared_ptr<Dictionary>& structure) {
+    return structure;
+  }
+
   template<TIterable TType>
   std::shared_ptr<TType> sorted(const std::shared_ptr<TType>& structure) {
-    if (structure->type() == std::string("dict")) {
-      std::shared_ptr<List> result = structure->keys();
-      std::sort(result->begin(), result->end());
-      return result;
-    }
-
     std::shared_ptr<TType> result = std::make_shared<TType>(structure);
     std::sort(result->begin(), result->end());
     return result;
@@ -463,8 +521,7 @@ namespace BF {
   std::shared_ptr<Number> sum(
     const std::shared_ptr<TType>& numbers,
     const std::shared_ptr<Number>& extra = Number::spawn(0)) {
-      
-    if (numbers->type() == std::string("dict")) {
+     if (numbers->type() == std::string("dict")) {
       std::shared_ptr<List> newStructure = numbers->keys();
 
       return Number::spawn(std::accumulate(
@@ -493,6 +550,11 @@ namespace BF {
     }
 
     return std::make_shared<Tuple>(result);
+  }
+
+  std::shared_ptr<Tuple> tuple(const std::shared_ptr<Dictionary>& items) {
+    std::shared_ptr<List> keys = items->keys();
+    return std::make_shared<Tuple>(keys->begin(), keys->end());
   }
 
   template<TIterable TType>

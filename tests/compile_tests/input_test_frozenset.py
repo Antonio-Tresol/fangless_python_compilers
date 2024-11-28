@@ -12,11 +12,20 @@ print(frozenset("hello"))
 print(frozenset("python"))
 print("")
 
+print("Testing frozenset with tuples")
+# {1, 2, 3}
+print(frozenset((1, 2, 3)))
+print("")
+
 print("Testing frozenset with sets")
 # {1, 2, 3}
 print(frozenset({1, 2, 3}))
 print("")
 
+print("Testing frozenset with dicts")
+# {1, 2, 3}
+print(frozenset({1 : "one", 2 : "two", 3 : "three"}))
+print("")
 
 print("Testing empty frozenset")
 # {}

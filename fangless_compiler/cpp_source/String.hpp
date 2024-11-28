@@ -528,11 +528,6 @@ class String : public Object {
     return os << *obj;
   }
 
-  friend std::istream& operator>>(std::istream& is,
-                                  std::shared_ptr<String>& obj) {
-    return is >> (*obj).value_;
-  }
-
   friend std::shared_ptr<String> operator+(const std::shared_ptr<String>& a,
                                            const std::shared_ptr<String>& b) {
     return *a + *b;

@@ -12,6 +12,16 @@ print(list((1, 2, 3)))
 print(list(('a', 'b', 'c')))
 print("")
 
+print("Testing list with dicts")
+# [1, 2, 3]
+print(list({1 : "one", 2 : "two", 3 : "three"}))
+print("")
+
+print("Testing list with lists")
+# [1, 2, 3]
+print(list([1, 2, 3]))
+print("")
+
 print("Testing list with range")
 # [0, 1, 2, 3]
 print(list(range(4)))
