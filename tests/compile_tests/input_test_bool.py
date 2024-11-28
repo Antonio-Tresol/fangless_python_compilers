@@ -56,16 +56,16 @@ print(bool({1, 2, 3}))
 print(bool(set()))
 print("")
 
-# # Testing bool with dictionaries
-# print("Testing bool with dictionaries")
-# # True
-# print(bool({"key": "value"}))
-# # False
-# print(bool({}))
-# print("")
+# Testing bool with dictionaries
+print("Testing bool with dictionaries")
+# True
+print(bool({"key": "value"}))
+# False
+print(bool({}))
+print("")
 
-# # Testing bool with None
-# print("Testing bool with None")
-# # False
-# print(bool(None))
-# print("")
+# Testing bool with None
+print("Testing bool with None")
+# False
+print(bool(None))
+print("")

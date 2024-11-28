@@ -86,20 +86,14 @@ namespace BF {
   }
 
   std::shared_ptr<std::wstring> chr(const std::shared_ptr<Number>& code) {
-    std::wcout << L"Hello, UTF-8 😀!\n";
     std::wstring str;
-    int codeInt = code->getInt();
-
-    std::wcout << "int val: " << codeInt << std::endl;
+    const int codeInt = code->getInt();
 
     if (codeInt <= 0xFFFF) {
       str += static_cast<wchar_t>(codeInt);
-      std::wcout << "within: " << str << std::endl;
     } else if (codeInt <= 0x10FFFF) {
       str += static_cast<wchar_t>(0xD800 + ((codeInt - 0x10000) >> 10));
-      std::wcout << "extra1: " << str << std::endl;
       str += static_cast<wchar_t>(0xDC00 + ((codeInt - 0x10000) & 0x3FF));
-      std::wcout << "extra2: " << str << std::endl;
     } else {
       throw std::out_of_range(
         "Code is out of valid Unicode range (0x0 to 0x10FFFF)."
@@ -108,21 +102,33 @@ namespace BF {
 
     return std::make_shared<std::wstring>(str);
   }
-  
+
   std::shared_ptr<Dictionary> dict() {
     return Dictionary::spawn();
   }
 
   std::shared_ptr<Tuple> divmod(const std::shared_ptr<Number>& dividend,
     const std::shared_ptr<Number>& divisor) {
-    std::shared_ptr<Number> divisionResult = (*dividend) / (*divisor);
+    if (divisor == Number::spawn(0)) {
+      throw std::runtime_error("Attempted to perform a division by 0");
+    }
 
-    std::shared_ptr<Number> quotient =
-      Number::spawn(divisionResult->getInt());
-    std::shared_ptr<Number> remainder =
-      Number::spawn(divisionResult - quotient);
+    if (dividend->isDouble() || divisor->isDouble()) {
+      std::shared_ptr<Number> quotient =
+        Number::spawn(((*dividend) / (*divisor))->getDouble());
+      std::shared_ptr<Number> remainder =
+        Number::spawn(((*dividend) % (*divisor))->getDouble());
 
-    return Tuple::spawn({quotient, remainder});
+      return Tuple::spawn({quotient, remainder});
+      
+    } else {
+      std::shared_ptr<Number> quotient =
+        Number::spawn(((*dividend) / (*divisor))->getInt());
+      std::shared_ptr<Number> remainder =
+        Number::spawn(((*dividend) % (*divisor))->getInt());
+
+      return Tuple::spawn({quotient, remainder});
+    }    
   }
 
   template<TIterable TType>
@@ -130,7 +136,7 @@ namespace BF {
     std::shared_ptr<Number> start = Number::spawn(0)) {
     std::shared_ptr<List> result = List::spawn();
 
-    for (auto& item : structure) {
+    for (auto& item : (*structure)) {
       result->append(Tuple::spawn({start, item}));
       start = ++*start;
     }
@@ -146,6 +152,10 @@ namespace BF {
     return Number::spawn(value->getDouble());
   }
 
+  std::shared_ptr<Number> float_(const std::shared_ptr<Bool>& value) {
+    return float_(Number::spawn((value->toBool())? 1.0 : 0.0));
+  }
+
   std::shared_ptr<Number> float_(const std::shared_ptr<String>& value) {
     return Number::spawn(std::stod(**value));
   }
@@ -154,11 +164,21 @@ namespace BF {
     return Set::spawn();
   }
 
+  const std::shared_ptr<Set> frozenset(const std::shared_ptr<String>& items) {
+    std::shared_ptr<Set> set = Set::spawn();
+
+    for (Number i = Number(0); i < *(items->len()); ++i) {
+      set->add((*items)[i]);
+    }
+
+    return set;
+  }
+
   template<TIterable TType>
   const std::shared_ptr<Set> frozenset(const std::shared_ptr<TType>& items) {
     std::shared_ptr<Set> set = Set::spawn();
 
-    for (auto& item : items) {
+    for (auto& item : (*items)) {
       set->add(item);
     }
 
@@ -201,6 +221,11 @@ namespace BF {
     return Number::spawn(result);
   }
 
+  std::shared_ptr<Number> int_(const std::shared_ptr<Bool>& value,
+    const std::shared_ptr<Number>& base = Number::spawn(10)) {
+    return int_(Number::spawn((value->toBool())? 1:0), base);
+  }
+
   std::shared_ptr<Number> int_(const std::shared_ptr<String>& value,
     const std::shared_ptr<Number>& base = Number::spawn(10)) {
     return Number::spawn(std::stoi(**value, nullptr, base->getInt()));
@@ -220,11 +245,21 @@ namespace BF {
     return List::spawn();
   }
 
+  const std::shared_ptr<List> list(const std::shared_ptr<String>& items) {
+    std::shared_ptr<List> result = List::spawn();
+
+    for (Number i = Number(0); i < *(items->len()); ++i) {
+      result->append((*items)[i]);
+    }
+
+    return result;
+  }
+
   template<TIterable TType>
   std::shared_ptr<List> list(const std::shared_ptr<TType>& items) {
     std::shared_ptr<List> result = List::spawn();
 
-    for (auto& item : items) {
+    for (auto& item : (*items)) {
       result->append(item);
     }
 
@@ -298,15 +333,15 @@ namespace BF {
   }
 
   void print() {
-    std::wcout << std::endl;
+    std::cout << std::endl;
   }
 
   void print(const std::shared_ptr<String>& object) {
-    std::wcout << (**object).c_str() << std::endl;
+    std::cout << (**object).c_str() << std::endl;
   }
 
   void print(const std::shared_ptr<Object>& object) {
-    std::wcout << object->toString().c_str() << std::endl;
+    std::cout << object->toString().c_str() << std::endl;
   }
 
   void print(const std::shared_ptr<std::wstring>& anything) {
@@ -315,7 +350,7 @@ namespace BF {
 
   template<typename Any>
   void print(const std::shared_ptr<Any>& anything) {
-    std::wcout << (*anything) << std::endl;
+    std::cout << (*anything) << std::endl;
   }
 
   std::shared_ptr<List> range(const std::shared_ptr<Number>& stop) {
@@ -382,11 +417,21 @@ namespace BF {
     return Set::spawn();
   }
 
+  const std::shared_ptr<Set> set(const std::shared_ptr<String>& items) {
+    std::shared_ptr<Set> result = Set::spawn();
+
+    for (Number i = Number(0); i < *(items->len()); ++i) {
+      result->add((*items)[i]);
+    }
+
+    return result;
+  }
+
   template<TIterable TType>
   std::shared_ptr<Set> set(const std::shared_ptr<TType>& items) {
     std::shared_ptr<Set> result = Set::spawn();
 
-    for (auto& item : items) {
+    for (auto& item : (*items)) {
       result->add(item);
     }
 
@@ -404,6 +449,10 @@ namespace BF {
     std::shared_ptr<TType> result = std::make_shared<TType>(structure);
     std::sort(result->begin(), result->end());
     return result;
+  }
+
+  std::shared_ptr<String> str() {
+    return String::spawn(std::string(""));
   }
 
   std::shared_ptr<String> str(const std::shared_ptr<Object>& object) {
@@ -436,10 +485,21 @@ namespace BF {
     return Tuple::spawn();
   }
 
+  const std::shared_ptr<Tuple> tuple(const std::shared_ptr<String>& items) {
+    std::vector<std::shared_ptr<Object>> result;
+
+    for (Number i = Number(0); i < *(items->len()); ++i) {
+      result.push_back((*items)[i]);
+    }
+
+    return std::make_shared<Tuple>(result);
+  }
+
   template<TIterable TType>
   std::shared_ptr<Tuple> tuple(const std::shared_ptr<TType>& items) {
-    std::shared_ptr<Tuple> result =
-      std::make_shared<Tuple>(list(items)->getElements());
-    return result;
+    // std::shared_ptr<Tuple> result =
+    //   std::make_shared<Tuple>(list(items)->getElements());
+    // return result;
+    return std::make_shared<Tuple>(items->begin(), items->end());
   }
 };

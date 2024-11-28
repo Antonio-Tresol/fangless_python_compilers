@@ -72,11 +72,10 @@ class FanglessGenerator:
                 if is_standalone:
                     statements += ";\n"
 
-            elif subtree is not None:
+            elif (subtree is not None) or (not is_standalone):
                 statements += (
                     f"// {create_instance(subtree)}\n"
-                    if is_standalone else
-                    create_instance(subtree)
+                    if is_standalone else create_instance(subtree)
                 )
 
         return statements

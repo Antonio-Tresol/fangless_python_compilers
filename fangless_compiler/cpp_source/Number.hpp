@@ -6,6 +6,7 @@
 #include <string>
 #include <stdexcept>
 #include <variant>
+#include <sstream>
 
 #include "Object.hpp"
 
@@ -25,7 +26,7 @@ class Number : public Object {
 
   explicit Number(const Number& other) : value_(other.value_) {}
 
-  explicit Number(const Object& other) : value_(other.toBool() ? 1 : 0) {}
+  explicit Number(const Object& other) : value_(static_cast<int64_t>(other.toBool() ? 1 : 0)) {}
 
   explicit Number(std::shared_ptr<Object> obj) {
     if (auto* numObj = dynamic_cast<Number*>(obj.get())) {
@@ -33,7 +34,7 @@ class Number : public Object {
       return;
     }
 
-    value_ = obj->toBool() ? 1 : 0;
+    value_ = static_cast<int64_t>(obj->toBool()? 1 : 0);
   }
 
   template <typename T>
@@ -54,7 +55,7 @@ class Number : public Object {
             if (std::isinf(arg)) return arg > 0 ? "inf" : "-inf";
 
             if (std::isnan(arg)) return "nan";
-
+            
             return std::to_string(arg);
           } else {
             return std::to_string(arg);
@@ -312,6 +313,7 @@ class Number : public Object {
         },
         value_, other.value_);
   }
+
   std::shared_ptr<Number> operator%(const Number& other) const {
     return std::visit(
         [](auto&& a, auto&& b) -> std::shared_ptr<Number> {
@@ -320,9 +322,10 @@ class Number : public Object {
 
           if constexpr (std::is_same_v<A, double> ||
                         std::is_same_v<B, double>) {
-            throw std::runtime_error(
-                "Modulo operation not supported on floats");
+            double result = static_cast<int64_t>(a) % static_cast<int64_t>(b);
+            return std::make_shared<Number>(result);
           } else {
+            
             if (b == 0) {
               throw std::runtime_error("Division by zero");
             }
