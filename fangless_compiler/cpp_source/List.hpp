@@ -23,12 +23,20 @@ class List : public Object {
 
   List(std::initializer_list<std::shared_ptr<Object>> init) : elements_(init) {}
 
+  static std::shared_ptr<List> spawn() { return std::make_shared<List>(); }
+
   static std::shared_ptr<List> spawn(
       std::initializer_list<std::shared_ptr<Object>> init) {
     return std::make_shared<List>(init);
   }
 
-  static std::shared_ptr<List> spawn() { return std::make_shared<List>(); }
+  inline std::vector<std::shared_ptr<Object>>& getElements() {
+    return elements_;
+  }
+
+  inline const std::vector<std::shared_ptr<Object>>& getElements() const {
+    return elements_;
+  }
 
   std::string type() const override { return "list"; }
 
@@ -131,10 +139,9 @@ class List : public Object {
   }
 
   bool toBool() const override { return !elements_.empty(); }
-  bool operator!() const { return !toBool(); }
-  friend bool operator!(const List& list) { return !list.toBool(); }
+  bool operator!() const { return elements_.empty(); }
   friend bool operator!(const std::shared_ptr<List>& list) {
-    return !list->toBool();
+    return list->operator!();
   }
 
   bool isInstance(const std::string& type) const override {
@@ -233,11 +240,11 @@ class List : public Object {
   }
 
   std::shared_ptr<Number> count() const {
-    return std::make_shared<Number>(static_cast<int>(elements_.size()));
+    return Number::spawn(static_cast<int64_t>(elements_.size()));
   }
 
   std::shared_ptr<Number> len() const {
-    return std::make_shared<Number>(static_cast<int>(elements_.size()));
+    return Number::spawn(static_cast<int64_t>(elements_.size()));
   }
 
   // Attribute access
@@ -256,34 +263,56 @@ class List : public Object {
   auto begin() const { return elements_.begin(); }
   auto end() const { return elements_.end(); }
 
-  std::shared_ptr<List> operator[](const Slice& slice) const {
-    int start = slice.start;
-    int end = slice.end;
+  auto rbegin() { return elements_.rbegin(); }
+  auto rend() { return elements_.rend(); }
+  auto rbegin() const { return elements_.rbegin(); }
+  auto rend() const { return elements_.rend(); }
 
-    if (start == INT_MAX) start = 0;
-    if (end == INT_MAX) end = elements_.size();
-
-    if (start < 0) start += elements_.size();
-    if (end < 0) end += elements_.size();
-
-    start = std::clamp(start, 0, static_cast<int>(elements_.size()));
-    end = std::clamp(end, 0, static_cast<int>(elements_.size()));
-
-    auto result = std::make_shared<List>();
-
-    for (int i = start; i < end; ++i) {
-      result->append(elements_[i]);
+  std::shared_ptr<Object> at(std::shared_ptr<Number> index) const {
+    int indexNum = index->getInt();
+    if (indexNum < 0) indexNum += elements_.size();
+    if (indexNum < 0 || static_cast<size_t>(indexNum) >= elements_.size()) {
+      throw std::out_of_range("List index out of range");
     }
-
-    return result;
+    return elements_[indexNum];
   }
 
-  std::shared_ptr<List> slice(const Slice& slice) const {
-    int start = slice.start;
-    int end = slice.end;
+  std::shared_ptr<Object> at(const Number& index) const {
+    int indexNum = index.getInt();
+    if (indexNum < 0) indexNum += elements_.size();
+    if (indexNum < 0 || static_cast<size_t>(indexNum) >= elements_.size()) {
+      throw std::out_of_range("List index out of range");
+    }
+    return elements_[indexNum];
+  }
 
-    if (start == INT_MAX) start = 0;
-    if (end == INT_MAX) end = elements_.size();
+  auto operator[](const Number& pos) const {
+    int index = pos.getInt();
+    int actual_index = index;
+    if (index < 0) actual_index += elements_.size();
+
+    if (actual_index < 0 || actual_index >= static_cast<int>(elements_.size())) {
+      throw std::out_of_range("List index out of range");
+    }
+    return elements_[actual_index];
+  }
+
+  auto operator[](const std::shared_ptr<Number>& pos) const {
+    int index = pos->getInt();
+    int actual_index = index;
+    if (index < 0) actual_index += elements_.size();
+
+    if (actual_index < 0 || actual_index >= static_cast<int>(elements_.size())) {
+      throw std::out_of_range("List index out of range");
+    }
+    return elements_[actual_index];
+  }
+
+  std::shared_ptr<List> operator[](const Slice& slice) const {
+    int start = slice.start == INT_MAX ? 0 : slice.start;
+    int end = slice.end == INT_MAX ? elements_.size() : slice.end;
+    int step = slice.step == 0 ?
+      throw std::invalid_argument("Step cannot be zero") : slice.step;
 
     if (start < 0) start += elements_.size();
     if (end < 0) end += elements_.size();
@@ -293,11 +322,21 @@ class List : public Object {
 
     auto result = std::make_shared<List>();
 
-    for (int i = start; i < end; ++i) {
-      result->append(elements_[i]);
+    if (step > 0) {
+        for (int i = start; i < end; i += step) {
+            result->append(elements_[i]);
+        }
+    } else {
+        for (int i = start; i > end; i += step) {
+            result->append(elements_[i]);
+        }
     }
 
     return result;
+}
+
+  std::shared_ptr<List> slice(const Slice& slice) const {
+    return this->operator[](slice);
   }
 
   // List arithmetic and comparison operators
@@ -363,42 +402,6 @@ class List : public Object {
       }
     }
     return std::shared_ptr<List>(this);
-  }
-
-  std::shared_ptr<Object> operator[](std::shared_ptr<Number> index) const {
-    int indexNum = index->getInt();
-    if (indexNum < 0) indexNum += elements_.size();
-    if (indexNum < 0 || static_cast<size_t>(indexNum) >= elements_.size()) {
-      throw std::out_of_range("list index out of range");
-    }
-    return elements_[indexNum];
-  }
-
-  std::shared_ptr<Object> at(std::shared_ptr<Number> index) const {
-    int indexNum = index->getInt();
-    if (indexNum < 0) indexNum += elements_.size();
-    if (indexNum < 0 || static_cast<size_t>(indexNum) >= elements_.size()) {
-      throw std::out_of_range("list index out of range");
-    }
-    return elements_[indexNum];
-  }
-
-  std::shared_ptr<Object> at(const Number& index) const {
-    int indexNum = index.getInt();
-    if (indexNum < 0) indexNum += elements_.size();
-    if (indexNum < 0 || static_cast<size_t>(indexNum) >= elements_.size()) {
-      throw std::out_of_range("list index out of range");
-    }
-    return elements_[indexNum];
-  }
-
-  std::shared_ptr<Object> operator[](const Number& index) const {
-    int indexNum = index.getInt();
-    if (indexNum < 0) indexNum += elements_.size();
-    if (indexNum < 0 || static_cast<size_t>(indexNum) >= elements_.size()) {
-      throw std::out_of_range("list index out of range");
-    }
-    return elements_[indexNum];
   }
 
   List& operator=(const List& other) {

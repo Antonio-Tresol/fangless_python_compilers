@@ -199,6 +199,7 @@ TOKENS = (
         "START_TOKEN",
         "END_TOKEN",
         "ARROW",
+        "COMMENT",
     )
 
 RESERVED_WORDS = {

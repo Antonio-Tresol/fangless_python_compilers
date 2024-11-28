@@ -5,7 +5,7 @@
 #ifndef TUPLE_HPP
 #define TUPLE_HPP
 
-#include <array>
+#include <vector>
 #include <concepts>
 #include <ranges>
 
@@ -17,39 +17,32 @@ using std::views::iota;
 template <typename T>
 concept SharedObject = std::is_convertible<T, std::shared_ptr<Object>>::value;
 
-template <std::size_t ElementAmount>
-class Tuple final : public Object {
+class Tuple : public Object {
+  const std::vector<std::shared_ptr<Object>> elements_;
+
  public:
   template <typename... Args>
     requires(SharedObject<Args> && ...)
-  explicit Tuple(Args... args) : elements_{args...} {
-    static_assert(sizeof...(Args) == ElementAmount,
-                  "Wrong number of arguments");
-  }
+  explicit Tuple(Args... args) : elements_{args...} {}
 
-  explicit Tuple(const std::vector<std::shared_ptr<Object>>& vec) {
-    if (vec.size() != ElementAmount) {
-      throw std::runtime_error("Vector size must match tuple size");
-    }
-    std::copy(vec.begin(), vec.end(), elements_.begin());
-  }
+  explicit Tuple(const std::vector<std::shared_ptr<Object>>& vec)
+    : elements_(vec) {}
+
+  explicit Tuple(auto begin, auto end) : elements_(begin, end) {}
 
   template <typename... Args>
     requires(SharedObject<Args> && ...)
-  static std::shared_ptr<Tuple<sizeof...(Args)>> spawn(Args... args) {
-    return std::make_shared<Tuple<sizeof...(Args)>>(args...);
+  static std::shared_ptr<Tuple> spawn(Args... args) {
+    return std::make_shared<Tuple>(args...);
   }
 
-  static std::shared_ptr<Tuple<ElementAmount>> spawn(
+  static std::shared_ptr<Tuple> spawn(
       std::initializer_list<std::shared_ptr<Object>> init) {
-    if (init.size() != ElementAmount) {
-      throw std::runtime_error("Initializer list size must match tuple size");
-    }
-    return std::make_shared<Tuple<ElementAmount>>(
+
+    return std::make_shared<Tuple>(
         std::vector<std::shared_ptr<Object>>(init.begin(), init.end()));
   }
 
-  std::array<std::shared_ptr<Object>, ElementAmount> elements_;
   std::string type() const override { return "tuple"; }
 
   std::string toString() const override {
@@ -101,32 +94,31 @@ class Tuple final : public Object {
       return lhs.equals(rhs);
   }
   
-  friend bool operator==(std::shared_ptr<Tuple> lhs, std::shared_ptr<Tuple> rhs) {
+  friend bool operator==(const std::shared_ptr<Tuple>& lhs, const std::shared_ptr<Tuple>& rhs) {
       return lhs->equals(*rhs);
   }
   
-  friend bool operator==(std::shared_ptr<Tuple> lhs, const Tuple& rhs) {
+  friend bool operator==(const std::shared_ptr<Tuple>& lhs, const Tuple& rhs) {
       return lhs->equals(rhs);
   }
   
-  friend bool operator==(const Tuple& lhs, std::shared_ptr<Tuple> rhs) {
+  friend bool operator==(const Tuple& lhs, const std::shared_ptr<Tuple>& rhs) {
       return rhs->equals(lhs);
   }
   
   friend bool operator==(const std::shared_ptr<Object>& lhs, const std::shared_ptr<Tuple>& rhs) {
-      return rhs->equals(lhs);
+      return rhs->equals(*lhs);
   }
   
   friend bool operator==(const std::shared_ptr<Object>& lhs, const Tuple& rhs) {
-      return rhs.equals(lhs);
+      return rhs.equals(*lhs);
   }
 
-  bool operator!() const { return !toBool(); }
+  bool operator!() const { return elements_.empty(); }
 
   friend bool operator!(const std::shared_ptr<Tuple>& tuple) {
-    return !tuple->toBool();
+    return tuple->operator!();
   }
-
 
   bool isInstance(const std::string& type) const override {
     return type == "tuple" || type == "object";
@@ -141,14 +133,14 @@ class Tuple final : public Object {
     throw std::runtime_error("'tuple' object attributes are read-only");
   }
 
-  auto begin() { return elements_.begin(); }
-  auto end() { return elements_.end(); }
-
   auto begin() const { return elements_.begin(); }
   auto end() const { return elements_.end(); }
 
   auto cbegin() const { return elements_.cbegin(); }
   auto cend() const { return elements_.cend(); }
+
+  auto rbegin() const { return elements_.rbegin(); }
+  auto rend() const { return elements_.rend(); }
 
   const std::shared_ptr<const Object> operator[](
       const std::shared_ptr<Number>& index) const {
@@ -165,18 +157,18 @@ class Tuple final : public Object {
         return std::make_shared<Number>(i);
       }
     }
-    const std::string err = std::string("Error Tuple::index: Coudl not find ") +
+    const std::string err = std::string("Error Tuple::index: Could not find ") +
                             " could not find [" + object->toString() + "] in " +
                             toString();
     throw std::runtime_error(err);
   }
 
   std::shared_ptr<Number> count() const {
-    return std::make_shared<Number>(static_cast<int>(elements_.size()));
+    return Number::spawn(static_cast<int>(elements_.size()));
   }
 
   std::shared_ptr<Number> len() const {
-    return std::make_shared<Number>(static_cast<int>(elements_.size()));
+    return Number::spawn(static_cast<int>(elements_.size()));
   }
 
   // at() methods - same behavior as operator[] but clearer intent
@@ -188,101 +180,81 @@ class Tuple final : public Object {
     return operator[](*index);
   }
 
-  template <size_t NewSize>
-  std::shared_ptr<Tuple<NewSize>> operator[](const Slice& slice) const {
-    int start = slice.start;
-    int end = slice.end;
+  auto operator[](const Slice& slice) const {
+    int start = slice.start == INT_MAX ? 0 : slice.start;
+    int end = slice.end == INT_MAX ? len()->getInt() : slice.end;
+    int step = slice.step == 0 ?
+      throw std::invalid_argument("Step cannot be zero") : slice.step;
 
-    if (start == INT_MAX) start = 0;
-    if (end == INT_MAX) end = ElementAmount;
+    if (start < 0) start += len()->getInt();
+    if (end < 0) end += len()->getInt();
 
-    if (start < 0) start += ElementAmount;
-    if (end < 0) end += ElementAmount;
+    start = std::clamp(start, 0, static_cast<int>(len()->getInt()));
+    end = std::clamp(end, 0, static_cast<int>(len()->getInt()));
 
-    start = std::clamp(start, 0, static_cast<int>(ElementAmount));
-    end = std::clamp(end, 0, static_cast<int>(ElementAmount));
-
-    if (start >= end) {
-      return std::make_shared<Tuple<0>>();
+    auto vector = std::vector<std::shared_ptr<Object>>();
+    if (step > 0) {
+        for (int i = start; i < end; i += step) {
+            vector.push_back(elements_[i]);
+        }
+    } else {
+        for (int i = start; i > end; i += step) {
+            vector.push_back(elements_[i]);
+        }
     }
+    const size_t newSize = vector.size();
 
-    auto result = std::make_shared<Tuple<NewSize>>();
-    for (int i = start; i < end && i < static_cast<int>(ElementAmount); ++i) {
-      result->elements_[i - start] = elements_[i];
-    }
-
-    return result;
+    return std::make_shared<Tuple>(vector);
   }
 
-  std::shared_ptr<Tuple<ElementAmount>> slice(const Slice& slice) const {
-    int start = slice.start;
-    int end = slice.end;
-
-    if (start == INT_MAX) start = 0;
-    if (end == INT_MAX) end = ElementAmount;
-
-    if (start < 0) start += ElementAmount;
-    if (end < 0) end += ElementAmount;
-
-    start = std::clamp(start, 0, static_cast<int>(ElementAmount));
-    end = std::clamp(end, 0, static_cast<int>(ElementAmount));
-
-    auto result = std::make_shared<Tuple<ElementAmount>>();
-    for (int i = start; i < end; ++i) {
-      result->elements_[i - start] = elements_[i];
-    }
-
-    return result;
+  auto slice(const Slice& slice) const {
+    return this->operator[](slice);
   }
 
-  template <size_t OtherSize>
-  std::shared_ptr<Tuple<ElementAmount + OtherSize>> operator+(
-      const Tuple<OtherSize>& other) const {
+  std::shared_ptr<Tuple> operator+(
+      const Tuple& other) const {
     std::vector<std::shared_ptr<Object>> combined;
-    combined.reserve(ElementAmount + OtherSize);
+    combined.reserve(other.len()->getInt());
 
     // Combine elements from both tuples
     combined.insert(combined.end(), elements_.begin(), elements_.end());
     combined.insert(combined.end(), other.elements_.begin(),
                     other.elements_.end());
 
-    return Tuple<ElementAmount + OtherSize>::from_vector(combined);
+    return Tuple::from_vector(combined);
   }
 
-  // Overload for shared_ptr version
-  template <size_t OtherSize>
-  std::shared_ptr<Tuple<ElementAmount + OtherSize>> operator+(
-      const std::shared_ptr<Tuple<OtherSize>>& other) const {
+  std::shared_ptr<Tuple> operator+(
+      const std::shared_ptr<Tuple>& other) const {
     return (*this) + (*other);
   }
 
-  static std::shared_ptr<Tuple<ElementAmount>> from_vector(
+  static std::shared_ptr<Tuple> from_vector(
       const std::vector<std::shared_ptr<Object>>& vec) {
-    return std::make_shared<Tuple<ElementAmount>>(vec);
+    return std::make_shared<Tuple>(vec);
+  }
+
+  friend std::ostream& operator<<(std::ostream& os,
+                         const std::shared_ptr<Tuple>& obj) {
+    return os << *obj;
+  }
+
+  friend std::shared_ptr<Tuple> operator+(
+      const std::shared_ptr<Tuple>& a,
+      const std::shared_ptr<Tuple>& b) {
+    return *a + *b;
   }
 
  private:
   int normalizeIndex(int index) const {
-    if (index < 0) index += ElementAmount;
-    if (index < 0 || index >= ElementAmount) {
+    if (index < 0) index += len()->getInt();
+    if (index < 0 || index >= len()->getInt()) {
       throw std::runtime_error("Index out of bounds error");
     }
     return index;
   }
-
 };
 
-template <size_t Size>
-std::ostream& operator<<(std::ostream& os,
-                         const std::shared_ptr<Tuple<Size>>& obj) {
-  return os << *obj;
-}
 
-template <size_t Size>
-std::shared_ptr<Tuple<Size + Size>> operator+(
-    const std::shared_ptr<Tuple<Size>>& a,
-    const std::shared_ptr<Tuple<Size>>& b) {
-  return *a + *b;
-}
 
 #endif  // TUPLE_HPP

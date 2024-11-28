@@ -81,6 +81,7 @@ class Object {
                          const std::shared_ptr<Object>& rhs) {
     return rhs->equals(*lhs);
   }
+
   template<typename ObjectA, typename ObjectB>
   friend bool operator==(std::shared_ptr<ObjectA>& lhs, 
                         std::shared_ptr<ObjectB>& rhs) {

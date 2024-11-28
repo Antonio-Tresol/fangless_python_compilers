@@ -57,7 +57,7 @@ class None : public Object {
 
   bool toBool() const override { return false; }
 
-  bool operator!() const { return toBool(); }
+  bool operator!() const { return !toBool(); }
 
   friend bool operator!(const std::shared_ptr<None>& none) {
     return !none->toBool();

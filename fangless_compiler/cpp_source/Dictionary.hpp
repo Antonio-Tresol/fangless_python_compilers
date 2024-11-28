@@ -160,7 +160,9 @@ class Dictionary : public Object {
 
   void clear() { elements_.clear(); }
 
-  size_t size() const { return elements_.size(); }
+  std::shared_ptr<Number> len() const {
+    return Number::spawn(static_cast<int64_t>(elements_.size()));
+  }
 
   std::shared_ptr<List> keys() const {
     auto result = std::make_shared<List>();
@@ -202,6 +204,11 @@ class Dictionary : public Object {
   auto end() { return elements_.end(); }
   auto begin() const { return elements_.begin(); }
   auto end() const { return elements_.end(); }
+
+  auto rbegin() { return elements_.rbegin(); }
+  auto rend() { return elements_.rend(); }
+  auto rbegin() const { return elements_.rbegin(); }
+  auto rend() const { return elements_.rend(); }
 
   std::shared_ptr<Object>& operator[](std::shared_ptr<Object> key) {
     return elements_[key];

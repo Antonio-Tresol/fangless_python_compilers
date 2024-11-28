@@ -22,7 +22,11 @@ from collections import defaultdict
 from typing import Any
 
 from abstract_syntax_tree.node import NIL_NODE
-from abstract_syntax_tree.operator_node import (OperatorType, OperatorNode, Operand)
+from abstract_syntax_tree.operator_node import (
+    OperatorType,
+    OperatorNode,
+    Operand
+)
 from abstract_syntax_tree.epic_node import EpicNode
 from abstract_syntax_tree.name_node import NameNode
 

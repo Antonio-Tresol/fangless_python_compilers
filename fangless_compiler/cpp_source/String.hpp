@@ -31,6 +31,8 @@ class String : public Object {
     return *this;
   }
 
+  std::string operator*() const { return value_; }
+
   std::string type() const override { return "str"; }
 
   std::string toString() const override { return "'" + value_ + "'"; }
@@ -112,6 +114,11 @@ class String : public Object {
   auto begin() const { return value_.begin(); }
   auto end() const { return value_.end(); }
 
+  auto rbegin() { return value_.rbegin(); }
+  auto rend() { return value_.rend(); }
+  auto rbegin() const { return value_.rbegin(); }
+  auto rend() const { return value_.rend(); }
+
   // Python string methods
   std::shared_ptr<String> upper() const {
     std::string result = value_;
@@ -192,7 +199,7 @@ class String : public Object {
   }
 
   std::shared_ptr<Number> len() const {
-    return std::make_shared<Number>(static_cast<int>(value_.size()));
+    return Number::spawn(static_cast<int>(value_.size()));
   }
 
   std::shared_ptr<Number> count(const String& sub, Number startNum = Number(0),
@@ -278,7 +285,7 @@ class String : public Object {
     return std::make_shared<String>(std::string{value_[actual_index]});
   }
 
-  std::shared_ptr<String> operator[](std::shared_ptr<Number> pos) const {
+  std::shared_ptr<String> operator[](const std::shared_ptr<Number>& pos) const {
     int index = pos->getInt();
     int actual_index = index;
     if (index < 0) actual_index += value_.size();
@@ -290,11 +297,10 @@ class String : public Object {
   }
 
   std::shared_ptr<String> operator[](const Slice& slice) const {
-    int start = slice.start;
-    int end = slice.end;
-
-    if (start == INT_MAX) start = 0;
-    if (end == INT_MAX) end = value_.size();
+    int start = slice.start == INT_MAX ? 0 : slice.start;
+    int end = slice.end == INT_MAX ? value_.size() : slice.end;
+    int step = slice.step == 0 ?
+      throw std::invalid_argument("Step cannot be zero") : slice.step;
 
     if (start < 0) start += value_.size();
     if (end < 0) end += value_.size();
@@ -302,31 +308,23 @@ class String : public Object {
     start = std::clamp(start, 0, static_cast<int>(value_.size()));
     end = std::clamp(end, 0, static_cast<int>(value_.size()));
 
-    if (start >= end) {
-      return std::make_shared<String>("");
+    std::string result;
+
+    if (step > 0) {
+        for (int i = start; i < end; i += step) {
+            result += value_[i];
+        }
+    } else {
+        for (int i = start; i > end; i += step) {
+            result += value_[i];
+        }
     }
 
-    return std::make_shared<String>(value_.substr(start, end - start));
+    return std::make_shared<String>(result);
   }
 
   std::shared_ptr<String> slice(const Slice& slice) const {
-    int start = slice.start;
-    int end = slice.end;
-
-    if (start == INT_MAX) start = 0;
-    if (end == INT_MAX) end = value_.size();
-
-    if (start < 0) start += value_.size();
-    if (end < 0) end += value_.size();
-
-    start = std::clamp(start, 0, static_cast<int>(value_.size()));
-    end = std::clamp(end, 0, static_cast<int>(value_.size()));
-
-    if (start >= end) {
-      return std::make_shared<String>("");
-    }
-
-    return std::make_shared<String>(value_.substr(start, end - start));
+    return this->operator[](slice);
   }
 
   std::shared_ptr<Number> find(
@@ -528,6 +526,11 @@ class String : public Object {
   friend std::ostream& operator<<(std::ostream& os,
                                   const std::shared_ptr<String>& obj) {
     return os << *obj;
+  }
+
+  friend std::istream& operator>>(std::istream& is,
+                                  std::shared_ptr<String>& obj) {
+    return is >> (*obj).value_;
   }
 
   friend std::shared_ptr<String> operator+(const std::shared_ptr<String>& a,

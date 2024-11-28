@@ -149,7 +149,7 @@ class FanglessLexer:
 
         return token
 
-    def t_comment(self, token: lex.LexToken) -> None:
+    def t_COMMENT(self, token: lex.LexToken) -> None:
         r"""([ ]*\043[^\n]*)"""
         token.lexer.lineno += 1
 

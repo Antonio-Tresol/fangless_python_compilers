@@ -4,6 +4,7 @@
 #include <cmath>
 #include <memory>
 #include <string>
+#include <stdexcept>
 #include <variant>
 
 #include "Object.hpp"
@@ -57,6 +58,19 @@ class Number : public Object {
             return std::to_string(arg);
           } else {
             return std::to_string(arg);
+          }
+        }, value_);
+  }
+
+  inline bool isDouble() const {
+    return std::visit(
+        [](auto&& arg) -> bool {
+          using T = std::decay_t<decltype(arg)>;
+        
+          if constexpr (std::is_same_v<T, double>) {
+            return true;
+          } else {
+            return false;
           }
         }, value_);
   }
@@ -135,7 +149,6 @@ class Number : public Object {
   }
 
   bool operator!() const { return !toBool(); }
-  friend bool operator!(const Number& num) { return !num.toBool(); }
   friend bool operator!(const std::shared_ptr<Number>& num) {
     return !num->toBool();
   }
@@ -230,7 +243,18 @@ class Number : public Object {
         value_);
   }
 
+  std::shared_ptr<Number> operator~() const {
+    if (this->isDouble()) {
+      throw(std::invalid_argument("Can not use a double for ~ operation"));
+    }
+    return Number::spawn(~(this->getInt()));
+  }
+
   // Arithmetic operators
+  inline std::shared_ptr<Number> operator+() const {
+    return std::make_shared<Number>(*this);
+  }
+
   std::shared_ptr<Number> operator+(const Number& other) const {
     return std::visit(
         [](auto&& a, auto&& b) -> std::shared_ptr<Number> {
@@ -245,6 +269,16 @@ class Number : public Object {
           }
         },
         value_, other.value_);
+  }
+
+  std::shared_ptr<Number> operator-() const {
+    if (this->isDouble()) {
+      const double value = -(this->getDouble());
+      return Number::spawn(value);
+    }
+
+    const int value = -(this->getInt());
+    return Number::spawn(value);
   }
 
   std::shared_ptr<Number> operator-(const Number& other) const {
@@ -319,9 +353,58 @@ class Number : public Object {
         value_, other.value_);
   }
 
+  std::shared_ptr<Number> pow(std::shared_ptr<Number> other) const {
+    if (isDouble() || other->isDouble()) {
+      return std::make_shared<Number>(
+          std::pow(getDouble(), other->getDouble()));
+    }
+    return std::make_shared<Number>(std::pow(getInt(), other->getInt()));
+  }
+  
+  // pre-increment
+  std::shared_ptr<Number> operator++() {
+    std::visit([](auto&& arg) {
+          using T = std::decay_t<decltype(arg)>;
+          if constexpr (std::is_same_v<T, double>) {
+            arg += 1.0;
+          } else {
+            arg += 1;
+          }
+        }, value_);
+  
+    return std::make_shared<Number>(*this);
+  }
+
+  // post-increment
+  std::shared_ptr<Number> operator++(int) {
+    std::shared_ptr<Number> old_value = std::make_shared<Number>(*this);
+    std::visit([](auto&& arg) {
+          using T = std::decay_t<decltype(arg)>;
+          if constexpr (std::is_same_v<T, double>) {
+            arg += 1.0;
+          } else {
+            arg += 1;
+          }
+        }, value_);
+        
+    return old_value;
+  }
+
+  friend std::shared_ptr<Number> operator~(const std::shared_ptr<Number>& num) {
+    return num->operator~();
+  }
+
+  friend std::shared_ptr<Number> operator+(const std::shared_ptr<Number>& num) {
+    return num->operator+();
+  }
+
   friend std::shared_ptr<Number> operator+(const std::shared_ptr<Number>& a,
                                            const std::shared_ptr<Number>& b) {
     return *a + *b;
+  }
+
+  friend std::shared_ptr<Number> operator-(const std::shared_ptr<Number>& num) {
+    return num->operator-();
   }
 
   friend std::shared_ptr<Number> operator-(const std::shared_ptr<Number>& a,

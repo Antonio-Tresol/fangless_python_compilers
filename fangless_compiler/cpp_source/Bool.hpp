@@ -4,6 +4,8 @@
 #include <memory>
 
 #include "Object.hpp"
+#include "Number.hpp"
+
 class Bool : public Object {
   bool value_;
 
@@ -63,6 +65,14 @@ class Bool : public Object {
 
   friend bool operator!(const std::shared_ptr<Bool>& obj) {
     return obj->operator!();
+  }
+
+  inline std::shared_ptr<Number> operator~() const {
+    return ~Number::spawn((value_)? 1 : 0);
+  }
+
+  friend std::shared_ptr<Number> operator~(const std::shared_ptr<Bool>& obj) {
+    return obj->operator~();
   }
 
   std::shared_ptr<Object> getAttr(const std::string& name) const override {

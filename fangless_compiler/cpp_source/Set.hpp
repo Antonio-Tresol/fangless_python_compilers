@@ -114,8 +114,6 @@ class Set final : public Object {
     return std::strong_ordering::equal;
   }
 
-  Number len() const { return Number(static_cast<int64_t>(elements_.size())); }
-
   friend bool operator==(const Set& lhs, const Set& rhs) {
     return lhs.equals(rhs);
   }
@@ -159,10 +157,10 @@ class Set final : public Object {
 
   bool toBool() const override { return !elements_.empty(); }
 
-  bool operator!() const { return !toBool(); }
+  bool operator!() const { return elements_.empty(); }
 
   friend bool operator!(const std::shared_ptr<Set>& set) {
-    return !set->toBool();
+    return set->operator!();
   }
 
   bool isInstance(const std::string& type) const override {
@@ -189,8 +187,19 @@ class Set final : public Object {
   auto cbegin() const { return elements_.cbegin(); }
   auto cend() const { return elements_.cend(); }
 
+  auto rbegin() { return elements_.rbegin(); }
+  auto rend() { return elements_.rend(); }
+  auto rbegin() const { return elements_.rbegin(); }
+  auto rend() const { return elements_.rend(); }
+
   // set functions
-  size_t count() const { return elements_.size(); }
+  std::shared_ptr<Number> count() const {
+    return Number::spawn(static_cast<int64_t>(elements_.size()));
+  }
+
+  std::shared_ptr<Number> len() const {
+    return Number::spawn(static_cast<int64_t>(elements_.size()));
+  }
 
   bool exists(const std::shared_ptr<Object>& obj) const {
     return elements_.contains(obj);

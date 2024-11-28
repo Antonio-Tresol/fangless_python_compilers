@@ -21,6 +21,7 @@ void printSection(const std::string& title) {
 void printResult(const std::string& op, const Object& result) {
   std::cout << op << ": " << result << std::endl;
 }
+
 void printResult(const std::string& op, const std::shared_ptr<Object>& result) {
   std::cout << op << ": " << result << std::endl;
 }
@@ -339,7 +340,7 @@ void testStrings() {
   // Empty slice tests
   std::cout << "Empty slice hello[5:2]: \"" << (*hello)[Slice(5, 2)] << "\"\n";
   std::cout << "Empty string slice: \""
-            << (*hello)[Slice(hello->len(), INT_MAX)] << "\"\n";
+            << (*hello)[Slice(hello->len()->getInt(), INT_MAX)] << "\"\n";
 }
 
 void testLists() {
@@ -550,7 +551,7 @@ void testTuple() {
   printSection("1. Tuple Creation and Basic Operations");
 
   // Create a Tuple with three elements
-  auto tuple1 = Tuple<3>::spawn(Number::spawn(42), String::spawn("hello"),
+  auto tuple1 = Tuple::spawn(Number::spawn(42), String::spawn("hello"),
                                 Number::spawn(3.14));
 
   std::cout << "Created tuple with (42, 'hello', 3.14):\n";
@@ -567,10 +568,10 @@ void testTuple() {
   std::cout << "      Actual:   " << *tuple1->at(Number(2)) << "\n";
 
   printSection("2. Tuple Equality Testing");
-  auto tuple2 = Tuple<3>::spawn(Number::spawn(42), String::spawn("hello"),
+  auto tuple2 = Tuple::spawn(Number::spawn(42), String::spawn("hello"),
                                 Number::spawn(3.14));
 
-  auto tuple3 = Tuple<3>::spawn(Number::spawn(42),
+  auto tuple3 = Tuple::spawn(Number::spawn(42),
                                 String::spawn("world"),  // Different value
                                 Number::spawn(3.14));
 
@@ -590,7 +591,7 @@ void testTuple() {
   std::cout << "  Hashes equal: " << (tuple1->hash() == tuple2->hash()) << "\n";
 
   printSection("4. Empty Tuple");
-  auto emptyTuple = Tuple<0>::spawn();
+  auto emptyTuple = Tuple::spawn();
   std::cout << "Empty tuple representation:\n";
   std::cout << "  Expected: ()\n";
   std::cout << "  Actual:   " << emptyTuple << "\n";
@@ -607,6 +608,7 @@ void testTuple() {
       std::cout << "null ";
     }
   }
+
   std::cout << "\n";
 
   printSection("6. Error Handling");
@@ -620,9 +622,9 @@ void testTuple() {
     std::cout << "✓ Caught expected error: " << e.what() << "\n";
   }
   printSection("7. Tuple operations");
-  auto tuple4 = Tuple<3>::spawn(Number::spawn(42), String::spawn("hello"),
+  auto tuple4 = Tuple::spawn(Number::spawn(42), String::spawn("hello"),
                                 Number::spawn(3.14));
-  auto tuple5 = Tuple<3>::spawn(Number::spawn(42), String::spawn("hello"),
+  auto tuple5 = Tuple::spawn(Number::spawn(42), String::spawn("hello"),
                                 Number::spawn(3.14));
   std::cout << "Tuple4: " << tuple4 << "\n";
   std::cout << "Tuple5: " << tuple5 << "\n";
