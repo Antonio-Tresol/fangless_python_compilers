@@ -149,10 +149,13 @@ class FanglessGenerator:
         instance = self.visit_tree([instance])
 
         slice_dict = tree.get_adjacent(Operand.SLICE)
-        start = create_instance(slice_dict[Operand.START])
-        end = create_instance(slice_dict[Operand.END])
 
-        return f"{instance}[Slice({start}, {end})]"
+        end = create_instance(slice_dict[Operand.END])
+        if slice_dict[Operand.START] is not None:
+            start = create_instance(slice_dict[Operand.START])
+            return f"(*{instance})[Slice({start}, {end})]"
+        
+        return f"(*{instance})[Slice({end})]"
 
 
     def visit_indexing(self, tree: OperatorNode) -> None:
@@ -162,7 +165,7 @@ class FanglessGenerator:
         index = tree.get_adjacent(Operand.INDEX)
         index = self.visit_tree([index])
 
-        return f"{instance}[{index}]"
+        return f"(*{instance})[{index}]"
 
 
     def visit_assignation(self, tree: OperatorNode) -> str:

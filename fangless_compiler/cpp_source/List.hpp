@@ -286,7 +286,7 @@ class List : public Object {
     return elements_[indexNum];
   }
 
-  auto operator[](const Number& pos) const {
+  auto& operator[](const Number& pos) const {
     int index = pos.getInt();
     int actual_index = index;
     if (index < 0) actual_index += elements_.size();
@@ -297,7 +297,7 @@ class List : public Object {
     return elements_[actual_index];
   }
 
-  auto operator[](const std::shared_ptr<Number>& pos) const {
+  auto& operator[](const std::shared_ptr<Number>& pos) const {
     int index = pos->getInt();
     int actual_index = index;
     if (index < 0) actual_index += elements_.size();

@@ -164,6 +164,7 @@ def p_all(token_list: yacc.YaccProduction) -> None:
 def p_literal(token_list: yacc.YaccProduction) -> None:
     """literal  :   structure
                 |   number
+                |   MINUS number
                 |   bool
                 |   NONE
                 |   NAME
@@ -176,6 +177,8 @@ def p_literal(token_list: yacc.YaccProduction) -> None:
             token_list[0] = NameNode(token_list[1])
         case "NONE":
             token_list[0] = None
+        case "MINUS":
+            token_list[0] = -token_list[2]
         case _:
             token_list[0] = token_list[1]
 
@@ -715,13 +718,17 @@ def p_index_literal(token_list: yacc.YaccProduction) -> None:
 
 
 def p_slice(token_list: yacc.YaccProduction) -> None:
-    """slice    :   index COLON index"""
-    operand1 = token_list[1]
-    operand2 = token_list[3]
+    """slice    :   index COLON index
+                |   COLON index
+    """
     # sending a temp node up to recognize it
     temp_node = EpicNode(2)
-    temp_node.add_named_adjacent(Operand.START, operand1)
-    temp_node.add_named_adjacent(Operand.END, operand2)
+    if len(token_list) == 4:
+        temp_node.add_named_adjacent(Operand.START, token_list[1])
+        temp_node.add_named_adjacent(Operand.END, token_list[3])
+    else:
+        temp_node.add_named_adjacent(Operand.END, token_list[2])
+    
     token_list[0] = temp_node
 
 

@@ -9,7 +9,15 @@
 // an object interface to mimic python type behaviour
 class Object {
  public:
+  size_t id_ {};
+  
+  Object() {
+    static size_t idCounter = 0;
+    id_ = idCounter++;
+  }
+
   virtual ~Object() = default;
+
   template <typename T>
   static std::shared_ptr<Object> spawn() {
     static_assert(std::is_base_of<Object, T>::value,

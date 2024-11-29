@@ -358,13 +358,21 @@ class Number : public Object {
   }
 
   std::shared_ptr<Number> pow(std::shared_ptr<Number> other) const {
-    if (isDouble() || other->isDouble()) {
+    if (isDouble() || other->isDouble() || other < *Number::spawn(0)) {
       return std::make_shared<Number>(
           std::pow(getDouble(), other->getDouble()));
     }
-    return std::make_shared<Number>(std::pow(getInt(), other->getInt()));
+    
+    const double doubleValue = std::pow(getInt(), other->getInt());
+
+    if (std::isnan(doubleValue) ||
+      std::isinf(doubleValue)) {
+      return std::make_shared<Number>(doubleValue);
+    }
+   
+    return std::make_shared<Number>(static_cast<int64_t>(doubleValue));
   }
-  
+
   // pre-increment
   std::shared_ptr<Number> operator++() {
     std::visit([](auto&& arg) {

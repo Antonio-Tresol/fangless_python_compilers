@@ -22,9 +22,11 @@ class Tuple : public Object {
 
  public:
   template <typename... Args>
-    requires(SharedObject<Args> && ...)
-  explicit Tuple(Args... args) : elements_{args...} {}
-
+      requires(SharedObject<Args> && ...)
+  explicit Tuple(Args&&... args)
+      : elements_{{
+        std::static_pointer_cast<Object>(std::forward<Args>(args))...}} {}
+  
   explicit Tuple(const std::vector<std::shared_ptr<Object>>& vec)
     : elements_(vec) {}
 
@@ -32,15 +34,17 @@ class Tuple : public Object {
 
   template <typename... Args>
     requires(SharedObject<Args> && ...)
-  static std::shared_ptr<Tuple> spawn(Args... args) {
-    return std::make_shared<Tuple>(args...);
+  static std::shared_ptr<Tuple> spawn(Args&&... args) {
+      std::vector<std::shared_ptr<Object>> elements{
+          std::static_pointer_cast<Object>(std::forward<Args>(args))...
+      };
+      return std::make_shared<Tuple>(elements);
   }
 
   static std::shared_ptr<Tuple> spawn(
       std::initializer_list<std::shared_ptr<Object>> init) {
-
-    return std::make_shared<Tuple>(
-        std::vector<std::shared_ptr<Object>>(init.begin(), init.end()));
+      return std::make_shared<Tuple>(
+          std::vector<std::shared_ptr<Object>>(init.begin(), init.end()));
   }
 
   std::string type() const override { return "tuple"; }
@@ -142,12 +146,12 @@ class Tuple : public Object {
   auto rbegin() const { return elements_.rbegin(); }
   auto rend() const { return elements_.rend(); }
 
-  const std::shared_ptr<const Object> operator[](
+  const std::shared_ptr<Object>& operator[](
       const std::shared_ptr<Number>& index) const {
     return elements_[normalizeIndex(index->getInt())];
   }
 
-  const std::shared_ptr<const Object> operator[](const Number& index) const {
+  const std::shared_ptr<Object>& operator[](const Number& index) const {
     return elements_[normalizeIndex(index.getInt())];
   }
 

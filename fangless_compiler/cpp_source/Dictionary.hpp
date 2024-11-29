@@ -210,11 +210,12 @@ class Dictionary : public Object {
   auto rbegin() const { return elements_.rbegin(); }
   auto rend() const { return elements_.rend(); }
 
-  std::shared_ptr<Object>& operator[](std::shared_ptr<Object> key) {
+  std::shared_ptr<Object>& operator[](const std::shared_ptr<Object> key) {
     return elements_[key];
   }
 
-  std::shared_ptr<Object> operator[](std::shared_ptr<Object> key) const {
+  const std::shared_ptr<Object>& operator[](
+    const std::shared_ptr<Object> key) const {
     auto it = elements_.find(key);
     if (it == elements_.end()) {
       throw std::runtime_error("KeyError: " + key->toString());

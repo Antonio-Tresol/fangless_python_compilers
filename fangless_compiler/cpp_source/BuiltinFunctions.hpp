@@ -39,6 +39,13 @@ template<typename TClass>
 concept TIterable = requires(TClass a) {
   a.begin();
   a.end();
+} && std::is_base_of_v<Object, TClass>;
+
+template<typename TIterator>
+concept TAdvIterator = requires(TIterator it) {
+    { *it };
+    std::advance(it, 1);
+    typename std::iterator_traits<TIterator>::value_type;
 };
 
 // Namespace for builtin functions
@@ -224,7 +231,7 @@ namespace BF {
   }
 
   const std::shared_ptr<Number> id(const std::shared_ptr<Object>& object) {
-    return Number::spawn(reinterpret_cast<int64_t>(object.get()));
+    return Number::spawn(static_cast<int64_t>(object->id_));
   }
 
   std::shared_ptr<String> input(const std::shared_ptr<String>& prompt) {
@@ -314,15 +321,31 @@ namespace BF {
     return *(std::max_element(realValues->begin(), realValues->end()));
   }
 
+  template<typename ... TArgs>
+    requires (sizeof...(TArgs) > 1) && (SharedObject<TArgs> && ...)
+  auto max(TArgs&& ... args) {
+    std::shared_ptr<Tuple> realValues =
+      Tuple::spawn(std::forward<TArgs>(args)...);
+    return *(std::max_element(realValues->begin(), realValues->end()));
+  }
+
   template<TIterable TType>
   auto min(const std::shared_ptr<TType>& values) {
     std::shared_ptr<List> realValues = list(values);
     return *(std::min_element(realValues->begin(), realValues->end()));
   }
 
-  template <typename BidirectionalIterator>
-  auto next(BidirectionalIterator& iter) {
-      BidirectionalIterator current = iter;
+  template<typename ... TArgs>
+    requires (sizeof...(TArgs) > 1) && (SharedObject<TArgs> && ...)
+  auto min(TArgs&& ... args) {
+    std::shared_ptr<Tuple> realValues =
+      Tuple::spawn(std::forward<TArgs>(args)...);
+    return *(std::min_element(realValues->begin(), realValues->end()));
+  }
+
+  template <TAdvIterator TIterator>
+  TIterator next(TIterator& iter) {
+      TIterator current = iter;
       std::advance(iter, 1);
       return current;
   }
@@ -397,6 +420,32 @@ namespace BF {
     std::cout << (*anything) << std::endl;
   }
 
+  void print(const std::map<
+    std::shared_ptr<Object>,
+    std::shared_ptr<Object>,
+    ObjectComparator>::iterator& iterator) {
+    std::cout << (*(iterator->first))
+      << " : " 
+      << (*(iterator->second))
+      << std::endl;
+  }
+
+  template<TAdvIterator TIterator>
+  void print(const TIterator& iterator) {
+    using ValueType = typename std::iterator_traits<TIterator>::value_type;
+    if constexpr (std::is_same_v<ValueType, std::shared_ptr<Object>>) {
+      const std::shared_ptr<Object>& objPtr = *iterator;
+      if (!objPtr.get()) {
+        std::cout << "The container has already been freed" << std::endl;
+      } else {
+        std::cout << objPtr->toString().c_str() << std::endl;
+      }
+      
+    } else {
+      std::cout << (*iterator) << std::endl;
+    }
+  }
+
   std::shared_ptr<List> range(const std::shared_ptr<Number>& stop) {
     std::shared_ptr<List> result = List::spawn();
   
@@ -412,10 +461,18 @@ namespace BF {
     const std::shared_ptr<Number>& step = Number::spawn(1)) {
     std::shared_ptr<List> result = List::spawn();
 
-    for (int64_t i = start->getInt()
+    if (*step > *Number::spawn(0)) {
+      for (int64_t i = start->getInt()
           ; i < stop->getInt()
           ; i += step->getInt()) {
-      result->append(Number::spawn(i));
+        result->append(Number::spawn(i));
+      }
+    } else {
+      for (int64_t i = start->getInt()
+          ; i > stop->getInt()
+          ; i += step->getInt()) {
+        result->append(Number::spawn(i));
+      }
     }
 
     return result;
@@ -445,9 +502,15 @@ namespace BF {
   std::shared_ptr<Number> round(const std::shared_ptr<Number>& num,
     const std::shared_ptr<Number>& decimals = Number::spawn(0)) {
     if (decimals == Number::spawn(0)) {
-      return Number::spawn(static_cast<double>(std::round(
+      return Number::spawn(static_cast<int64_t>(std::round(
         static_cast<long double>(num->getDouble()))
       ));
+    } else if (decimals <= Number::spawn(0)) {
+      std::shared_ptr<Number> nearest = Number::spawn(10)->pow(-decimals);
+
+      return Number::spawn(
+        static_cast<double>(std::round(
+          num->getDouble() / nearest->getDouble()) * nearest->getDouble()));
     }
     
     const double scale = std::pow(10.0, decimals->getInt());
@@ -559,9 +622,10 @@ namespace BF {
 
   template<TIterable TType>
   std::shared_ptr<Tuple> tuple(const std::shared_ptr<TType>& items) {
-    // std::shared_ptr<Tuple> result =
-    //   std::make_shared<Tuple>(list(items)->getElements());
-    // return result;
     return std::make_shared<Tuple>(items->begin(), items->end());
+  }
+
+  std::shared_ptr<String> type(const std::shared_ptr<Object>& anything) {
+    return String::spawn(anything->type());
   }
 };
