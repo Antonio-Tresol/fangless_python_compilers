@@ -50,6 +50,8 @@ class List : public Object {
   }
 
   bool hasSingleType() const {
+    if (elements_.size() == 0) return true;
+
     std::string type = elements_[0]->type();
     for (auto i : iota(1, static_cast<int>(elements_.size()))) {
       if (elements_[i]->type() != type) {

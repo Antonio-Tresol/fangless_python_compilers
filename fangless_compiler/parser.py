@@ -164,7 +164,6 @@ def p_all(token_list: yacc.YaccProduction) -> None:
 def p_literal(token_list: yacc.YaccProduction) -> None:
     """literal  :   structure
                 |   number
-                |   MINUS number
                 |   bool
                 |   NONE
                 |   NAME
@@ -177,20 +176,22 @@ def p_literal(token_list: yacc.YaccProduction) -> None:
             token_list[0] = NameNode(token_list[1])
         case "NONE":
             token_list[0] = None
-        case "MINUS":
-            token_list[0] = -token_list[2]
         case _:
             token_list[0] = token_list[1]
 
 
 def p_number(token_list: yacc.YaccProduction) -> None:
-    """number   :   FLOATING_NUMBER
+    """number   :   MINUS number
+                |   FLOATING_NUMBER
                 |   INTEGER_NUMBER
                 |   BINARY_NUMBER
                 |   OCTAL_NUMBER
                 |   HEXADECIMAL_NUMBER
     """
-    # numbers just go up
+    if len(token_list) > 2:
+        token_list[0] = -token_list[2]
+        return
+
     token_list[0] = token_list[1]
 
 
@@ -291,10 +292,15 @@ def p_key_value_pair(token_list: yacc.YaccProduction) -> None:
 
 
 def p_non_mutable_literal(token_list: yacc.YaccProduction) -> None:
-    """non_mutable_literal  :   tuple
+    """non_mutable_literal  :   name_dot_series
+                            |   index_literal
+                            |   ternary
+                            |   tuple
                             |   string
                             |   number
                             |   bool
+                            |   function_call
+                            |   method_call
                             |   NONE
                             |   NAME
     """
@@ -335,30 +341,24 @@ def p_completed_general_series(token_list: yacc.YaccProduction) -> None:
     """completed_general_series :   general_series COMMA
                                 |   general_series
     """
-    # the comma is ignored and the general series comes ready
-    # so up
     token_list[0] = token_list[1]
 
 
 def p_general_series(token_list: yacc.YaccProduction) -> None:
-    """general_series   :   general_series COMMA literal
-                        |   literal
+    """general_series   :   general_series COMMA scalar_statement
+                        |   scalar_statement
     """
-    # if it is only a literal, make it a list and send it up
     if len(token_list) == 2:
         token_list[0] = [token_list[1]]
         return
 
-    # when we already have a series
-    # add the literal to the existing list and
-    # send it up
     series = token_list[1]
     series.append(token_list[3])
     token_list[0] = series
 
 
 def p_tuple(token_list: yacc.YaccProduction) -> None:
-    """tuple    :   L_PARENTHESIS general_series COMMA literal R_PARENTHESIS
+    """tuple    :   L_PARENTHESIS general_series COMMA scalar_statement R_PARENTHESIS
                 |   L_PARENTHESIS general_series COMMA R_PARENTHESIS
                 |   L_PARENTHESIS R_PARENTHESIS
     """
@@ -1288,7 +1288,7 @@ def p_parameter_list(token_list: yacc.YaccProduction) -> None:
 
 def p_parameter(token_list: yacc.YaccProduction) -> None:
     """parameter    :   scalar_statement
-                    |   binary_operation
+                    |   binary_operand
                     |   unary_operation
     """
     token_list[0] = token_list[1]

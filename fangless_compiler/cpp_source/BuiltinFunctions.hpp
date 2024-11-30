@@ -92,6 +92,20 @@ namespace BF {
     return Bool::spawn(object->toBool());
   }
 
+  std::shared_ptr<Tuple> tuple(const std::shared_ptr<Dictionary>& items) {
+    std::shared_ptr<List> keys = items->keys();
+    return std::make_shared<Tuple>(keys->begin(), keys->end());
+  }
+
+  template<TIterable TType>
+  std::shared_ptr<Tuple> tuple(const std::shared_ptr<TType>& items) {
+    return std::make_shared<Tuple>(items->begin(), items->end());
+  }
+
+  std::shared_ptr<String> type(const std::shared_ptr<Object>& anything) {
+    return String::spawn(anything->type());
+  }
+
   std::shared_ptr<std::wstring> chr(const std::shared_ptr<Number>& code) {
     std::wstring str;
     const int codeInt = code->getInt();
@@ -488,14 +502,35 @@ namespace BF {
     return structure;
   }
 
-  template<TIterable TType>
-  std::shared_ptr<TType> reversed(const std::shared_ptr<TType>& structure) {
-    std::shared_ptr<TType> result = std::make_shared<TType>();
-    std::reverse_copy(
-      structure->begin(),
-      structure->end(),
-      result->begin()
-    );
+  std::shared_ptr<Tuple> reversed(const std::shared_ptr<Tuple>& structure) {
+    std::shared_ptr<List> result = std::make_shared<List>();
+
+    for (auto& item : (*structure)) {
+      result->append(item);
+    }
+
+    return tuple(result);
+  }
+
+  std::shared_ptr<List> reversed(const std::shared_ptr<List>& structure) {
+    std::shared_ptr<List> result = std::make_shared<List>();
+    std::shared_ptr<Number> zero = Number::spawn(0);
+
+    for (auto& item : (*structure)) {
+      result->insert(zero, item);
+    }
+
+    return result;
+  }
+
+  std::shared_ptr<String> reversed(const std::shared_ptr<String>& structure) {
+    std::shared_ptr<String> result = std::make_shared<String>();
+    
+    for (std::shared_ptr<Number> i = (structure->len() - Number::spawn(1));
+      *i >= *Number::spawn(0); --(*i)) {
+      result = result + (*structure)[*i];
+    }
+
     return result;
   }
 
@@ -555,21 +590,23 @@ namespace BF {
     return result;
   }
 
-  std::shared_ptr<Set> sorted(
-    const std::shared_ptr<Set>& structure) {
-    return structure;
-  }
-
-  std::shared_ptr<Dictionary> sorted(
-    const std::shared_ptr<Dictionary>& structure) {
-    return structure;
+  std::shared_ptr<List> sorted(
+    const std::shared_ptr<Dictionary>& structure,
+    const std::shared_ptr<Bool>& reverse = Bool::spawn(false)) {
+    return (!reverse? structure->keys() : reversed(structure->keys()));
   }
 
   template<TIterable TType>
-  std::shared_ptr<TType> sorted(const std::shared_ptr<TType>& structure) {
-    std::shared_ptr<TType> result = std::make_shared<TType>(structure);
+  std::shared_ptr<List> sorted(const std::shared_ptr<TType>& structure,
+    const std::shared_ptr<Bool>& reverse = Bool::spawn(false)) {
+    std::shared_ptr<List> result = list(structure);
+    if (!result->hasSingleType()) {
+      throw std::invalid_argument(
+        "Sorted not supported on structures with multiple types");
+    }
+
     std::sort(result->begin(), result->end());
-    return result;
+    return (!reverse? result : reversed(result));
   }
 
   std::shared_ptr<String> str() {
@@ -580,20 +617,23 @@ namespace BF {
     return String::spawn(object->toString());
   }
 
+  std::shared_ptr<Number> sum(
+    const std::shared_ptr<Dictionary>& numbers,
+    const std::shared_ptr<Number>& extra = Number::spawn(0)) {
+    std::shared_ptr<List> keys = numbers->keys();
+
+    return Number::spawn(std::accumulate(
+      keys->begin(),
+      keys->end(),
+      extra
+    ));
+    
+  }
+
   template<TIterable TType>
   std::shared_ptr<Number> sum(
     const std::shared_ptr<TType>& numbers,
     const std::shared_ptr<Number>& extra = Number::spawn(0)) {
-     if (numbers->type() == std::string("dict")) {
-      std::shared_ptr<List> newStructure = numbers->keys();
-
-      return Number::spawn(std::accumulate(
-        newStructure->begin(),
-        newStructure->end(),
-        extra
-      ));
-    }
-
     return Number::spawn(std::accumulate(
         numbers->begin(),
         numbers->end(),
@@ -613,19 +653,5 @@ namespace BF {
     }
 
     return std::make_shared<Tuple>(result);
-  }
-
-  std::shared_ptr<Tuple> tuple(const std::shared_ptr<Dictionary>& items) {
-    std::shared_ptr<List> keys = items->keys();
-    return std::make_shared<Tuple>(keys->begin(), keys->end());
-  }
-
-  template<TIterable TType>
-  std::shared_ptr<Tuple> tuple(const std::shared_ptr<TType>& items) {
-    return std::make_shared<Tuple>(items->begin(), items->end());
-  }
-
-  std::shared_ptr<String> type(const std::shared_ptr<Object>& anything) {
-    return String::spawn(anything->type());
   }
 };

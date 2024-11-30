@@ -402,6 +402,33 @@ class Number : public Object {
     return std::make_shared<Number>(old_value);
   }
 
+  std::shared_ptr<Number> operator--() {
+    std::visit([](auto&& arg) {
+          using T = std::decay_t<decltype(arg)>;
+          if constexpr (std::is_same_v<T, double>) {
+            arg -= 1.0;
+          } else {
+            arg -= 1;
+          }
+        }, value_);
+  
+    return std::make_shared<Number>(*this);
+  }
+
+  std::shared_ptr<Number> operator--(int) {
+    std::shared_ptr<Number> old_value = std::make_shared<Number>(*this);
+    std::visit([](auto&& arg) {
+          using T = std::decay_t<decltype(arg)>;
+          if constexpr (std::is_same_v<T, double>) {
+            arg -= 1.0;
+          } else {
+            arg -= 1;
+          }
+        }, value_);
+        
+    return std::make_shared<Number>(old_value);
+  }
+
   friend std::shared_ptr<Number> operator~(const std::shared_ptr<Number>& num) {
     return num->operator~();
   }

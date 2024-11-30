@@ -74,11 +74,57 @@ class FanglessGenerator:
 
             elif (subtree is not None) or (not is_standalone):
                 statements += (
-                    f"// {create_instance(subtree)}\n"
-                    if is_standalone else create_instance(subtree)
+                    f"// {self.visit_instance(subtree)}\n"
+                    if is_standalone else self.visit_instance(subtree)
                 )
 
         return statements
+    
+    def visit_instance(self, instance) -> str:
+        if isinstance(instance, (int, str, float, bool, type(None), NameNode)):
+            return self.visit_basic_instance(instance)
+        return self.visit_structure_instance(instance)
+
+
+    def visit_basic_instance(self, instance) -> str:
+        if isinstance(instance, bool):
+            bool_instance = "true" if instance else "false"
+            return f"Bool::spawn({bool_instance})"
+        if isinstance(instance, str):
+            return f'String::spawn("{instance}")'
+        if instance is None:
+            return f'None::spawn()'
+        if isinstance(instance, (int, float)):
+            return f"Number::spawn({instance})"
+
+        return f"{instance.id}"
+
+
+    def visit_structure_instance(self, instance) -> str:
+        elements = ""
+        if len(instance) > 0:
+            elements += "{"
+            if isinstance(instance, dict):
+                for key, value in instance.items():
+                    key_str = self.visit_tree([key])
+                    value_sr = self.visit_tree([value])
+                    elements += f"{{ {key_str}, {value_sr} }}, "
+            else:
+                for element in instance:
+                    element_str = self.visit_tree([element])
+                    elements += f"{element_str}, "
+
+            elements = elements[:-2]
+            elements += "}"
+
+        if isinstance(instance, dict):
+            return f"Dictionary::spawn({elements})"
+        if isinstance(instance, tuple):
+            return f"Tuple::spawn({elements})"
+        if isinstance(instance, set):
+            return f"Set::spawn({elements})"
+
+        return f"List::spawn({elements})"
 
     def visit_ternary(self, tree: OperatorNode) -> str:
         condition = tree.get_adjacent(Operand.CONDITION)
@@ -150,9 +196,9 @@ class FanglessGenerator:
 
         slice_dict = tree.get_adjacent(Operand.SLICE)
 
-        end = create_instance(slice_dict[Operand.END])
+        end = self.visit_instance(slice_dict[Operand.END])
         if slice_dict[Operand.START] is not None:
-            start = create_instance(slice_dict[Operand.START])
+            start = self.visit_instance(slice_dict[Operand.START])
             return f"(*{instance})[Slice({start}, {end})]"
         
         return f"(*{instance})[Slice({end})]"
@@ -274,47 +320,3 @@ class FanglessGenerator:
 
     def translate_any(self, parameters_str: str) -> str:
         return f"abs({parameters_str})"
-
-
-def create_instance(instance) -> str:
-    if isinstance(instance, (int, str, float, bool, type(None), NameNode)):
-        return create_basic_instance(instance)
-    return create_structure_instance(instance)
-
-
-def create_basic_instance(instance) -> str:
-    if isinstance(instance, bool):
-        bool_instance = "true" if instance else "false"
-        return f"Bool::spawn({bool_instance})"
-    if isinstance(instance, str):
-        return f'String::spawn("{instance}")'
-    if instance is None:
-        return f'None::spawn()'
-    if isinstance(instance, (int, float)):
-        return f"Number::spawn({instance})"
-
-    return f"{instance.id}"
-
-
-def create_structure_instance(instance) -> str:
-    elements = ""
-    if len(instance) > 0:
-        elements += "{"
-        if isinstance(instance, dict):
-            for key, value in instance.items():
-                elements += f"{{ {create_instance(key)}, {create_instance(value)} }}, "
-        else:
-            for element in instance:
-                elements += f"{create_instance(element)}, "
-
-        elements = elements[:-2]
-        elements += "}"
-
-    if isinstance(instance, dict):
-        return f"Dictionary::spawn({elements})"
-    if isinstance(instance, tuple):
-        return f"Tuple::spawn({elements})"
-    if isinstance(instance, set):
-        return f"Set::spawn({elements})"
-
-    return f"List::spawn({elements})"

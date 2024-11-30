@@ -16,7 +16,7 @@ class String : public Object {
   std::string value_;
 
  public:
-  explicit String(const std::string& value) : value_(value) {}
+  explicit String(const std::string& value = "") : value_(value) {}
 
   String(const String& other) : value_(other.value_) {}
 
