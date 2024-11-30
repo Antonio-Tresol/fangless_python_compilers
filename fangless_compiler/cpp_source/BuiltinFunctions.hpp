@@ -411,6 +411,10 @@ namespace BF {
     std::cout << object->toString().c_str() << std::endl;
   }
 
+  void print(bool boolean) {
+    std::cout << (boolean? "True" : "False") << std::endl;
+  }
+
   void print(const std::shared_ptr<std::wstring>& anything) {
     std::wcout << (*anything) << std::endl;
   }

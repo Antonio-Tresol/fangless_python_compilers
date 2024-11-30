@@ -2,7 +2,7 @@ from pathlib import Path
 import sys
 import common
 from exceptions import (
-    IndentationError,
+    IndentationMismatchError,
     LexerError,
     ParserError,
 )
@@ -20,7 +20,7 @@ class FanglessCompiler:
     def __init__(self) -> None:
         self.lexer = FanglessLexer()
         self.lexer.build()
-        self.generator = FanglessGenerator() 
+        self.generator = FanglessGenerator()
 
     def generate_code(self) -> str:
         program_to_compile_file_name = Path(sys.argv[1])
@@ -29,11 +29,11 @@ class FanglessCompiler:
             common.print_step("Lexing the input")
             content = source_file.read()
             try:
-              self.parser = FanglessParser(self.lexer)
+                self.parser = FanglessParser(self.lexer)
 
-              common.print_step("Parsing the tokens")
-              tree = self.parser.parse(content)
-            except IndentationError as e:
+                common.print_step("Parsing the tokens")
+                tree = self.parser.parse(content)
+            except IndentationMismatchError as e:
                 common.print_catastrophic_error("Could not indent", f"{e}")
                 sys.exit()
             except LexerError as e:
@@ -42,7 +42,7 @@ class FanglessCompiler:
             except ParserError as e:
                 common.print_catastrophic_error("Could not parse", f"{e}")
                 sys.exit()
-            
+
             common.print_step("Generating the code")
             code = self.generator.generate_code(tree)
 
@@ -51,7 +51,7 @@ class FanglessCompiler:
 
             return code
 
-    def format_code(self, code : str) -> None:
+    def format_code(self, code: str) -> None:
         common.print_step("Formatting the code")
         try:
             clang_format = "/usr/bin/clang-format"
@@ -73,7 +73,7 @@ class FanglessCompiler:
             if common.VERBOSE_COMPILER:
                 print(common.color_yellow("Unformatted code:"))
                 print(code)
-                
+
         else:
             if common.VERBOSE_COMPILER:
                 print(common.color_yellow("Formatted code:"))
@@ -86,11 +86,13 @@ class FanglessCompiler:
             cpp_compiler = "/usr/bin/g++"
             flags = ["-O3", "-std=c++20"]
             subprocess.run(
-                [cpp_compiler,
-                 *flags,
-                 OUTPUT_CODE_FILE_PATH,
-                 "-o",
-                 "output/output.out"],
+                [
+                    cpp_compiler,
+                    *flags,
+                    OUTPUT_CODE_FILE_PATH,
+                    "-o",
+                    "output/output.out",
+                ],
                 capture_output=True,
                 text=True,
                 check=True,
@@ -98,11 +100,15 @@ class FanglessCompiler:
         except subprocess.CalledProcessError as e:
             common.print_error("Could not find clang-format")
             print(e.stderr)
-      
+
         else:
-            print(common.color_green(f"╔═══════════════════════════════════╗\n"
-                                     f"║ 🎉   Compilation Successful!   🎉 ║\n"
-                                     f"╚═══════════════════════════════════╝"))
+            print(
+                common.color_green(
+                    f"╔═══════════════════════════════════╗\n"
+                    f"║ 🎉   Compilation Successful!   🎉 ║\n"
+                    f"╚═══════════════════════════════════╝"
+                )
+            )
 
     def test_lexer(self) -> None:
         program_to_compile_file_name = Path(sys.argv[1])

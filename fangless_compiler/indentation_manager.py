@@ -2,7 +2,7 @@ from ply.lex import Lexer, LexToken
 from collections.abc import Iterable
 import sys
 from common import new_token, VERBOSE_INDENTATION
-from exceptions import IndentationError
+from exceptions import IndentationMismatchError
 
 NO_INDENT = 0
 MAY_INDENT = 1
@@ -147,7 +147,7 @@ class FanglessIndentationManager:
                     "Indentation Error on must indent "
                     f"in line no {token.lineno}"
                 )
-                raise IndentationError(error)
+                raise IndentationMismatchError(error)
 
             if VERBOSE_INDENTATION:
                 print(f"---Token must indent: {token}---")
@@ -166,7 +166,7 @@ class FanglessIndentationManager:
                     f"in line no {token.lineno}"
                     " with depth greater than levels"
                 )
-                raise IndentationError(error)
+                raise IndentationMismatchError(error)
 
             # If the depth is less than the last level, we just dedented
             try:
@@ -176,7 +176,7 @@ class FanglessIndentationManager:
                     "Indentation Error on line start"
                     f"in line no {token.lineno}"
                 )
-                raise IndentationError(error)
+                raise IndentationMismatchError(error)
 
             # Pop levels and create dedent tokens until the current depth is reached
             for _ in range(i + 1, len(levels)):

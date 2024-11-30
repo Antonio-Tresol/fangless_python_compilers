@@ -3,7 +3,6 @@ from lexer import FanglessLexer
 from common import (
     VERBOSE_PARSER,
     VERBOSE_AST,
-    SENSITIVE_PROGRAMMER,
     TOKENS,
     CLASS,
     FUNCTION,
@@ -12,10 +11,7 @@ from common import (
     TYPES,
     CONTAINER_TYPES,
     fill_symbol_table_with_builtin_functions,
-    color_msg,
     add_remark,
-    be_artistic,
-    RAINBOW_ERRORS,
 )
 from exceptions import ParserError
 from collections import defaultdict

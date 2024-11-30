@@ -92,6 +92,45 @@ class Bool : public Object {
     return value_ <=> otherBool->value_;
   }
 
+  friend std::strong_ordering operator<=>(const std::shared_ptr<Bool>& lhs,
+                                          const Bool& rhs) {
+    return lhs->compare(rhs);
+  }
+  friend std::strong_ordering operator<=>(const Bool& lhs,
+                                          const std::shared_ptr<Bool>& rhs) {
+    return lhs.compare(*rhs);
+  }
+  friend std::strong_ordering operator<=>(const std::shared_ptr<Object>& lhs,
+                                          const Bool& rhs) {
+    return rhs.compare(*lhs);
+  }
+
+  friend std::strong_ordering operator<=>(const std::shared_ptr<Bool>& lhs,
+                                           const std::shared_ptr<Bool>& rhs) {
+    return lhs->compare(*rhs);
+  }
+
+  friend std::strong_ordering operator<=>(const std::shared_ptr<Number>& lhs,
+                                          const Bool& rhs) {
+    return rhs.compare(*lhs);
+  } 
+  friend std::strong_ordering operator<=>(const Bool& lhs,
+                                          const std::shared_ptr<Number>& rhs) {
+    return lhs.compare(*rhs);
+  }
+  friend std::strong_ordering operator<=>(const std::shared_ptr<Number>& lhs,
+                                          const std::shared_ptr<Bool>& rhs) {
+    return rhs->compare(*lhs);
+  }
+  friend std::strong_ordering operator<=>(const std::shared_ptr<Bool>& lhs,
+                                          const std::shared_ptr<Number>& rhs) {
+    return lhs->compare(*rhs);
+  }
+
+  friend std::strong_ordering operator<=>(const std::shared_ptr<Object>& lhs,
+                                          const std::shared_ptr<Bool>& rhs) {
+    return rhs->compare(*lhs);
+  }
   bool isInstance(const std::string& type) const override {
     return type == "bool" || type == "object";
   }
