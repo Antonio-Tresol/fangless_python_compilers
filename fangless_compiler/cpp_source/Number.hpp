@@ -3,30 +3,31 @@
 
 #include <cmath>
 #include <memory>
-#include <string>
-#include <stdexcept>
-#include <variant>
 #include <sstream>
+#include <stdexcept>
+#include <string>
+#include <variant>
 
 #include "Object.hpp"
 
 constexpr double DELTA = 1e-9;
 
 template <typename T>
-concept Numerable = std::is_same_v<T, int64_t> || std::is_same_v<T, double>
-  || std::is_same_v<T, int32_t> || std::is_same_v<T, size_t>;
+concept Numerable = std::is_same_v<T, int64_t> || std::is_same_v<T, double> ||
+                    std::is_same_v<T, int32_t> || std::is_same_v<T, size_t>;
 
 class Number : public Object {
  private:
   std::variant<int64_t, double> value_;
 
  public:
-  template<Numerable TType>
+  template <Numerable TType>
   explicit Number(const TType& value) : value_(value) {}
 
   explicit Number(const Number& other) : value_(other.value_) {}
 
-  explicit Number(const Object& other) : value_(static_cast<int64_t>(other.toBool() ? 1 : 0)) {}
+  explicit Number(const Object& other)
+      : value_(static_cast<int64_t>(other.toBool() ? 1 : 0)) {}
 
   explicit Number(std::shared_ptr<Object> obj) {
     if (auto* numObj = dynamic_cast<Number*>(obj.get())) {
@@ -34,7 +35,55 @@ class Number : public Object {
       return;
     }
 
-    value_ = static_cast<int64_t>(obj->toBool()? 1 : 0);
+    value_ = static_cast<int64_t>(obj->toBool() ? 1 : 0);
+  }
+
+  std::strong_ordering compare(const Object& other) const override {
+      if (auto* numObj = dynamic_cast<const Number*>(&other)) {
+          return std::visit(
+              [](auto&& a, auto&& b) -> std::strong_ordering {
+                  double da = static_cast<double>(a);
+                  double db = static_cast<double>(b);
+  
+                  if (std::isnan(da) && std::isnan(db)) {
+                      return std::strong_ordering::equal;
+                  }
+                  if (std::isnan(da)) {
+                      return std::strong_ordering::less;
+                  }
+                  if (std::isnan(db)) {
+                      return std::strong_ordering::greater;
+                  }
+  
+                  if (da < db)
+                      return std::strong_ordering::less;
+                  if (da > db)
+                      return std::strong_ordering::greater;
+                  return std::strong_ordering::equal;
+              },
+              value_, numObj->value_);
+      } 
+      return type() < other.type() ? std::strong_ordering::less : std::strong_ordering::greater;
+  }
+
+  friend std::strong_ordering operator<=>(const Number& lhs, const Number& rhs) {
+    return lhs.compare(rhs);
+  }
+  friend std::strong_ordering operator<=>(const std::shared_ptr<Number>& lhs,
+                                          const Number& rhs) {
+    return lhs->compare(rhs);
+  }
+  friend std::strong_ordering operator<=>(const Number& lhs,
+                                          const std::shared_ptr<Number>& rhs) {
+    return lhs.compare(*rhs);
+  }
+  friend std::strong_ordering operator<=>(const std::shared_ptr<Number>& lhs,
+                                          const std::shared_ptr<Number>& rhs) {
+    return lhs->compare(*rhs);
+  }
+  friend std::strong_ordering operator<=>(const std::shared_ptr<Object>& lhs,
+                                          const Number& rhs) {
+    return rhs.compare(*lhs);
   }
 
   template <typename T>
@@ -55,25 +104,27 @@ class Number : public Object {
             if (std::isinf(arg)) return arg > 0 ? "inf" : "-inf";
 
             if (std::isnan(arg)) return "nan";
-            
+
             return std::to_string(arg);
           } else {
             return std::to_string(arg);
           }
-        }, value_);
+        },
+        value_);
   }
 
   inline bool isDouble() const {
     return std::visit(
         [](auto&& arg) -> bool {
           using T = std::decay_t<decltype(arg)>;
-        
+
           if constexpr (std::is_same_v<T, double>) {
             return true;
           } else {
             return false;
           }
-        }, value_);
+        },
+        value_);
   }
 
   bool equals(const Object& other) const override {
@@ -169,22 +220,6 @@ class Number : public Object {
   void setAttr(const std::string& name,
                std::shared_ptr<Object> value) override {
     throw std::runtime_error("'" + type() + "' object has no attributes");
-  }
-
-    std::strong_ordering compare(const Object& other) const override {
-    if (auto* numObj = dynamic_cast<const Number*>(&other)) {
-      return std::visit(
-          [](auto&& a, auto&& b) -> std::strong_ordering {
-            auto cmp = static_cast<double>(a) <=> static_cast<double>(b);
-            if (cmp == std::partial_ordering::less)
-              return std::strong_ordering::less;
-            if (cmp == std::partial_ordering::greater)
-              return std::strong_ordering::greater;
-            return std::strong_ordering::equal;
-          },
-          value_, numObj->value_);
-    }
-    return std::strong_ordering::greater;
   }
 
   // numeric specific methods
@@ -362,43 +397,46 @@ class Number : public Object {
       return std::make_shared<Number>(
           std::pow(getDouble(), other->getDouble()));
     }
-    
+
     const double doubleValue = std::pow(getInt(), other->getInt());
 
-    if (std::isnan(doubleValue) ||
-      std::isinf(doubleValue)) {
+    if (std::isnan(doubleValue) || std::isinf(doubleValue)) {
       return std::make_shared<Number>(doubleValue);
     }
-   
+
     return std::make_shared<Number>(static_cast<int64_t>(doubleValue));
   }
 
   // pre-increment
   std::shared_ptr<Number> operator++() {
-    std::visit([](auto&& arg) {
+    std::visit(
+        [](auto&& arg) {
           using T = std::decay_t<decltype(arg)>;
           if constexpr (std::is_same_v<T, double>) {
             arg += 1.0;
           } else {
             arg += 1;
           }
-        }, value_);
-  
+        },
+        value_);
+
     return std::make_shared<Number>(*this);
   }
 
   // post-increment
   std::shared_ptr<Number> operator++(int) {
     std::shared_ptr<Number> old_value = std::make_shared<Number>(*this);
-    std::visit([](auto&& arg) {
+    std::visit(
+        [](auto&& arg) {
           using T = std::decay_t<decltype(arg)>;
           if constexpr (std::is_same_v<T, double>) {
             arg += 1.0;
           } else {
             arg += 1;
           }
-        }, value_);
-        
+        },
+        value_);
+
     return std::make_shared<Number>(old_value);
   }
 

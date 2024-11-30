@@ -1,6 +1,4 @@
-from typing import Any
 from abstract_syntax_tree.operator_node import (
-    Node,
     Operand,
     OperatorNode,
     OperatorType,
@@ -9,8 +7,21 @@ from abstract_syntax_tree.name_node import (
     NameNode,
 )
 from common import (
-    BUILTIN_FUNCTIONS
+    BUILTIN_FUNCTIONS,
 )
+NOT_A_OPERATOR_NODE = (
+    list,
+    dict,
+    tuple,
+    set,
+    int,
+    float,
+    str,
+    bool,
+    type(None),
+    NameNode,
+)
+
 
 class FanglessGenerator:
     def __init__(self) -> None:
@@ -64,10 +75,10 @@ class FanglessGenerator:
 
         return base_code
 
-    def visit_tree(self, tree_list: list[OperatorNode], is_standalone : bool = False) -> str:
+    def visit_tree(self, tree_list: list[OperatorNode], is_standalone: bool = False) -> str:
         statements = ""
         for subtree in tree_list:
-            if not isinstance(subtree, (list, dict, tuple, set, int, float, str, bool, type(None), NameNode)):
+            if not isinstance(subtree, NOT_A_OPERATOR_NODE):
                 statements += self.operator_handlers[subtree.operator](subtree)
                 if is_standalone:
                     statements += ";\n"
@@ -81,19 +92,22 @@ class FanglessGenerator:
         return statements
     
     def visit_instance(self, instance) -> str:
+        """Writes the code for creating an instance of a given object"""
         if isinstance(instance, (int, str, float, bool, type(None), NameNode)):
             return self.visit_basic_instance(instance)
         return self.visit_structure_instance(instance)
 
 
     def visit_basic_instance(self, instance) -> str:
+        """Writes the code for creating an instance of a basic object
+        (int, str, float, bool, None) """
         if isinstance(instance, bool):
             bool_instance = "true" if instance else "false"
             return f"Bool::spawn({bool_instance})"
         if isinstance(instance, str):
             return f'String::spawn("{instance}")'
         if instance is None:
-            return f'None::spawn()'
+            return 'None::spawn()'
         if isinstance(instance, (int, float)):
             return f"Number::spawn({instance})"
 
@@ -177,11 +191,9 @@ class FanglessGenerator:
             ""
         )
 
-        if (function_name == "bool" or
-            function_name == "float" or
-            function_name == "int"):
+        if (function_name in {"bool", "float", "int"}):
             function_name += "_"
-        
+
         return f"{namespace}{function_name}({parameters_str})"
 
     def visit_method_call(self, tree: OperatorNode) -> None:
@@ -222,7 +234,10 @@ class FanglessGenerator:
 
         code = ""
 
-        if isinstance(right_child, OperatorNode) and right_child.operator == OperatorType.VAR_DECLARATION:
+        if (
+            isinstance(right_child, OperatorNode)
+            and right_child.operator == OperatorType.VAR_DECLARATION
+        ):
             true_right_child = right_child.get_left_operand().id
             right_child = self.visit_tree([right_child], is_standalone=True)
             code += right_child
@@ -243,8 +258,13 @@ class FanglessGenerator:
     def visit_return(self, tree: OperatorNode) -> None:
         pass
 
-    def visit_while(self, tree: OperatorNode) -> None:
-        pass
+    def visit_while(self, tree: OperatorNode) -> str:
+        result = ""
+        condition = tree.get_adjacent(Operand.CONDITION)
+        condition = f"{self.visit_tree([condition])}"
+        body = tree.get_adjacent(Operand.BODY)
+        body = self.visit_tree(body, is_standalone=True)
+        return f"while ({condition}) {{ \n {body} }}"
 
     def visit_for(self, tree: OperatorNode) -> None:
         pass
@@ -272,13 +292,12 @@ class FanglessGenerator:
     def visit_continue(self, tree: OperatorNode) -> str:
         _ = tree
         return "continue"
-    
+
     def visit_unary_or_binary(self, tree: OperatorNode) -> str:
         if Operand.CENTER in tree.adjacents:
             return self.visit_unary(tree)
-        
         return self.visit_direct_binary(tree)
-        
+
     def visit_unary(self, tree: OperatorNode) -> str:
         operand = tree.get_adjacent(Operand.CENTER)
         operand = self.visit_tree([operand])
@@ -289,7 +308,7 @@ class FanglessGenerator:
         if tree.parenthesis:
             return f"({tree.operator} {operand})"
         return f"{tree.operator} {operand}"
-  
+
     def visit_direct_binary(self, tree: OperatorNode) -> str:
         left_child = tree.get_left_operand()
         left_child = self.visit_tree([left_child])
@@ -310,7 +329,6 @@ class FanglessGenerator:
         return (f"{left_child} "
         f"{tree.operator} "
         f"{right_child}")
-
 
     def visit_other_operators(self, tree: OperatorNode) -> None:
         pass

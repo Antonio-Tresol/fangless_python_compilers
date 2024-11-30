@@ -1,5 +1,5 @@
 if 3 + 2 > 4:
-   "hola"
+   print("hola")
 elif 3 + 2 > 6:
     "joder"
 else:
