@@ -1385,8 +1385,7 @@ class FanglessParser:
 
     def parse(self, source_code: str) -> Any:
         self.lexer.lex_stream(source_code)
-        parsed_source_code = self.parser.parse(
+        return self.parser.parse(
             lexer=self.lexer,
             debug=VERBOSE_PARSER,
         )
-        return parsed_source_code

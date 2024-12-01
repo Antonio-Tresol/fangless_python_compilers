@@ -625,24 +625,26 @@ namespace BF {
     const std::shared_ptr<Dictionary>& numbers,
     const std::shared_ptr<Number>& extra = Number::spawn(0)) {
     std::shared_ptr<List> keys = numbers->keys();
+    std::shared_ptr<Number> result = Number::spawn(0);
 
-    return Number::spawn(std::accumulate(
-      keys->begin(),
-      keys->end(),
-      extra
-    ));
-    
+    for (auto& num : (*keys)) {
+      result = result + std::dynamic_pointer_cast<Number>(num);
+    }
+
+    return result;
   }
 
   template<TIterable TType>
   std::shared_ptr<Number> sum(
     const std::shared_ptr<TType>& numbers,
     const std::shared_ptr<Number>& extra = Number::spawn(0)) {
-    return Number::spawn(std::accumulate(
-        numbers->begin(),
-        numbers->end(),
-        extra
-      ));
+    std::shared_ptr<Number> result = Number::spawn(0);
+
+    for (auto& num : (*numbers)) {
+      result = result + std::dynamic_pointer_cast<Number>(num);
+    }
+
+    return result;
   }
 
   std::shared_ptr<Tuple> tuple() {

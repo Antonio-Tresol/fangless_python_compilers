@@ -24,5 +24,5 @@ while a == "perrito":
 	else:
 		a = "perrito"
 
-if a == 1  # Missing colon here
+if a == 1
 	a = "a is 1"

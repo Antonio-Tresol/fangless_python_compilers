@@ -1,6 +1,5 @@
 from ply.lex import Lexer, LexToken
 from collections.abc import Iterable
-import sys
 from common import new_token, VERBOSE_INDENTATION
 from exceptions import IndentationMismatchError
 
@@ -144,7 +143,7 @@ class FanglessIndentationManager:
         if token.must_indent:
             if not (depth > levels[-1]):
                 error = (
-                    "Indentation Error on must indent "
+                    "Indentation Mismatch Error on must indent "
                     f"in line no {token.lineno}"
                 )
                 raise IndentationMismatchError(error)
@@ -162,7 +161,7 @@ class FanglessIndentationManager:
             # If the depth is greater than the last level, it's an error
             elif depth > levels[-1]:
                 error = (
-                    "Indentation Error on line start "
+                    "Indentation Mismatch Error on line start "
                     f"in line no {token.lineno}"
                     " with depth greater than levels"
                 )
@@ -173,7 +172,7 @@ class FanglessIndentationManager:
                 i = levels.index(depth)
             except ValueError:
                 error = (
-                    "Indentation Error on line start"
+                    "Indentation Mismatch Error on line start"
                     f"in line no {token.lineno}"
                 )
                 raise IndentationMismatchError(error)

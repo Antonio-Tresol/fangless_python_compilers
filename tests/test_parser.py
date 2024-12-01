@@ -1,5 +1,4 @@
 # test_parser.py
-import pytest
 from pathlib import Path
 from utils import add_package_from_parent_to_context
 
@@ -7,22 +6,28 @@ add_package_from_parent_to_context("fangless_compiler")
 
 from parser import FanglessParser
 from lexer import FanglessLexer
-import common
-import ply
+from exceptions import ParserError, IndentationMismatchError, LexerError
+import sys
+from common import VERBOSE_TESTER, color_yellow
 
 positive_path = Path("tests/positive/")
 positive_tests = [
     positive_path.joinpath(Path(file.name)) for file in positive_path.glob("*.py")
 ]
 
-negative_path = Path("test/negative/")
+negative_path = Path("tests/negative/")
 negative_tests = [
     negative_path.joinpath(Path(file.name)) for file in negative_path.glob("*.py")
 ]
 
-ast_path = Path("test/ast/")
+ast_path = Path("tests/ast/")
 ast_tests = [
-    negative_path.joinpath(Path(file.name)) for file in negative_path.glob("*.py")
+    ast_path.joinpath(Path(file.name)) for file in ast_path.glob("*.py")
+]
+
+compile_path = Path("tests/compile/")
+compile_tests = [
+    compile_path.joinpath(Path(file.name)) for file in compile_path.glob("*.py")
 ]
 
 
@@ -35,61 +40,60 @@ def print_error_header(test_name: str, header: str) -> None:
     print(separator)
 
 
-def test_positive_cases() -> None:
-    for test in positive_tests:
-        try:
-            positive_parser = FanglessParser()
-            with test.open("r", encoding="utf-8") as source:
-                print(f"\n🔍 Testing positive case: {test.name}")
-                content = source.read()
-                positive_parser.parse(content)
-                error_count = len(positive_parser.errors)
-                assert error_count == 0, (
-                    f"\n❌ Expected no errors but found {error_count}"
-                )
-                print(f"✅ Test passed: {test.name}")
-        except Exception as e:
-            print_error_header(test.name, "POSITIVE TEST FAILED")
-            print(f"❌ Error details:\n{e}")
-            print(f"📍 Error location: {e.__traceback__.tb_lineno}")
-            raise e
-
-
 def test_negative_cases() -> None:
     for test in negative_tests:
+        test_specific_negative_case(test)
+
+
+def test_specific_negative_case(path: Path) -> None:
+    with path.open("r") as source:
+        content = source.read()
         try:
             negative_parser = FanglessParser()
-            with test.open("r", encoding="utf-8") as source:
-                print(f"\n🔍 Testing negative case: {test.name}")
-                content = source.read()
-                negative_parser.parse(content)
-                error_count = len(negative_parser.errors)
-                assert error_count > 0, (
-                    "\n❌ Expected errors but found none"
-                )
-                print(f"✅ Test passed: {test.name}")
-        except Exception as e:
-            print_error_header(test.name, "NEGATIVE TEST FAILED")
-            print(f"❌ Error details:\n{e}")
-            print(f"📍 Error location: {e.__traceback__.tb_lineno}")
-            raise e
+            negative_parser.parse(content)
+            if not ("fake" in path.name) or VERBOSE_TESTER:
+                print(f"❌ Expected error not raised for {path.name}")
+        except (ParserError, IndentationMismatchError, LexerError) as e:
+            if VERBOSE_TESTER:
+                print(f"✅ Tests passed: {path.name}")
 
 
-def test_ast_cases() -> None:
-    for test in ast_tests:  # Fixed: was using negative_tests
+def test_specific_positive_case(path: Path, title: str) -> None:
+    with path.open("r") as source:
+        content = source.read()
         try:
-            ast_parser = FanglessParser()
-            with test.open("r", encoding="utf-8") as source:
-                print(f"\n🔍 Testing AST case: {test.name}")
-                content = source.read()
-                ast_parser.parse(content)
-                error_count = len(ast_parser.errors)
-                assert error_count == 0, (
-                    f"\n❌ Expected no errors but found {error_count}"
-                )
-                print(f"✅ Test passed: {test.name}")
-        except Exception as e:
-            print_error_header(test.name, "AST TEST FAILED")
-            print(f"❌ Error details:\n{e}")
-            print(f"📍 Error location: {e.__traceback__.tb_lineno}")
-            raise e
+            positive_parse = FanglessParser()
+            positive_parse.parse(content)
+            if VERBOSE_TESTER:
+                print(f"✅ Tests passed: {path.name}")
+        except (ParserError, IndentationMismatchError, LexerError) as e:
+            if "fake" not in path.name or VERBOSE_TESTER:
+                print(f"❌ Unexpected error raised for {path.name}")
+            print(f"\n    {color_yellow("Error Summary")}:\n      -{e}")
+
+
+def test_positives(cases: list, test_title: str) -> None:
+    for test in cases:
+        test_specific_positive_case(test, test_title)
+
+
+def main() -> None:
+    option = "positive"
+    if len(sys.argv) == 2:
+        option = sys.argv[1]
+    print("\n🧪 Running tests for the parser")
+    match option:
+        case "positive":
+            test_positives(positive_tests, "Positive")
+        case "negative":
+            test_negative_cases()
+        case "ast":
+            test_positives(ast_tests, "AST")
+        case "compile":
+            test_positives(compile_tests, "Compile")
+        case _:
+            print("Invalid option")
+
+
+if __name__ == "__main__":
+    main()

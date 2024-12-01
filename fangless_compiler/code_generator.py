@@ -25,6 +25,7 @@ NOT_A_OPERATOR_NODE = (
 
 class FanglessGenerator:
     def __init__(self) -> None:
+        self.iter_count = 0
         self.operator_handlers: dict = {
             OperatorType.TERNARY: self.visit_ternary,
             OperatorType.IF: self.visit_conditional,
@@ -267,7 +268,33 @@ class FanglessGenerator:
         return f"while ({condition}) {{ \n {body} }}"
 
     def visit_for(self, tree: OperatorNode) -> None:
-        pass
+        for_literal = tree.get_adjacent(Operand.FOR_LITERAL)
+        pre_define = ""
+
+        if isinstance(for_literal, NameNode):
+            for_literal = self.visit_tree([for_literal])
+        else:  # if we have an range, enumerate, or any other iterable
+            # we need to define the iterator first
+            iterator = f"iter_{self.iter_count}"
+            pre_define = f"auto {iterator} = {self.visit_tree([for_literal])};\n"
+            for_literal = iterator
+            self.iter_count += 1
+
+        for_symbols = tree.get_adjacent(Operand.SYMBOLS)
+        names = for_symbols
+        if len(names) == 1:
+            for_symbols = f"auto {names[0].id}"
+            body = tree.get_adjacent(Operand.BODY)
+            body = self.visit_tree(body, is_standalone=True)
+            return f"{pre_define} for ({for_symbols} : *{for_literal}) {{ \n {body} }}"
+
+        body_pre_define = ""
+        body_pre_define += "auto tuplaGod = std::dynamic_pointer_cast<Tuple>(symbols);\nif (tuplaGod == nullptr) { throw std::runtime_error(\"Expected a tuple\"); }\n"
+        for i, name in enumerate(names):
+            body_pre_define += f"auto {name.id} = (*tuplaGod)[Number::spawn({i})];\n"
+        body = tree.get_adjacent(Operand.BODY)
+        body = self.visit_tree(body, is_standalone=True)
+        return f"{pre_define} for (auto symbols : *{for_literal}) {{ \n {body_pre_define} {body} }}"
 
     def visit_func_declaration(self, tree: OperatorNode) -> None:
         # sacar el nombre
