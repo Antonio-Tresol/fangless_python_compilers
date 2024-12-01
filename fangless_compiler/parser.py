@@ -136,7 +136,7 @@ def p_all(token_list: yacc.YaccProduction) -> None:
     if len(undefined_functions) > 0:
         error = "--Names:--"
         for function in undefined_functions:
-            if symbol_table[function]:
+            if symbol_table[function] is not None:
                 continue
             error += f"\n'{function}'"
         error += f"\n--Were not defined as functions--{add_remark()}"
@@ -145,8 +145,8 @@ def p_all(token_list: yacc.YaccProduction) -> None:
 
     if len(undefined_classes) > 0:
         error = "--Names:"
-        for function in undefined_functions:
-            error += f"\n'{function}'"
+        for class_ in undefined_classes:
+            error += f"\n'{class_}'"
         error += f"\nWere not defined as classes--{add_remark()}"
         errors.append(error)
         raise ParserError(error)
@@ -1388,10 +1388,14 @@ def p_method_call(token_list: yacc.YaccProduction) -> None:
     if token_list.slice[2].type == "DOT":
         function_node: OperatorNode = token_list[3]
         method_node.add_named_adjacent(Operand.INSTANCE, token_list[1])
+
+        undefined_functions.discard(
+            function_node.get_adjacent(Operand.FUNCTION_NAME).id)
     else:
         names_subtree: OperatorNode = token_list[1]
 
         function_node = OperatorNode(OperatorType.FUNCTION_CALL)
+
         function_node.add_named_adjacent(
             Operand.FUNCTION_NAME,
             names_subtree.get_rightmost(),

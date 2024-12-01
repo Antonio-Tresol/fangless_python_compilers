@@ -402,6 +402,11 @@ namespace BF {
     return base->pow(exponent) % modulus;
   }
 
+  std::shared_ptr<Number> intDiv(const std::shared_ptr<Number>& dividend,
+    const std::shared_ptr<Number>& divisor) {
+    return Number::spawn(dividend->getInt() / divisor->getInt());
+  }
+
   std::shared_ptr<None> print() {
     std::cout << std::endl;
     return None::spawn();
@@ -684,6 +689,15 @@ namespace BF {
     return Bool::spawn(it != structure.end());
   }
 
+
+  std::shared_ptr<Bool> is(const std::shared_ptr<Object>& first,
+    const std::shared_ptr<Object>& second) {
+    if (first->isNone()) return Bool::spawn(second->isNone());
+
+    if (second->isNone()) return Bool::spawn(first->isNone());
+
+    return Bool::spawn(first.get() == second.get());
+  }
 };
 
 #endif  // BUILTIN_FUNCTIONS_HPP

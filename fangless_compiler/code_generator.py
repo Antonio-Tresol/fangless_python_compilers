@@ -7,6 +7,7 @@ from abstract_syntax_tree.name_node import (
     NameNode,
 )
 from common import (
+    METHODS,
     BUILTIN_FUNCTIONS,
 )
 
@@ -84,12 +85,14 @@ class FanglessGenerator:
             ">>=": self.visit_direct_binary,
             "not": self.visit_unary,
             "~": self.visit_unary,
-            "in": self.visit_in,
-            "**": self.visit_exponent,
-            "//": self.visit_floor_div,
-            "is": self.visit_is,
-            "is not": self.visit_is_not,
-            "not in": self.visit_not_in,
+            "in": self.visit_binary_func,
+            "**": self.visit_binary_func,
+            "//": self.visit_binary_func,
+            "is": self.visit_binary_func,
+            "is not": self.visit_binary_func,
+            "not in": self.visit_binary_func,
+            "**=": self.visit_func_assignation,
+            "//=": self.visit_func_assignation,
         }
 
     def generate_code(self, tree_list: list[OperatorNode]) -> str:
@@ -187,7 +190,10 @@ class FanglessGenerator:
 
         values = tree.get_adjacent(Operand.VALUES)
 
-        return f"(*{condition})? {values[True]} : {values[False]}"
+        return (
+            f"(Function::boolEval({condition}))? "
+            f"{values[True]} : {values[False]}"
+        )
 
     def visit_conditional(self, tree: OperatorNode) -> str:
         true_body = tree.get_adjacent(Operand.BODY)
@@ -200,7 +206,9 @@ class FanglessGenerator:
 
         if_str = "if" if tree.operator == OperatorType.IF else "else if"
 
-        operation = f"{if_str} (*{condition}) {{ \n {true_body} }}"
+        operation = (
+            f"{if_str} (Function::boolEval({condition})) {{ \n {true_body} }}"
+        )
 
         if alternative_tree is None:
             return operation
@@ -234,16 +242,19 @@ class FanglessGenerator:
             if function_name in {"bool", "float", "int"}:
                 function_name += "_"
         else:
-            namespace = "GF::"
+            namespace = "GF::" if function_name not in METHODS else "" 
             parameters_str = f"Function::spawnArgs({parameters_str})"
 
         return f"{predefine}{namespace}{function_name}({parameters_str})"
 
     def visit_method_call(self, tree: OperatorNode) -> str:
-        left_child = tree.get_left_operand()
+        left_child = tree.get_adjacent(Operand.INSTANCE)
         left_child = self.visit_tree([left_child])
 
-        right_child = tree.get_right_operand()
+        right_child = tree.get_adjacent(Operand.METHOD)
+        method_name = right_child.get_adjacent(Operand.FUNCTION_NAME).id
+        METHODS.add(method_name)
+
         right_child = self.visit_tree([right_child])
 
         return f"{left_child}->{right_child}"
@@ -329,7 +340,7 @@ class FanglessGenerator:
         body = tree.get_adjacent(Operand.BODY)
         body = self.visit_tree(body, is_standalone=True)
 
-        while_str = f"while (*{condition}) {{ \n {body} }}"
+        while_str = f"while (Function::boolEval({condition})) {{ \n {body} }}"
         alternative_body = tree.get_adjacent(Operand.ALTERNATIVE)
         if alternative_body is None:
             return while_str
@@ -338,7 +349,7 @@ class FanglessGenerator:
                                             is_standalone=True)
 
         return (
-            f"if (*{condition}) {{ {while_str} \n }}"
+            f"if (Function::boolEval({condition})) {{ {while_str} \n }}"
             f"else {{ {alternative_body} }}"
         )
 
@@ -412,10 +423,11 @@ class FanglessGenerator:
                 argument_strs.append(arg[Operand.ARGUMENT].id)
             else:
                 argument_strs.append(arg.id)
+        arguments = ", ".join(argument_strs)
 
         update = (
             "auto newArgs = Function::spawnArgs("
-            f" {", ".join(argument_strs)});\n"
+            f" {arguments});\n"
             "Function::updateArgs(args, newArgs);\n"
         )
 
@@ -496,45 +508,39 @@ class FanglessGenerator:
     def visit_other_operators(self, tree: OperatorNode) -> None:
         pass
 
-    def visit_in(self, tree: OperatorNode) -> str:
+    def visit_binary_func(self, tree: OperatorNode) -> str:
         left_child = tree.get_left_operand()
         left_child = self.visit_tree([left_child])
 
         right_child = tree.get_right_operand()
         right_child = self.visit_tree([right_child])
+
+        func = "Bf::"
+        if tree.operator == "**":
+            func += "pow"
+        elif tree.operator == "//":
+            func += "intDiv"
+        elif "in" in tree.operator:
+            func += "in"
+        elif "is" in tree.operator:
+            func += "is"
+        else:
+            func += tree.operator
+
+        func = f"{func}({left_child}, {right_child})"
+        if "not" in tree.operator:
+            func = f"negate({func})"
 
         if tree.parenthesis:
-            return f"(BF::in({left_child}, {right_child}))"
+            return f"({func})"
+        return func
+    
+    def visit_func_assignation(self, tree: OperatorNode) -> str:
+        name = tree.get_left_operand()
+        name = tree.visit_tree([tree])
 
-        return f"BF::in({left_child}, {right_child})"
+        tree.operator = tree.operator[:-1]
+        right = self.visit_tree([tree])
 
-    def visit_not_in(self, tree: OperatorNode) -> str:
-        return f"!*{self.visit_in(self, tree)}"
+        return f"{name} = {right}"
 
-    def visit_exponent(self, tree: OperatorNode) -> str:
-        left_child = tree.get_left_operand()
-        left_child = self.visit_tree([left_child])
-
-        right_child = tree.get_right_operand()
-        right_child = self.visit_tree([right_child])
-
-        return f"BF::Pow({left_child}, {right_child})"
-
-    def visit_floor_div(self, tree: OperatorNode) -> str:
-        pass
-
-    def visit_is(self, tree: OperatorNode) -> str:
-        left_child = tree.get_left_operand()
-        left_child = self.visit_tree([left_child])
-
-        right_child = tree.get_right_operand()
-        right_child = self.visit_tree([right_child])
-
-        return (
-            f"{left_child}.isNone() && {right_child}.isNone() ?"
-            f"Bool::spawn(true) : "
-            f"{left_child}.get() == {right_child}.get()"
-        )
-
-    def visit_is_not(self, tree: OperatorNode) -> str:
-        return f"!*{self.visit_is(self, tree)}"

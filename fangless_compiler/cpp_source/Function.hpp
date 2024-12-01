@@ -51,5 +51,25 @@ template <typename... Args1, typename... Args2>
 
       updateHelper(std::make_index_sequence<minSize>{});
   }
+
+  bool boolEval(const char obj) {
+    return obj != '\0';
+  }
+
+  bool boolEval(const int obj) {
+    return obj != 0;
+  }
+
+  bool boolEval(const bool obj) {
+    return obj;
+  }
+
+  bool boolEval(const std::shared_ptr<Object>& obj) {
+    return obj->toBool();
+  }
+
+  bool boolEval(const std::shared_ptr<std::wstring>& obj) {
+    return !obj->empty();
+  }
 }// namespace Function
 #endif  // FUNCTION_HPP

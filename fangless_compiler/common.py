@@ -267,6 +267,8 @@ CLASS = 3
 FUNCTION = 2
 VARIABLE = 1
 
+METHODS = set()
+
 BUILTIN_FUNCTIONS = (
     "abs",
     "all",
