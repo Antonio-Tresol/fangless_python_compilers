@@ -212,6 +212,7 @@ class FanglessGenerator:
         if slice_dict[Operand.START] is not None:
             start = self.visit_tree([slice_dict[Operand.START]])
             return f"(*{instance})[Slice({start}, {end})]"
+
         return f"(*{instance})[Slice({end})]"
 
     def visit_indexing(self, tree: OperatorNode) -> None:
@@ -256,12 +257,23 @@ class FanglessGenerator:
         pass
 
     def visit_while(self, tree: OperatorNode) -> str:
-        result = ""
         condition = tree.get_adjacent(Operand.CONDITION)
-        condition = f"{self.visit_tree([condition])}"
+        condition = self.visit_tree([condition])
         body = tree.get_adjacent(Operand.BODY)
         body = self.visit_tree(body, is_standalone=True)
-        return f"while ({condition}) {{ \n {body} }}"
+
+        while_str = f"while ({condition}) {{ \n {body} }}"
+        alternative_body = tree.get_adjacent(Operand.ALTERNATIVE)
+        if alternative_body is None:
+            return while_str
+
+        alternative_body = self.visit_tree(alternative_body,
+                                            is_standalone=True)
+
+        return (
+            f"if ({condition}) {{ {while_str} \n }}"
+            f"else {{ {alternative_body} }}"
+        )
 
     def visit_for(self, tree: OperatorNode) -> None:
         for_literal = tree.get_adjacent(Operand.FOR_LITERAL)
@@ -269,31 +281,32 @@ class FanglessGenerator:
 
         if isinstance(for_literal, NameNode):
             for_literal = self.visit_tree([for_literal])
-        else:  # if we have an range, enumerate, or any other iterable
-            # we need to define the iterator first
-            iterator = f"iter_{self.iter_count}"
-            pre_define = f"auto {iterator} = {self.visit_tree([for_literal])};\n"
-            for_literal = iterator
+        else:
+            pre_define = (
+                f"auto iter_{self.iter_count} = "
+                f"{self.visit_tree([for_literal])};\n"
+            )
+            for_literal = f"iter_{self.iter_count}"
             self.iter_count += 1
 
         for_symbols = tree.get_adjacent(Operand.SYMBOLS)
         names = for_symbols
         if len(names) == 1:
-            for_symbols = f"auto {names[0].id}"
+            for_symbols = f"auto& {names[0].id}"
             body = tree.get_adjacent(Operand.BODY)
             body = self.visit_tree(body, is_standalone=True)
             return (
-                f"{pre_define} for ({for_symbols} : *{for_literal}) {{ \n {body} }}"
+                f"{pre_define}"
+                f"for ({for_symbols} : *{for_literal}) {{ \n {body} }}"
             )
 
         body_pre_define = ""
-        body_pre_define += (
-            "auto tuplaGod=std::dynamic_pointer_cast<Tuple>(symbols)"
-            ";\nif (tuplaGod==nullptr) "
-            '{ throw std::runtime_error("Expected a tuple"); }\n'
-        )
+        body_pre_define += "auto tuple = symbols->asTuple();\n"
+
         for i, name in enumerate(names):
-            body_pre_define += f"auto {name.id} = (*tuplaGod)[Number::spawn({i})];\n"
+            body_pre_define += (
+                f"auto {name.id} = tuple->at(Number::spawn({i}));\n"
+            )
         body = tree.get_adjacent(Operand.BODY)
         body = self.visit_tree(body, is_standalone=True)
         code = f"{pre_define} for (auto symbols : *{for_literal})"

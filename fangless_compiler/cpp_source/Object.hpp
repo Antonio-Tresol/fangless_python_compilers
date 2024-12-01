@@ -6,6 +6,8 @@
 #include <string>
 #include <compare>
 
+class Tuple;
+
 // an object interface to mimic python type behaviour
 class Object {
  public:
@@ -43,6 +45,10 @@ class Object {
                        std::shared_ptr<Object> value) = 0;
 
   bool isNone() const { return type() == "None"; }
+
+  virtual std::shared_ptr<Tuple> asTuple() const {
+    throw std::runtime_error("Cannot convert to tuple");
+  } 
 
   operator bool() const { return toBool(); }
   operator std::string() const { return toString(); }

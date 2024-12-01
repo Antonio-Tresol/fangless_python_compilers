@@ -10,6 +10,7 @@
 #include "Number.hpp"
 #include "Object.hpp"
 #include "Slice.hpp"
+#include "Tuple.hpp"
 
 using std::views::iota;
 
@@ -60,6 +61,10 @@ class List : public Object {
     }
 
     return true;
+  }
+
+  std::shared_ptr<Tuple> asTuple() const override {
+    return std::make_shared<Tuple>(elements_);
   }
 
   bool equals(const Object& other) const override {

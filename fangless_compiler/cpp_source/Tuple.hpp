@@ -94,6 +94,10 @@ class Tuple : public Object {
 
   bool toBool() const override { return !elements_.empty(); }
 
+  std::shared_ptr<Tuple> asTuple() const override {
+    return std::make_shared<Tuple>(elements_);
+  } 
+
   friend bool operator==(const Tuple& lhs, const Tuple& rhs) {
       return lhs.equals(rhs);
   }

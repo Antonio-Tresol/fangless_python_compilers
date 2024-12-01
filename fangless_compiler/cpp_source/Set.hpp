@@ -11,6 +11,7 @@
 
 #include "Iterable.hpp"
 #include "Object.hpp"
+#include "Tuple.hpp"
 
 class Set final : public Object {
   std::set<std::shared_ptr<Object>, ObjectComparator> elements_ {};
@@ -42,7 +43,9 @@ class Set final : public Object {
     return result + "}";
   };
 
-
+  std::shared_ptr<Tuple> asTuple() const override {
+    return std::make_shared<Tuple>(elements_.begin(), elements_.end());
+  }
 
   bool equals(const Object& other) const override {
     auto* otherPtr = dynamic_cast<const Set*>(&other);
