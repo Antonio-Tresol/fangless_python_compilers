@@ -1112,15 +1112,7 @@ def p_for_symbols(token_list: yacc.YaccProduction) -> None:
 
 
 def p_for_literal(token_list: yacc.YaccProduction) -> None:
-    """for_literal  :   structure
-                    |   function_call
-                    |   NAME
-    """
-    does_name_exist(token_list)
-    if token_list.slice[1].type == "NAME":
-        token_list[0] = NameNode(identifier=token_list[1])
-        return
-
+    """for_literal  :   scalar_statement"""
     token_list[0] = token_list[1]
 
 
@@ -1152,7 +1144,7 @@ def p_return_value_list(token_list: yacc.YaccProduction) -> None:
     """
     value_list = token_list[1]
 
-    if isinstance(value_list, list):
+    if len(token_list) > 2:
         value_list.append(token_list[3])
         token_list[0] = value_list
     else:
@@ -1187,7 +1179,6 @@ def p_function_definition(token_list: yacc.YaccProduction) -> None:
     body_index = 5 if len(token_list) == 6 else 7
     func_node.add_named_adjacent(Operand.BODY, token_list[body_index])
     token_list[0] = func_node
-
 
 
 def p_def_open(token_list: yacc.YaccProduction) -> None:

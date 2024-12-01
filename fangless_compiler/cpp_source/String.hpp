@@ -323,8 +323,11 @@ class String : public Object {
     return std::make_shared<String>(result);
   }
 
-  std::shared_ptr<String> slice(const Slice& slice) const {
+  std::shared_ptr<String> slice(const Slice& slice) {
     return this->operator[](slice);
+  }
+  std::shared_ptr<String> slice(std::shared_ptr<Slice> slice) {
+    return this->operator[](*slice);
   }
 
   std::shared_ptr<Number> find(

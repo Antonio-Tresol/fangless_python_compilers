@@ -56,6 +56,7 @@ class Operand(Enum):
     FOR_LITERAL = 17
     CLASS_NAME = 18
     PARENT_CLASS = 19
+    UPDATE_ARGS = 20
 
     def __repr__(self) -> str:
         return str(self.name).lower()
@@ -124,6 +125,9 @@ class OperatorNode(Node):
 
     def set_center_operand(self, value: Any) -> None:
         self.adjacents[Operand.CENTER] = value
+
+    def get_center_operand(self) -> Any:
+        return self.adjacents.get(Operand.CENTER, None)
 
     def set_right_operand(self, value: Any) -> None:
         self.adjacents[Operand.RIGHT] = value

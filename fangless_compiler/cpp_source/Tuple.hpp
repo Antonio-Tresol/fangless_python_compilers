@@ -215,9 +215,14 @@ class Tuple : public Object {
     return std::make_shared<Tuple>(vector);
   }
 
-  auto slice(const Slice& slice) const {
+  auto slice(const Slice& slice) {
     return this->operator[](slice);
   }
+
+  auto slice(std::shared_ptr<Slice> slice) {
+    return this->operator[](*slice);
+  }
+
 
   std::shared_ptr<Tuple> operator+(
       const Tuple& other) const {

@@ -77,6 +77,7 @@ class List : public Object {
 
       return true;
     }
+  
     return false;
   }
 
@@ -315,6 +316,17 @@ class List : public Object {
     return elements_[actual_index];
   }
 
+  auto& operator[](const std::shared_ptr<Number>& pos) {
+    int index = pos->getInt();
+    int actual_index = index;
+    if (index < 0) actual_index += elements_.size();
+
+    if (actual_index < 0 || actual_index >= static_cast<int>(elements_.size())) {
+      throw std::out_of_range("List index out of range");
+    }
+    return elements_[actual_index];
+  }
+
   std::shared_ptr<List> operator[](const Slice& slice) const {
     int start = slice.start == INT_MAX ? 0 : slice.start;
     int end = slice.end == INT_MAX ? elements_.size() : slice.end;
@@ -342,9 +354,15 @@ class List : public Object {
     return result;
 }
 
-  std::shared_ptr<List> slice(const Slice& slice) const {
+  std::shared_ptr<List> slice(const Slice& slice) {
     return this->operator[](slice);
   }
+
+  std::shared_ptr<List> slice(std::shared_ptr<Slice> slice) {
+    return this->operator[](*slice);
+  }
+
+
 
   // List arithmetic and comparison operators
   std::shared_ptr<List> operator+(const List& other) const {

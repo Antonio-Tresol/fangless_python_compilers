@@ -9,6 +9,7 @@
 #include <string>
 #include <stdexcept>
 #include <filesystem>
+#include <type_traits>
 
 #include "Bool.hpp"
 #include "Dictionary.hpp"
@@ -35,6 +36,7 @@
 // };
 
 // auto c = DefaultFunction(FUNC(std::abs, -1)).Call<Number>();
+
 template<typename TClass>
 concept TIterable = requires(TClass a) {
   a.begin();
@@ -47,6 +49,18 @@ concept TAdvIterator = requires(TIterator it) {
     std::advance(it, 1);
     typename std::iterator_traits<TIterator>::value_type;
 };
+
+template <typename T>
+struct is_container_type : std::false_type {};
+
+template <>
+struct is_container_type<String> : std::true_type {};
+template <>
+struct is_container_type<Set> : std::true_type {};
+template <>
+struct is_container_type<Dictionary> : std::true_type {};
+template <>
+struct is_container_type<List> : std::true_type {};
 
 // Namespace for builtin functions
 namespace BF {
@@ -413,32 +427,43 @@ namespace BF {
     return base->pow(exponent) % modulus;
   }
 
-  void print() {
+  std::shared_ptr<None> print() {
     std::cout << std::endl;
+    return None::spawn();
   }
 
-  void print(const std::shared_ptr<String>& object) {
+  std::shared_ptr<None> print(const char object) {
+    std::cout << object << std::endl;
+    return None::spawn();
+  }
+
+  std::shared_ptr<None> print(const std::shared_ptr<String>& object) {
     std::cout << (**object).c_str() << std::endl;
+    return None::spawn();
   }
 
-  void print(const std::shared_ptr<Object>& object) {
+  std::shared_ptr<None> print(const std::shared_ptr<Object>& object) {
     std::cout << object->toString().c_str() << std::endl;
+    return None::spawn();
   }
 
-  void print(bool boolean) {
+  std::shared_ptr<None> print(bool boolean) {
     std::cout << (boolean? "True" : "False") << std::endl;
+    return None::spawn();
   }
 
-  void print(const std::shared_ptr<std::wstring>& anything) {
+  std::shared_ptr<None> print(const std::shared_ptr<std::wstring>& anything) {
     std::wcout << (*anything) << std::endl;
+    return None::spawn();
   }
 
   template<typename Any>
-  void print(const std::shared_ptr<Any>& anything) {
+  std::shared_ptr<None> print(const std::shared_ptr<Any>& anything) {
     std::cout << (*anything) << std::endl;
+    return None::spawn();
   }
 
-  void print(const std::map<
+  std::shared_ptr<None> print(const std::map<
     std::shared_ptr<Object>,
     std::shared_ptr<Object>,
     ObjectComparator>::iterator& iterator) {
@@ -446,10 +471,11 @@ namespace BF {
       << " : " 
       << (*(iterator->second))
       << std::endl;
+    return None::spawn();
   }
 
   template<TAdvIterator TIterator>
-  void print(const TIterator& iterator) {
+  std::shared_ptr<None> print(const TIterator& iterator) {
     using ValueType = typename std::iterator_traits<TIterator>::value_type;
     if constexpr (std::is_same_v<ValueType, std::shared_ptr<Object>>) {
       const std::shared_ptr<Object>& objPtr = *iterator;
@@ -462,6 +488,8 @@ namespace BF {
     } else {
       std::cout << (*iterator) << std::endl;
     }
+
+    return None::spawn();
   }
 
   std::shared_ptr<List> range(const std::shared_ptr<Number>& stop) {
@@ -660,4 +688,44 @@ namespace BF {
 
     return std::make_shared<Tuple>(result);
   }
+
+  template <typename... Args>
+  void updateArgs(std::tuple<std::shared_ptr<Args>...>& args,
+                  std::tuple<std::shared_ptr<Args>...>& newArgs) {
+
+    auto updateHelper = [&]<std::size_t... I>(std::index_sequence<I...>) {
+      ((void)([&] {
+        auto& target = std::get<I>(args);
+        auto& source = std::get<I>(newArgs);
+        using SourceType = typename std::decay_t<decltype(*source)>;
+        if constexpr (is_container_type<SourceType>::value) {
+          *target = *source;
+        }
+      }()),
+      ...);
+    };
+
+    updateHelper(std::make_index_sequence<sizeof...(Args)>{});
+  }
+
+  std::shared_ptr<Bool> in(const std::shared_ptr<String>& obj,
+    const std::shared_ptr<String>& structure) {
+    for (Number i = Number(0); i < *(structure->len()); ++i) {
+      if ((*structure)[i] == obj) {
+        return Bool::spawn(true);
+      }
+    }
+    return Bool::spawn(false);
+  }
+
+  template<TIterable TType>
+  std::shared_ptr<Bool> in(const auto& obj,
+    const std::shared_ptr<TType>& structure) {
+    auto it = std::find_if(structure.begin(), structure.end(),
+                           [&obj](const auto& element) -> bool {
+                             return element->equals(*obj);
+                           });
+    return Bool::spawn(it != structure.end());
+  }
+
 };
