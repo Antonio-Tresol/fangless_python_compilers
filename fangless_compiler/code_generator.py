@@ -208,9 +208,9 @@ class FanglessGenerator:
 
         slice_dict = tree.get_adjacent(Operand.SLICE)
 
-        end = self.visit_instance(slice_dict[Operand.END])
+        end = self.visit_tree([slice_dict[Operand.END]])
         if slice_dict[Operand.START] is not None:
-            start = self.visit_instance(slice_dict[Operand.START])
+            start = self.visit_tree([slice_dict[Operand.START]])
             return f"(*{instance})[Slice({start}, {end})]"
         return f"(*{instance})[Slice({end})]"
 

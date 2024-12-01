@@ -748,12 +748,11 @@ def p_slice(token_list: yacc.YaccProduction) -> None:
         temp_node.add_named_adjacent(Operand.END, token_list[3])
     else:
         temp_node.add_named_adjacent(Operand.END, token_list[2])
-    
     token_list[0] = temp_node
 
 
 def p_index(token_list: yacc.YaccProduction) -> None:
-    """index    :   binary_operand"""
+    """index    :   scalar_statement"""
     token_list[0] = token_list[1]
 
 
@@ -871,6 +870,8 @@ def p_type_series(token_list: yacc.YaccProduction) -> None:
 # ========================= STATEMENTS ========================================
 def p_scalar_statement(token_list: yacc.YaccProduction) -> None:
     """scalar_statement :   name_dot_series
+                        |   binary_operation
+                        |   unary_operation
                         |   index_literal
                         |   ternary
                         |   literal
