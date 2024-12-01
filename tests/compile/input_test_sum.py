@@ -66,7 +66,7 @@ print("")
 
 # Testing sum with floating-point precision
 print("Testing sum with floating-point precision")
-# Expected output: 3.0000000000000004 (due to floating-point precision issues)
+# Expected output: 3.0
 print(sum([1.1, 2.2, -0.3]))
 # Expected output: 0.0
 print(sum([1.1, -1.1]))
