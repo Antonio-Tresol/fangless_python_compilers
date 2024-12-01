@@ -5,6 +5,8 @@ elif 3 + 2 > 6:
 else:
     ["a"]
 
+if False:
+    print("This should not be printed")
 
 if ("hola" == "mundo") and (True or False) or True:
     "Antonio"

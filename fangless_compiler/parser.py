@@ -10,8 +10,10 @@ from common import (
     SCOPE_OPENED,
     TYPES,
     CONTAINER_TYPES,
+    CPP_RESERVED_W,
     fill_symbol_table_with_builtin_functions,
     add_remark,
+    add_name,
 )
 from exceptions import ParserError
 from collections import defaultdict
@@ -21,7 +23,7 @@ from abstract_syntax_tree.node import NIL_NODE
 from abstract_syntax_tree.operator_node import (
     OperatorType,
     OperatorNode,
-    Operand
+    Operand,
 )
 from abstract_syntax_tree.epic_node import EpicNode
 from abstract_syntax_tree.name_node import NameNode
@@ -61,6 +63,9 @@ parser_state_info["loops"] = 0
 parser_state_info["functions"] = 0
 parser_state_info["classes"] = 0
 errors: list[str] = []
+
+REVERSED_CPP_WORD_POSTFIX = f"This_Was_Reserved_{add_name()}"
+
 
 # =============================ERROR CHECKING==================================
 def does_name_exist(token_list: yacc.YaccProduction) -> None:
@@ -190,9 +195,11 @@ def p_literal(token_list: yacc.YaccProduction) -> None:
     does_name_exist(token_list)
     match token_list.slice[1].type:
         case "NAME":
-            # for names we create a node so that
-            # we know we have to resolve it at some point.
-            token_list[0] = NameNode(token_list[1])
+            name = token_list[1]
+            if name in CPP_RESERVED_W:
+                name = f"{name}_{REVERSED_CPP_WORD_POSTFIX}"
+
+            token_list[0] = NameNode(name)
         case "NONE":
             token_list[0] = None
         case _:
@@ -301,8 +308,11 @@ def p_non_mutable_literal(token_list: yacc.YaccProduction) -> None:
     """
     match token_list.slice[1].type:
         case "NAME":
-            # we make a name node here because we have work to do
-            token_list[0] = NameNode(token_list[1])
+            name = token_list[1]
+            if name in CPP_RESERVED_W:
+                name = f"{name}_{REVERSED_CPP_WORD_POSTFIX}"
+
+            token_list[0] = NameNode(name)
         case "NONE":
             token_list[0] = None
         case _:
@@ -527,15 +537,23 @@ def p_name_comma_series(token_list: yacc.YaccProduction) -> None:
     """name_comma_series    : name_comma_series COMMA NAME
                             | NAME COMMA NAME
     """
+    second_name = token_list[3]
+    if second_name in CPP_RESERVED_W:
+        second_name = f"{second_name}_{REVERSED_CPP_WORD_POSTFIX}"
+
     # if this is the first pair of names, make a list of them
     if token_list.slice[1].type == "NAME":
+        first_name = token_list[1]
+        if first_name in CPP_RESERVED_W:
+            first_name = f"{first_name}_{REVERSED_CPP_WORD_POSTFIX}"
+
         token_list[0] = [
-            NameNode(identifier=token_list[1]),
-            NameNode(identifier=token_list[3]),
+            NameNode(first_name),
+            NameNode(second_name),
         ]
     else:  # when we have already some names, just add the name to the list
         names = token_list[1]
-        names.append(NameNode(identifier=token_list[3]))
+        names.append(NameNode(second_name))
         token_list[0] = names
 
 
@@ -589,11 +607,19 @@ def p_name_dot_series(token_list: yacc.YaccProduction) -> None:
     """
     validate_variable_declaration_or_class_scope(token_list)
 
+    second_name = token_list[3]
+    if second_name in CPP_RESERVED_W:
+        second_name = f"{second_name}_{REVERSED_CPP_WORD_POSTFIX}"
+
     new_node = OperatorNode(OperatorType.ATTRIBUTE_CALL)
     # if we are starting the series of dot names
     if token_list.slice[1].type == "NAME":
-        new_node.set_left_operand(NameNode(identifier=token_list[1]))
-        new_node.set_right_operand(NameNode(identifier=token_list[3]))
+        first_name = token_list[1]
+        if first_name in CPP_RESERVED_W:
+            first_name = f"{first_name}_{REVERSED_CPP_WORD_POSTFIX}"
+
+        new_node.set_left_operand(NameNode(first_name))
+        new_node.set_right_operand(NameNode(second_name))
         token_list[0] = new_node
     else:  # if we already have a series of names, extend the tree to the right
         attribute_subtree: OperatorNode = token_list[1]
@@ -601,7 +627,7 @@ def p_name_dot_series(token_list: yacc.YaccProduction) -> None:
         # which is in the rightmost position of the tree
         new_node.set_left_operand(attribute_subtree.get_rightmost())
         # its right will be the new name in the series
-        new_node.set_right_operand(NameNode(identifier=token_list[3]))
+        new_node.set_right_operand(NameNode(second_name))
         # and that subtree will be planted at the rightmost position of the last tree
         attribute_subtree.set_rightmost(new_node)
         token_list[0] = attribute_subtree
@@ -625,9 +651,11 @@ def p_name_assignation(token_list: yacc.YaccProduction) -> None:
         assignation = OperatorNode(operation)
         symbol_table[token_list[1]] = VARIABLE
 
-        # the name left
-        assignation.set_left_operand(NameNode(token_list[1]))
-        # the value right
+        if name in CPP_RESERVED_W:
+            name = f"{name}_{REVERSED_CPP_WORD_POSTFIX}"
+
+        assignation.set_left_operand(NameNode(name))
+
         assignation.set_right_operand(token_list[3])
         token_list[0] = assignation
     # when we have a name equal series
@@ -662,6 +690,10 @@ def p_name_equal_series(token_list: yacc.YaccProduction) -> None:
     """    
     new_tree: OperatorNode = NIL_NODE
 
+    second_name = token_list[3]
+    if second_name in CPP_RESERVED_W:
+        second_name = f"{second_name}_{REVERSED_CPP_WORD_POSTFIX}"
+
     # if we are starting the name series
     if token_list.slice[1].type == "NAME":
         operation = (
@@ -670,8 +702,13 @@ def p_name_equal_series(token_list: yacc.YaccProduction) -> None:
             else OperatorType.VAR_DECLARATION
         )
         new_tree = OperatorNode(operation)
-        new_tree.set_left_operand(NameNode(identifier=token_list[1]))
-        new_tree.set_right_operand(NameNode(identifier=token_list[3]))
+
+        first_name = token_list[1]
+        if first_name in CPP_RESERVED_W:
+            first_name = f"{first_name}_{REVERSED_CPP_WORD_POSTFIX}"
+
+        new_tree.set_left_operand(NameNode(first_name))
+        new_tree.set_right_operand(NameNode(second_name))
         token_list[0] = (new_tree, new_tree)
     else:  # when we already have a series
         tree = token_list[1]
@@ -685,7 +722,7 @@ def p_name_equal_series(token_list: yacc.YaccProduction) -> None:
         new_tree = OperatorNode(operation)
 
         new_tree.set_left_operand(last_tree.get_right_operand())
-        new_tree.set_right_operand(NameNode(identifier=token_list[3]))
+        new_tree.set_right_operand(NameNode(second_name))
         last_tree.set_right_operand(new_tree)
         token_list[0] = (root, new_tree)
 
@@ -730,7 +767,11 @@ def p_index_literal(token_list: yacc.YaccProduction) -> None:
 
     # if we are indexing over a variable
     if token_list.slice[1].type == "NAME":
-        tree.add_named_adjacent(Operand.INSTANCE, NameNode(identifier=token_list[1]))
+        name = token_list[1]
+        if name in CPP_RESERVED_W:
+            name = f"{name}_{REVERSED_CPP_WORD_POSTFIX}"
+
+        tree.add_named_adjacent(Operand.INSTANCE, NameNode(name))
     else:  # if we are indexing directly into a structure
         tree.add_named_adjacent(Operand.INSTANCE, token_list[1])
 
@@ -782,9 +823,12 @@ def p_op_assignation_operand(token_list: yacc.YaccProduction) -> None:
     else:
         does_name_exist(token_list)
 
-    # TODO(Antonio)
     if token_list.slice[1].type == "NAME":
-        token_list[0] = NameNode(token_list[1])
+        name = token_list[1]
+        if name in CPP_RESERVED_W:
+            name = f"{name}_{REVERSED_CPP_WORD_POSTFIX}"
+
+        token_list[0] = NameNode(name)
     else:
         token_list[0] = token_list[1]
 
@@ -881,7 +925,11 @@ def p_scalar_statement(token_list: yacc.YaccProduction) -> None:
     """
     does_name_exist(token_list)
     if token_list.slice[1].type == "NAME":
-        token_list[0] = NameNode(identifier=token_list[1])
+        name = token_list[1]
+        if name in CPP_RESERVED_W:
+            name = f"{name}_{REVERSED_CPP_WORD_POSTFIX}"
+
+        token_list[0] = NameNode(name)
 
     token_list[0] = token_list[1]
 
@@ -1101,13 +1149,23 @@ def p_for_symbols(token_list: yacc.YaccProduction) -> None:
         if symbol_table[token_list[1]] is None:
             stack.append(token_list[1])
         symbol_table[token_list[1]] = VARIABLE
-        token_list[0] = [NameNode(identifier=token_list[1])]
+
+        name = token_list[1]
+        if name in CPP_RESERVED_W:
+            name = f"{name}_{REVERSED_CPP_WORD_POSTFIX}"
+        token_list[0] = [NameNode(name)]
+
     else:  # when we already have some for symbols
         if symbol_table[token_list[3]] is None:
             stack.append(token_list[3])
         symbol_table[token_list[3]] = VARIABLE
         names = token_list[1]
-        names.append(NameNode(identifier=token_list[3]))
+
+        name = token_list[3]
+        if name in CPP_RESERVED_W:
+            name = f"{name}_{REVERSED_CPP_WORD_POSTFIX}"
+        names.append(NameNode(name))
+
         token_list[0] = names
 
 
@@ -1174,7 +1232,12 @@ def p_function_definition(token_list: yacc.YaccProduction) -> None:
     undefined_functions.discard(token_list[2])
 
     func_node = OperatorNode(OperatorType.FUNC_DECLARATION, max_adjacents=3)
-    func_node.add_named_adjacent(Operand.FUNCTION_NAME, NameNode(token_list[2]))
+
+    name = token_list[2]
+    if name in CPP_RESERVED_W:
+        name = f"{name}_{REVERSED_CPP_WORD_POSTFIX}"
+
+    func_node.add_named_adjacent(Operand.FUNCTION_NAME, NameNode(name))
     func_node.add_named_adjacent(Operand.ARGUMENTS, token_list[3])
     body_index = 5 if len(token_list) == 6 else 7
     func_node.add_named_adjacent(Operand.BODY, token_list[body_index])
@@ -1214,7 +1277,7 @@ def p_complete_argument_list(token_list: yacc.YaccProduction) -> None:
     arguments: list = token_list[2]
     for argument in arguments:
         if isinstance(argument, dict):
-            argument_id = argument["argument"].id
+            argument_id = argument[Operand.ARGUMENT].id
         else:
             argument_id = argument.id
 
@@ -1250,15 +1313,18 @@ def p_default_argument_list(token_list: yacc.YaccProduction) -> None:
 
 
 def p_default_argument(token_list: yacc.YaccProduction) -> None:
-    """default_argument :   argument EQUAL literal"""
-    token_list[0] = {"argument": token_list[1], "default": token_list[3]}
+    """default_argument :   argument EQUAL scalar_statement"""
+    token_list[0] = {Operand.ARGUMENT: token_list[1], Operand.DEFAULT: token_list[3]}
 
 
 def p_argument(token_list: yacc.YaccProduction) -> None:
     """argument   :   NAME COLON hints
                   |   NAME
     """
-    token_list[0] = NameNode(identifier=token_list[1])
+    name = token_list[1]
+    if name in CPP_RESERVED_W:
+        name = f"{name}_{REVERSED_CPP_WORD_POSTFIX}"
+    token_list[0] = NameNode(name)
 
 
 def p_function_call(token_list: yacc.YaccProduction) -> None:
@@ -1268,7 +1334,12 @@ def p_function_call(token_list: yacc.YaccProduction) -> None:
         undefined_functions.add(token_list[1])
 
     function_node = OperatorNode(OperatorType.FUNCTION_CALL)
-    function_node.add_named_adjacent(Operand.FUNCTION_NAME, NameNode(token_list[1]))
+
+    name = token_list[1]
+    if name in CPP_RESERVED_W:
+        name = f"{name}_{REVERSED_CPP_WORD_POSTFIX}"
+
+    function_node.add_named_adjacent(Operand.FUNCTION_NAME, NameNode(name))
     parameter_list: list = token_list[2]
     function_node.add_named_adjacent(Operand.ARGUMENTS, parameter_list)
     token_list[0] = function_node
@@ -1352,7 +1423,12 @@ def p_class_definition(token_list: yacc.YaccProduction) -> None:
     """
     parser_state_info["classes"] -= 1
     class_node = OperatorNode(OperatorType.CLASS_DECLARATION, max_adjacents=3)
-    class_node.add_named_adjacent(Operand.CLASS_NAME, NameNode(token_list[1]))
+
+    name = token_list[1]
+    if name in CPP_RESERVED_W:
+        name = f"{name}_{REVERSED_CPP_WORD_POSTFIX}"
+
+    class_node.add_named_adjacent(Operand.CLASS_NAME, NameNode(name))
 
     # TODO(Antonio)
     if len(token_list) == 7:
@@ -1367,7 +1443,10 @@ def p_class_definition(token_list: yacc.YaccProduction) -> None:
         if symbol_table[token_list[3]] is None:
             undefined_classes.add(token_list[3])
 
-        class_node.add_named_adjacent(Operand.PARENT_CLASS, NameNode(token_list[3]))
+        name = token_list[3]
+        if name in CPP_RESERVED_W:
+            name = f"{name}_{REVERSED_CPP_WORD_POSTFIX}"
+        class_node.add_named_adjacent(Operand.PARENT_CLASS, NameNode(name))
         class_node.add_named_adjacent(Operand.BODY, token_list[6])
     else:
         class_node.add_named_adjacent(Operand.BODY, token_list[3])

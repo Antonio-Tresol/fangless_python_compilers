@@ -27,7 +27,8 @@ class Bool : public Object {
   std::string type() const override { return "Bool"; }
 
   std::string toString() const override { return value_ ? "True" : "False"; }
-  explicit operator bool() const { return value_; }
+  operator bool() const { return value_; }
+
   bool equals(const Object& other) const override {
     if (other.type() != "Bool") return false;
 
@@ -61,10 +62,15 @@ class Bool : public Object {
 
   bool toBool() const override { return value_; }
 
+  // std::shared_ptr<Bool> operator!() const { return Bool::spawn(!value_); }
   bool operator!() const { return !value_; }
 
   friend bool operator!(const std::shared_ptr<Bool>& obj) {
     return obj->operator!();
+  }
+
+  std::shared_ptr<Bool> negate(std::shared_ptr<Bool>) {
+    return Bool::spawn(!value_);
   }
 
   inline std::shared_ptr<Number> operator~() const {

@@ -58,6 +58,9 @@ class Operand(Enum):
     PARENT_CLASS = 19
     UPDATE_ARGS = 20
 
+    ARGUMENT = 21
+    DEFAULT = 22
+
     def __repr__(self) -> str:
         return str(self.name).lower()
 

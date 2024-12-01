@@ -31,16 +31,16 @@ def iter_example():
     return True
 
 
-def map_ex():
-    d = {
-        "hola": "mundo",
-        1: [1, 2, 3, 4, 5],
-        "dict": {'adios': ':D'}
-    }
-    for k in d.keys():
-        print(d[k])
+# def map_ex():
+#     d = {
+#         "hola": "mundo",
+#         1: [1, 2, 3, 4, 5],
+#         "dict": {'adios': ':D'}
+#     }
+#     for k in d.keys():
+#         print(d[k])
 
-    return "hola" + "mundo"
+#     return "hola" + "mundo"
 
 
 def default_ex(a='hola'):
@@ -58,27 +58,27 @@ def tuple_ex():
     return a + b
 
 
-def slices_ex():
-    l = [1, 2, 3, 4, 5, 6, 7, 7, 8, 9]
-    print(l[-2])
-    print(l[1:-2])
-    k = l[1:2] + l[-3:-4]
-    return k
+# def slices_ex():
+#     l = [1, 2, 3, 4, 5, 6, 7, 7, 8, 9]
+#     print(l[-2])
+#     print(l[1:-2])
+#     k = l[1:2] + l[-3:-4]
+#     return k
 
 
-def string_ex():
-    print("profe"[2:4])
-    print("profe"[2:4] + "profe"[0:2] + "profe"[-1])
+# def string_ex():
+#     print("profe"[2:4])
+#     print("profe"[2:4] + "profe"[0:2] + "profe"[-1])
 
-    print(random_operation(5, 6))
+#     print(random_operation(5, 6))
 
 
-print(fibonacci(4))
-print(fibonacci_d(4))
-print(iter_example())
-print(map_ex())
-print(default_ex())
-print(tuple_ex())
-print(set_ex())
-print(slices_ex())
-string_ex()
+# print(fibonacci(4))
+# # print(fibonacci_d(4
+# print(iter_example())
+# print(map_ex())
+# print(default_ex())
+# print(tuple_ex())
+# print(set_ex())
+# print(slices_ex())
+# string_ex()

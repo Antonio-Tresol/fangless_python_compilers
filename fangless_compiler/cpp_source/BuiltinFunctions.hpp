@@ -1,3 +1,5 @@
+#ifndef BUILTIN_FUNCTIONS_HPP
+#define BUILTIN_FUNCTIONS_HPP
 #include <algorithm>
 #include <cstdlib>
 #include <cmath>
@@ -21,21 +23,6 @@
 #include "String.hpp"
 #include "Tuple.hpp"
 
-// #define FUNC(call, ...) []() { return call(__VA_ARGS__); }
-
-// template<typename FunctionT>
-// struct DefaultFunction {
-//     FunctionT function_;
-
-//     explicit DefaultFunction(FunctionT function) : function_(std::move(function)) {}
-
-//     template<typename ReturnT>
-//     std::shared_ptr<ReturnT> Call() {
-//         return ReturnT::Spawn(function_());
-//     }
-// };
-
-// auto c = DefaultFunction(FUNC(std::abs, -1)).Call<Number>();
 
 template<typename TClass>
 concept TIterable = requires(TClass a) {
@@ -49,18 +36,6 @@ concept TAdvIterator = requires(TIterator it) {
     std::advance(it, 1);
     typename std::iterator_traits<TIterator>::value_type;
 };
-
-template <typename T>
-struct is_container_type : std::false_type {};
-
-template <>
-struct is_container_type<String> : std::true_type {};
-template <>
-struct is_container_type<Set> : std::true_type {};
-template <>
-struct is_container_type<Dictionary> : std::true_type {};
-template <>
-struct is_container_type<List> : std::true_type {};
 
 // Namespace for builtin functions
 namespace BF {
@@ -689,25 +664,6 @@ namespace BF {
     return std::make_shared<Tuple>(result);
   }
 
-  template <typename... Args>
-  void updateArgs(std::tuple<std::shared_ptr<Args>...>& args,
-                  std::tuple<std::shared_ptr<Args>...>& newArgs) {
-
-    auto updateHelper = [&]<std::size_t... I>(std::index_sequence<I...>) {
-      ((void)([&] {
-        auto& target = std::get<I>(args);
-        auto& source = std::get<I>(newArgs);
-        using SourceType = typename std::decay_t<decltype(*source)>;
-        if constexpr (is_container_type<SourceType>::value) {
-          *target = *source;
-        }
-      }()),
-      ...);
-    };
-
-    updateHelper(std::make_index_sequence<sizeof...(Args)>{});
-  }
-
   std::shared_ptr<Bool> in(const std::shared_ptr<String>& obj,
     const std::shared_ptr<String>& structure) {
     for (Number i = Number(0); i < *(structure->len()); ++i) {
@@ -729,3 +685,5 @@ namespace BF {
   }
 
 };
+
+#endif  // BUILTIN_FUNCTIONS_HPP
