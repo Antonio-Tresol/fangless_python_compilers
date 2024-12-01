@@ -9,6 +9,7 @@ from abstract_syntax_tree.name_node import (
 from common import (
     BUILTIN_FUNCTIONS,
 )
+
 NOT_A_OPERATOR_NODE = (
     list,
     dict,
@@ -76,7 +77,9 @@ class FanglessGenerator:
 
         return base_code
 
-    def visit_tree(self, tree_list: list[OperatorNode], is_standalone: bool = False) -> str:
+    def visit_tree(
+        self, tree_list: list[OperatorNode], is_standalone: bool = False
+    ) -> str:
         statements = ""
         for subtree in tree_list:
             if not isinstance(subtree, NOT_A_OPERATOR_NODE):
@@ -87,33 +90,33 @@ class FanglessGenerator:
             elif (subtree is not None) or (not is_standalone):
                 statements += (
                     f"// {self.visit_instance(subtree)}\n"
-                    if is_standalone else self.visit_instance(subtree)
+                    if is_standalone
+                    else self.visit_instance(subtree)
                 )
 
         return statements
-    
+
     def visit_instance(self, instance) -> str:
         """Writes the code for creating an instance of a given object"""
         if isinstance(instance, (int, str, float, bool, type(None), NameNode)):
             return self.visit_basic_instance(instance)
         return self.visit_structure_instance(instance)
 
-
     def visit_basic_instance(self, instance) -> str:
         """Writes the code for creating an instance of a basic object
-        (int, str, float, bool, None) """
+        (int, str, float, bool, None)
+        """
         if isinstance(instance, bool):
             bool_instance = "true" if instance else "false"
             return f"Bool::spawn({bool_instance})"
         if isinstance(instance, str):
             return f'String::spawn("{instance}")'
         if instance is None:
-            return 'None::spawn()'
+            return "None::spawn()"
         if isinstance(instance, (int, float)):
             return f"Number::spawn({instance})"
 
         return f"{instance.id}"
-
 
     def visit_structure_instance(self, instance) -> str:
         elements = ""
@@ -186,13 +189,9 @@ class FanglessGenerator:
         function_name = tree.get_adjacent(Operand.FUNCTION_NAME)
         function_name = function_name.id
 
-        namespace = (
-            "BF::"
-            if function_name in BUILTIN_FUNCTIONS else
-            ""
-        )
+        namespace = "BF::" if function_name in BUILTIN_FUNCTIONS else ""
 
-        if (function_name in {"bool", "float", "int"}):
+        if function_name in {"bool", "float", "int"}:
             function_name += "_"
 
         return f"{namespace}{function_name}({parameters_str})"
@@ -213,9 +212,7 @@ class FanglessGenerator:
         if slice_dict[Operand.START] is not None:
             start = self.visit_instance(slice_dict[Operand.START])
             return f"(*{instance})[Slice({start}, {end})]"
-        
         return f"(*{instance})[Slice({end})]"
-
 
     def visit_indexing(self, tree: OperatorNode) -> None:
         instance = tree.get_adjacent(Operand.INSTANCE)
@@ -225,7 +222,6 @@ class FanglessGenerator:
         index = self.visit_tree([index])
 
         return f"(*{instance})[{index}]"
-
 
     def visit_assignation(self, tree: OperatorNode) -> str:
         left_child = tree.get_left_operand()
@@ -286,15 +282,23 @@ class FanglessGenerator:
             for_symbols = f"auto {names[0].id}"
             body = tree.get_adjacent(Operand.BODY)
             body = self.visit_tree(body, is_standalone=True)
-            return f"{pre_define} for ({for_symbols} : *{for_literal}) {{ \n {body} }}"
+            return (
+                f"{pre_define} for ({for_symbols} : *{for_literal}) {{ \n {body} }}"
+            )
 
         body_pre_define = ""
-        body_pre_define += "auto tuplaGod = std::dynamic_pointer_cast<Tuple>(symbols);\nif (tuplaGod == nullptr) { throw std::runtime_error(\"Expected a tuple\"); }\n"
+        body_pre_define += (
+            "auto tuplaGod=std::dynamic_pointer_cast<Tuple>(symbols)"
+            ";\nif (tuplaGod==nullptr) "
+            '{ throw std::runtime_error("Expected a tuple"); }\n'
+        )
         for i, name in enumerate(names):
             body_pre_define += f"auto {name.id} = (*tuplaGod)[Number::spawn({i})];\n"
         body = tree.get_adjacent(Operand.BODY)
         body = self.visit_tree(body, is_standalone=True)
-        return f"{pre_define} for (auto symbols : *{for_literal}) {{ \n {body_pre_define} {body} }}"
+        code = f"{pre_define} for (auto symbols : *{for_literal})"
+        code = code + f" {{ \n {body_pre_define} {body} }}"
+        return code
 
     def visit_func_declaration(self, tree: OperatorNode) -> None:
         # sacar el nombre
@@ -349,13 +353,9 @@ class FanglessGenerator:
             tree.operator = "||"
 
         if tree.parenthesis:
-            return (f"({left_child} "
-            f"{tree.operator} "
-            f"{right_child})")
+            return f"({left_child} " f"{tree.operator} " f"{right_child})"
 
-        return (f"{left_child} "
-        f"{tree.operator} "
-        f"{right_child}")
+        return f"{left_child} " f"{tree.operator} " f"{right_child}"
 
     def visit_other_operators(self, tree: OperatorNode) -> None:
         pass

@@ -157,25 +157,6 @@ def p_all(token_list: yacc.YaccProduction) -> None:
 
 
 # ================================== LITERALS =================================
-def p_literal(token_list: yacc.YaccProduction) -> None:
-    """literal  :   structure
-                |   number
-                |   bool
-                |   NONE
-                |   NAME
-    """
-    does_name_exist(token_list)
-    match token_list.slice[1].type:
-        case "NAME":
-            # for names we create a node so that
-            # we know we have to resolve it at some point.
-            token_list[0] = NameNode(token_list[1])
-        case "NONE":
-            token_list[0] = None
-        case _:
-            token_list[0] = token_list[1]
-
-
 def p_number(token_list: yacc.YaccProduction) -> None:
     """number   :   MINUS number
                 |   FLOATING_NUMBER
@@ -198,6 +179,24 @@ def p_bool(token_list: yacc.YaccProduction) -> None:
     # convert to equivalent boolean value and send it up
     token_list[0] = token_list[1] == "True"
 
+
+def p_literal(token_list: yacc.YaccProduction) -> None:
+    """literal  :   structure
+                |   number
+                |   bool
+                |   NONE
+                |   NAME
+    """
+    does_name_exist(token_list)
+    match token_list.slice[1].type:
+        case "NAME":
+            # for names we create a node so that
+            # we know we have to resolve it at some point.
+            token_list[0] = NameNode(token_list[1])
+        case "NONE":
+            token_list[0] = None
+        case _:
+            token_list[0] = token_list[1]
 
 # =============================== STRUCTURES ===================================
 def p_structure(token_list: yacc.YaccProduction) -> None:
@@ -353,17 +352,42 @@ def p_general_series(token_list: yacc.YaccProduction) -> None:
     token_list[0] = series
 
 
+def p_completed_tuple_series(token_list: yacc.YaccProduction) -> None:
+    """completed_tuple_series   :   tuple_series COMMA
+                                |   tuple_series
+                                |   scalar_statement COMMA
+    """
+    token_list[0] = token_list[1]
+
+
+def p_tuple_series(token_list: yacc.YaccProduction) -> None:
+    """tuple_series     :   tuple_series COMMA scalar_statement
+                        |   tuple_series_start
+    """
+    if len(token_list) == 2:
+        token_list[0] = token_list[1]
+        return
+
+    series = token_list[1]
+    series.append(token_list[3])
+    token_list[0] = series
+
+
+def p_tuple_series_start(token_list: yacc.YaccProduction) -> None:
+    """tuple_series_start     :   scalar_statement COMMA scalar_statement"""
+    token_list[0] = [token_list[1], token_list[3]]
+
+
 def p_tuple(token_list: yacc.YaccProduction) -> None:
-    """tuple    :   L_PARENTHESIS general_series COMMA scalar_statement R_PARENTHESIS
-                |   L_PARENTHESIS general_series COMMA R_PARENTHESIS
+    """tuple    :   L_PARENTHESIS completed_tuple_series R_PARENTHESIS
                 |   L_PARENTHESIS R_PARENTHESIS
     """
     series = []
-
     if len(token_list) > 3:
-        series = token_list[2]
-        if len(token_list) == 6:
-            series.append(token_list[4])
+        if isinstance(token_list[2], list): 
+            series = token_list[2]
+        else:
+            series = [token_list[2]]
 
     token_list[0] = tuple(series)
 
@@ -1259,7 +1283,8 @@ def p_function_call(token_list: yacc.YaccProduction) -> None:
 
 
 def p_complete_parameter_list(token_list: yacc.YaccProduction) -> None:
-    """complete_parameter_list  :   L_PARENTHESIS parameter_list R_PARENTHESIS
+    """complete_parameter_list  :   L_PARENTHESIS parameter_list COMMA R_PARENTHESIS
+                                |   L_PARENTHESIS parameter_list R_PARENTHESIS
                                 |   L_PARENTHESIS R_PARENTHESIS
     """
     param_list = token_list[2]

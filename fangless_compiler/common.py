@@ -4,6 +4,17 @@ import colors
 import error_messages
 
 
+# ===== COMPILER FLAGS ==================
+VERBOSE_INDENTATION = False
+VERBOSE_LEXER = False
+VERBOSE_PARSER = False
+VERBOSE_AST = False
+VERBOSE_TESTER = False
+VERBOSE_COMPILER = True
+RAINBOW_ERRORS = False
+SENSITIVE_PROGRAMMER = True
+
+
 def new_token(
     new_type: str, line_number: int, column_number: int,
 ) -> LexToken:
@@ -81,18 +92,7 @@ def be_artistic() -> str:
     return choice(error_messages.masterpiece_tuple)
 
 
-# ===== COMPILER CONSTANTS ==============
-
-# ===== COMPILER FLAGS ==================
-VERBOSE_INDENTATION = False
-VERBOSE_LEXER = False
-VERBOSE_PARSER = False
-VERBOSE_AST = False
-VERBOSE_TESTER = False
-VERBOSE_COMPILER = True
-RAINBOW_ERRORS = False
-SENSITIVE_PROGRAMMER = True
-
+# ========COMPILER CONSTANTS==============
 # ========TOKENS AND RESERVED WORDS=======
 TOKENS = (
         ###

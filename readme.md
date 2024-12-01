@@ -75,6 +75,13 @@ or to execute all tests from the root of the repository
    python fangless_compiler/compiler.py input_test_something.py
  ```
 
+ In the case of the parser, to run the tests make sure VERBOSE_TESTING is True in fangless_compiler/common.py and then run
+
+ ```bash
+ python tests/test_parser.py <option>
+ ```
+ where option can be `[negative, positive, ast, compile]` 
+
 ## Run the compiler
 
 To run the compiler over a .py file use the followin command
