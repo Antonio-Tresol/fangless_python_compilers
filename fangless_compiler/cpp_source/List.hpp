@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <vector>
 
+#include "Iterable.hpp"
 #include "Number.hpp"
 #include "Object.hpp"
 #include "Slice.hpp"
@@ -161,14 +162,26 @@ class List : public Object {
 
   void clear() { elements_.clear(); }
 
-  void extend(const List& other) {
-    elements_.insert(elements_.end(), other.elements_.begin(),
-                     other.elements_.end());
+  // void extend(const String& other) {
+  //   for (char c : other) {
+  //       append(String::spawn(std::string("" + c)));
+  //   }
+  // }
+
+  // void extend(std::shared_ptr<String> other) {
+  //   extend(*other);
+  // }
+
+  template<TIterable TType>
+  void extend(const TType& other) {
+    elements_.insert(elements_.end(), other.begin(),
+                     other.end());
   }
 
-  void extend(std::shared_ptr<List> other) {
-    elements_.insert(elements_.end(), other->elements_.begin(),
-                     other->elements_.end());
+  template<TIterable TType>
+  void extend(std::shared_ptr<TType> other) {
+    elements_.insert(elements_.end(), other->begin(),
+                     other->end());
   }
 
   std::shared_ptr<Number> index(std::shared_ptr<Object> object) const {
@@ -242,22 +255,36 @@ class List : public Object {
 
   void reverse() { std::reverse(elements_.begin(), elements_.end()); }
 
-  void sort() {
-    static constexpr auto sortFunc = [](std::shared_ptr<Object> i,
+  void sort(const std::shared_ptr<Bool>& descending = Bool::spawn(false)) {
+    static constexpr auto sortAsc = [](std::shared_ptr<Object> i,
+                                       std::shared_ptr<Object> j) {
+        return *i < *j;
+    };
+    static constexpr auto sortDesc = [](std::shared_ptr<Object> i,
                                         std::shared_ptr<Object> j) {
-      return *i < *j;
+        return *i > *j;
     };
 
     if (!hasSingleType()) {
-      throw std::runtime_error(
-          "Sort not supported on lists with more than one type");
+        throw std::runtime_error(
+            "Sort not supported on lists with more than one type");
     }
 
-    std::sort(elements_.begin(), elements_.end(), sortFunc);
+    if (descending->toBool()) {
+      std::sort(elements_.begin(), elements_.end(), sortDesc);
+    } else {
+      std::sort(elements_.begin(), elements_.end(), sortAsc);
+    }    
   }
 
-  std::shared_ptr<Number> count() const {
-    return Number::spawn(static_cast<int64_t>(elements_.size()));
+  std::shared_ptr<Number> count(const std::shared_ptr<Object>& obj) const {
+    int64_t count = 0;
+    for (const auto& element : elements_) {
+      if (element->equals(*obj)) {
+        ++count;
+      }
+    }
+    return Number::spawn(count);
   }
 
   std::shared_ptr<Number> len() const {

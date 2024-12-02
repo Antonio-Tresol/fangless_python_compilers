@@ -17,6 +17,8 @@ struct ObjectComparator {
   }
 };
 
+class String;
+
 template<typename TClass>
 concept TIterable = requires(TClass a) {
   a.begin();
