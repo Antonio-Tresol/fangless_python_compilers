@@ -10,10 +10,10 @@ from lexer import FanglessLexer
 from parser import FanglessParser
 from code_generator import FanglessGenerator
 import subprocess
+import compiler_settings as cs
 
 
-OUTPUT_CODE_FILE_PATH = "output/output.cpp"
-OUTPUT_FILE = Path(OUTPUT_CODE_FILE_PATH)
+OUTPUT_FILE = Path(cs.OUTPUT_CODE_FILE_PATH)
 
 
 class FanglessCompiler:
@@ -56,7 +56,7 @@ class FanglessCompiler:
         try:
             clang_format = "/usr/bin/clang-format"
             result = subprocess.run(
-                [clang_format, OUTPUT_CODE_FILE_PATH],
+                [clang_format, cs.OUTPUT_CODE_FILE_PATH],
                 capture_output=True,
                 text=True,
                 check=True,
@@ -64,18 +64,18 @@ class FanglessCompiler:
         except subprocess.CalledProcessError as e:
             common.print_error("Could not call clang-format")
             print(e.stderr)
-            if common.VERBOSE_COMPILER:
+            if cs.VERBOSE_COMPILER:
                 print(common.color_yellow("Unformatted code:"))
                 print(code)
 
         except FileNotFoundError:
             common.print_error("Could not find clang-format")
-            if common.VERBOSE_COMPILER:
+            if cs.VERBOSE_COMPILER:
                 print(common.color_yellow("Unformatted code:"))
                 print(code)
 
         else:
-            if common.VERBOSE_COMPILER:
+            if cs.VERBOSE_COMPILER:
                 print(common.color_yellow("Formatted code:"))
                 print(result.stdout)
             OUTPUT_FILE.write_text(result.stdout, encoding="utf-8")
@@ -83,15 +83,15 @@ class FanglessCompiler:
     def compile(self) -> None:
         common.print_step("Compiling the code")
         try:
-            cpp_compiler = "/usr/bin/g++"
-            flags = ["-O3", "-std=c++20"]
+            cpp_compiler = cs.COMPILER_SETTINGS[cs.COMPILER]["path"]
+            flags = cs.COMPILER_SETTINGS[cs.COMPILER]["standard_flags"]
             subprocess.run(
                 [
                     cpp_compiler,
                     *flags,
-                    OUTPUT_CODE_FILE_PATH,
+                    cs.OUTPUT_CODE_FILE_PATH,
                     "-o",
-                    "output/output.out",
+                    cs.OUTPUT_NAME,
                 ],
                 capture_output=True,
                 text=True,

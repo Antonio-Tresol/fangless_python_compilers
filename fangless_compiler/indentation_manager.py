@@ -1,6 +1,7 @@
 from ply.lex import Lexer, LexToken
 from collections.abc import Iterable
-from common import new_token, VERBOSE_INDENTATION
+from common import new_token
+from compiler_settings import VERBOSE_INDENTATION
 from exceptions import IndentationMismatchError
 
 NO_INDENT = 0

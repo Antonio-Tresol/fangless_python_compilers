@@ -1,8 +1,6 @@
 from ply import yacc
 from lexer import FanglessLexer
 from common import (
-    VERBOSE_PARSER,
-    VERBOSE_AST,
     TOKENS,
     CLASS,
     FUNCTION,
@@ -16,6 +14,7 @@ from common import (
     add_remark,
     add_name,
 )
+from compiler_settings import VERBOSE_AST, VERBOSE_PARSER
 from exceptions import ParserError
 from collections import defaultdict
 from typing import Any

@@ -5,8 +5,10 @@ import colors
 from indentation_manager import FanglessIndentationManager
 from collections.abc import Iterable
 from ply import lex
-from common import new_token, TOKENS, RESERVED_WORDS, VERBOSE_LEXER
+from common import new_token, TOKENS, RESERVED_WORDS
+from compiler_settings import VERBOSE_LEXER
 from exceptions import LexerError
+
 
 class FanglessLexer:
     # tokens and reserve words definition

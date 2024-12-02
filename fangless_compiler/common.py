@@ -2,17 +2,7 @@ from random import choice
 from ply.lex import LexToken
 import colors
 import error_messages
-
-
-# ===== COMPILER FLAGS ==================
-VERBOSE_INDENTATION = False
-VERBOSE_LEXER = False
-VERBOSE_PARSER = False
-VERBOSE_AST = False
-VERBOSE_TESTER = False
-VERBOSE_COMPILER = True
-RAINBOW_ERRORS = False
-SENSITIVE_PROGRAMMER = True
+from compiler_settings import SENSITIVE_PROGRAMMER, RAINBOW_ERRORS
 
 
 def new_token(
