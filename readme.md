@@ -62,11 +62,6 @@ To execute the unit test on a component e.g. the lexer, the following command ca
    pytest tests/test_lexer.py
  ```
 
-or to execute all tests from the root of the repository
-
- ```bash
-   pytest
- ```
 
  For the parser there are many test cases in dir tests. All named input_test_something.py
  All of them should end properly by executing the following command
@@ -75,7 +70,7 @@ or to execute all tests from the root of the repository
    python fangless_compiler/compiler.py input_test_something.py
  ```
 
- In the case of the parser, to run the tests make sure VERBOSE_TESTING is True in fangless_compiler/common.py and then run
+ In the case of the parser, to run the tests make sure VERBOSE_TESTING is True in fangless_compiler/compiler_settings.py and then run
 
  ```bash
  python tests/test_parser.py <option>
@@ -89,6 +84,63 @@ To run the compiler over a .py file use the followin command
  ```bash
    python fangless_compiler/compiler.py <program.py>
  ```
+
+## Compiler Settings
+
+The compiler's behavior can be customized through various settings in `compiler_settings.py`.
+
+### Debug Output Settings
+
+- `VERBOSE_INDENTATION`: Shows detailed code indentation in generated output
+- `VERBOSE_LEXER`: Displays token identification during lexical analysis
+- `VERBOSE_PARSER`: Shows grammar rule applications during parsing
+- `VERBOSE_AST`: Prints the Abstract Syntax Tree structure
+- `VERBOSE_TESTER`: Displays detailed test execution information
+- `VERBOSE_COMPILER`: Shows compilation phases and decisions
+
+### Error Handling Settings
+
+- `RAINBOW_ERRORS`: Enables colorized error messages
+- `SENSITIVE_PROGRAMMER`: Uses gentler language in error messages
+
+### Compiler Configuration
+
+Default output paths:
+```python
+OUTPUT_CODE_FILE_PATH = "output/output.cpp"
+OUTPUT_NAME = "output/output.out"
+```
+
+Available C++ compilers:
+- `g++` (default)
+- `clang++`
+
+To change the compiler:
+```python
+COMPILER = "clang++"  # or "g++"
+```
+
+Each compiler includes optimizations and warning flags:
+- C++20 standard (`-std=c++20`)
+- Optimization level 3 (`-O3`)
+- Warning flags (`-Wall`, `-Wextra`)
+- Colored diagnostics
+
+Example compiler configuration:
+```python
+COMPILER_SETTINGS = {
+    "clang++": {
+        "path": "/usr/bin/clang++",
+        "standard_flags": [
+            "-std=c++20",
+            "-O3",
+            "-fcolor-diagnostics",
+            "-Wall",
+            "-Wextra",
+        ],
+    }
+}
+```
 
 ## Unsupported grammar
 

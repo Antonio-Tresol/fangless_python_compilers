@@ -8,7 +8,8 @@ from parser import FanglessParser
 from lexer import FanglessLexer
 from exceptions import ParserError, IndentationMismatchError, LexerError
 import sys
-from common import VERBOSE_TESTER, color_yellow
+from common import color_yellow
+from compiler_settings import VERBOSE_TESTER
 
 positive_path = Path("tests/positive/")
 positive_tests = [
