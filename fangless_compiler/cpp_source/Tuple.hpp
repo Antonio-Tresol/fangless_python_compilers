@@ -159,8 +159,14 @@ class Tuple : public Object {
     return elements_[normalizeIndex(index.getInt())];
   }
 
-  std::shared_ptr<Number> index(std::shared_ptr<Object> object) const {
-    for (auto i : iota(0, static_cast<int>(0, elements_.size()))) {
+  std::shared_ptr<Number> index(const std::shared_ptr<Object>& object,
+    const std::shared_ptr<Number>& start = Number::spawn(0),
+    const std::shared_ptr<Number> end = Number::spawn(-1)) const {
+    
+    std::shared_ptr<Number> realEnd = ((end == Number::spawn(-1))? 
+      Number::spawn(static_cast<int>(elements_.size())) : end);
+
+    for (auto i : iota(start->getInt(), realEnd->getInt())) {
       if (*elements_[i] == *object) {
         return std::make_shared<Number>(i);
       }
@@ -171,8 +177,14 @@ class Tuple : public Object {
     throw std::runtime_error(err);
   }
 
-  std::shared_ptr<Number> count() const {
-    return Number::spawn(static_cast<int>(elements_.size()));
+  std::shared_ptr<Number> count(const std::shared_ptr<Object>& obj) const {
+    int64_t count = 0;
+    for (const auto& element : elements_) {
+      if (element->equals(*obj)) {
+        ++count;
+      }
+    }
+    return Number::spawn(count);
   }
 
   std::shared_ptr<Number> len() const {
