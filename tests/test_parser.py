@@ -68,8 +68,9 @@ def test_specific_positive_case(path: Path, title: str) -> None:
                 print(f"✅ Tests passed: {path.name}")
         except (ParserError, IndentationMismatchError, LexerError) as e:
             if "fake" not in path.name or VERBOSE_TESTER:
+                error_header = color_yellow("Error Summary")
                 print(f"❌ Unexpected error raised for {path.name}")
-                print(f"\n    {color_yellow("Error Summary")}:\n      -{e}")
+                print(f"\n    {error_header}:\n      -{e}")
                 print("")
 
 

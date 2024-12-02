@@ -28,11 +28,6 @@ def new_token(
     return tok
 
 
-def fill_symbol_table_with_builtin_functions(symbol_table: dict) -> None:
-    for func in BUILTIN_FUNCTIONS:
-        symbol_table[func] = FUNCTION
-
-
 def color_msg(msg: str, rainbow: bool = True) -> str:
     new_msg = ""
     if rainbow:

@@ -11,8 +11,8 @@ from common import (
     TYPES,
     CONTAINER_TYPES,
     CPP_RESERVED_W,
+    BUILTIN_FUNCTIONS,
     BUILTIN_METHODS,
-    fill_symbol_table_with_builtin_functions,
     add_remark,
     add_name,
 )
@@ -1232,7 +1232,7 @@ def p_function_definition(token_list: yacc.YaccProduction) -> None:
     symbol_table[token_list[2]] = FUNCTION
     undefined_functions.discard(token_list[2])
 
-    if len(parser_state_info["classes"]) > 0:
+    if parser_state_info["classes"] > 0:
         BUILTIN_METHODS.add(token_list[2])
 
     func_node = OperatorNode(OperatorType.FUNC_DECLARATION, max_adjacents=3)
@@ -1337,7 +1337,9 @@ def p_function_call(token_list: yacc.YaccProduction) -> None:
         name = f"{name}_{REVERSED_CPP_WORD_POSTFIX}"
     
     symbol = symbol_table[name]
-    if symbol not in {FUNCTION, CLASS}:
+    demangled_name = name.replace(f"_{REVERSED_CPP_WORD_POSTFIX}", "")
+    if (symbol not in {FUNCTION, CLASS}
+        and demangled_name not in BUILTIN_FUNCTIONS):
         undefined_functions.add(name)
 
     function_node = OperatorNode(OperatorType.FUNCTION_CALL)
@@ -1378,6 +1380,22 @@ def p_parameter(token_list: yacc.YaccProduction) -> None:
                     |   binary_operand
                     |   unary_operation
     """
+    token_list[0] = token_list[1]
+
+
+def p_callable(token_list: yacc.YaccProduction) -> None:
+    """callable   :   L_PARENTHESIS callable R_PARENTHESIS
+                  |   scalar_statement
+                  |   binary_operand
+    """
+    if len(token_list) > 2:
+        callable = token_list[2]
+        if isinstance(callable, OperatorNode):
+            callable.operator == True
+        
+        token_list[0] = token_list[1]
+        return
+    
     token_list[0] = token_list[1]
 
 
@@ -1424,11 +1442,6 @@ def p_method_call(token_list: yacc.YaccProduction) -> None:
 
     method_node.add_named_adjacent(Operand.METHOD, function_node)
     token_list[0] = method_node
-
-
-def p_callable(token_list: yacc.YaccProduction) -> None:
-    """callable :   scalar_statement"""
-    token_list[0] = token_list[1]
 
 
 # =============================== CLASSES =====================================
@@ -1492,7 +1505,6 @@ class FanglessParser:
         self.lexer = lexer
         self.parser = yacc.yacc(start="all", debug=VERBOSE_PARSER)
         self.errors = errors
-        fill_symbol_table_with_builtin_functions(symbol_table)
 
     def parse(self, source_code: str) -> Any:
         self.lexer.lex_stream(source_code)
