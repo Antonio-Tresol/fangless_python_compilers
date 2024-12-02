@@ -74,7 +74,7 @@ def string_ex():
 
 
 print(fibonacci(4))
-# print(fibonacci_d(4
+print(fibonacci_d(4))
 print(iter_example())
 print(map_ex())
 print(default_ex())

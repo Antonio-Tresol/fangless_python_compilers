@@ -26,6 +26,16 @@
 
 // Namespace for builtin functions
 namespace BF {
+
+  std::string removeQuotesIfNeeded(const std::string& str) {
+    if ((str.front() == '"' && str.back() == '"')||
+        (str.front() == '\'' && str.back() == '\'')) {
+      return str.substr(1, str.size() - 2);
+    }
+    return str;
+  }
+
+
   std::shared_ptr<Number> abs(const std::shared_ptr<Number>& num) {
     if (num->isDouble()) {
       return Number::spawn(std::abs(num->getDouble()));
@@ -409,11 +419,21 @@ namespace BF {
   }
 
   std::shared_ptr<None> print(const std::shared_ptr<String>& object) {
-    std::cout << (**object).c_str() << std::endl;
+    // if the string stars and ends with a quote, remove them
+    std::string str = **object;
+    str = removeQuotesIfNeeded(str); 
+    std::cout << str << std::endl;
     return None::spawn();
   }
 
   std::shared_ptr<None> print(const std::shared_ptr<Object>& object) {
+    // if type is string, remove quotes
+    if (auto strPtr = std::dynamic_pointer_cast<String>(object)) {
+      std::string str = **strPtr;
+      str = removeQuotesIfNeeded(str); 
+      std::cout << str << std::endl;
+      return None::spawn();
+    }
     std::cout << object->toString().c_str() << std::endl;
     return None::spawn();
   }
@@ -453,7 +473,13 @@ namespace BF {
       if (!objPtr.get()) {
         std::cout << "The container has already been freed" << std::endl;
       } else {
-        std::cout << objPtr->toString().c_str() << std::endl;
+        // if type is string, remove quotes
+        if (auto strPtr = std::dynamic_pointer_cast<String>(objPtr)) {
+          std::string str = **strPtr;
+          std::cout << removeQuotesIfNeeded(str) << std::endl;
+        } else {
+          std::cout << objPtr->toString().c_str() << std::endl;
+        }
       }
       
     } else {

@@ -105,8 +105,13 @@ class Number : public Object {
             if (std::isinf(arg)) return arg > 0 ? "inf" : "-inf";
 
             if (std::isnan(arg)) return "nan";
-
-            return std::to_string(arg);
+            // else remove trailing zeros
+            std::ostringstream oss;
+            oss << std::fixed << arg;
+            std::string str = oss.str();
+            str.erase(str.find_last_not_of('0') + 1, std::string::npos);
+            if (str.back() == '.') str.pop_back();
+            return str;
           } else {
             return std::to_string(arg);
           }
