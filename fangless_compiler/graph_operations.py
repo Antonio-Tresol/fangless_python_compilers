@@ -17,7 +17,7 @@ def topological_sort(graph: dict[str, list[str]]) -> list[str]:
             in_degree[neighbor] -= 1
             if in_degree[neighbor] == 0:
                 queue.append(neighbor)
-    return result[::-1]
+    return result
 
 
 if __name__ == "__main__":

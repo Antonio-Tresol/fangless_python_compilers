@@ -558,7 +558,7 @@ class FanglessGenerator:
         right_child = tree.get_right_operand()
         right_child = self.visit_tree([right_child])
 
-        func = "Bf::"
+        func = "BF::"
         if tree.operator == "**":
             func += "pow"
         elif tree.operator == "//":

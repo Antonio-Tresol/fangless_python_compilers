@@ -673,11 +673,11 @@ namespace BF {
   template<TIterable TType>
   std::shared_ptr<Bool> in(const auto& obj,
     const std::shared_ptr<TType>& structure) {
-    auto it = std::find_if(structure.begin(), structure.end(),
+    auto it = std::find_if(structure->begin(), structure->end(),
                            [&obj](const auto& element) -> bool {
                              return element->equals(*obj);
                            });
-    return Bool::spawn(it != structure.end());
+    return Bool::spawn(it != structure->end());
   }
 
 
