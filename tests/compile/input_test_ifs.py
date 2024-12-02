@@ -7,6 +7,16 @@ else:
 
 if False:
     print("This should not be printed")
+    if False:
+        if False:
+            print("hey")
+        else:
+            print("stop")
+    elif False:
+        print("Saluditos")
+else:
+    print("woah, that was weird")
+
 
 if ("hola" == "mundo") and (True or False) or True:
     "Antonio"

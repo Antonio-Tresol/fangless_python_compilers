@@ -957,7 +957,7 @@ def p_complex_statement(token_list: yacc.YaccProduction) -> None:
         case "CONTINUE":
             token_list[0] = OperatorNode(OperatorType.CONTINUE, max_adjacents=0)
         case "BREAK":
-            token_list[0] = OperatorNode(OperatorType.BREAK, max_adjacents=0)
+            token_list[0] = OperatorNode(OperatorType.BREAK, max_adjacents=1)
         case "PASS":
             token_list[0] = OperatorNode(OperatorType.PASS, max_adjacents=0)
         case _:

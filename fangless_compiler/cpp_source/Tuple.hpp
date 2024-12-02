@@ -180,11 +180,11 @@ class Tuple : public Object {
   }
 
   // at() methods - same behavior as operator[] but clearer intent
-  const std::shared_ptr<const Object> at(const Number& index) const {
+  std::shared_ptr<Object> at(const Number& index) const {
     return operator[](index);
   }
 
-  const std::shared_ptr<const Object> at(std::shared_ptr<Number> index) const {
+  std::shared_ptr<Object> at(std::shared_ptr<Number> index) const {
     return operator[](*index);
   }
 

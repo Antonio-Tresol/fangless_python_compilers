@@ -180,6 +180,15 @@ class List : public Object {
     throw std::runtime_error(object->toString() + " not in list");
   }
 
+  std::shared_ptr<List> copy() {
+    std::shared_ptr<List> copyList = std::make_shared<List>();
+    for (auto&& element : elements_) {
+      copyList->append(element);
+    }
+
+    return copyList;
+  }
+
   void insert(std::shared_ptr<Number> index, std::shared_ptr<Object> object) {
     elements_.insert(elements_.begin() + index->getInt(), object);
   }
@@ -352,7 +361,7 @@ class List : public Object {
     }
 
     return result;
-}
+  }
 
   std::shared_ptr<List> slice(const Slice& slice) {
     return this->operator[](slice);
@@ -361,8 +370,6 @@ class List : public Object {
   std::shared_ptr<List> slice(std::shared_ptr<Slice> slice) {
     return this->operator[](*slice);
   }
-
-
 
   // List arithmetic and comparison operators
   std::shared_ptr<List> operator+(const List& other) const {

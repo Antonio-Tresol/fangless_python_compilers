@@ -267,7 +267,41 @@ CLASS = 3
 FUNCTION = 2
 VARIABLE = 1
 
-METHODS = set()
+BUILTIN_METHODS = (
+    # List methods
+    'append', 'clear', 'copy', 'count', 'extend', 'index', 'insert', 
+    'pop', 'remove', 'reverse', 'sort', 
+
+    # Tuple methods
+    'count', 'index', 
+
+    # Set methods
+    'add', 'clear', 'copy', 'difference', 'discard', 'intersection', 
+    'isdisjoint', 'issubset', 'issuperset', 'pop', 'remove', 'symmetric_difference', 
+    'union', 'update',
+
+    # String methods
+    'capitalize', 'casefold', 'center', 'encode', 'expandtabs', 'find', 'format', 
+    'format_map', 'index', 'isalnum', 'isalpha', 'isascii', 'isdecimal', 'isdigit', 
+    'isidentifier', 'islower', 'isnumeric', 'isprintable', 'isspace', 'istitle', 
+    'isupper', 'join', 'ljust', 'lower', 'lstrip', 'partition', 'replace', 'rfind', 
+    'rjust', 'rpartition', 'rsplit', 'rstrip', 'split', 'splitlines', 'startswith', 
+    'strip', 'swapcase', 'title', 'upper', 'zfill',
+
+    # Dictionary methods
+    'clear', 'copy', 'fromkeys', 'get', 'items', 'keys', 'pop', 'popitem', 
+    'setdefault', 'update', 'values',
+
+    # Boolean methods (since bool is a subclass of int, it shares many methods with int)
+    'real', 'imag', 'conjugate',  # Methods inherited from int
+    
+    # Integer methods
+    'conjugate', 'denominator', 'from_bytes', 'imag', 'numerator', 'real',
+
+    # Float methods
+    'as_integer_ratio', 'conjugate', 'imag', 'is_integer', 'real'
+)
+
 
 BUILTIN_FUNCTIONS = (
     "abs",

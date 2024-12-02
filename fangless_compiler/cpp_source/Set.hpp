@@ -237,6 +237,12 @@ class Set final : public Object {
 
   void clear() { elements_.clear(); }
 
+  std::shared_ptr<Set> copy() {
+    auto copyElement = std::make_shared<Set>();
+    copyElement->elements_ = elements_;
+    return copyElement;
+  }
+
   bool isDisjoint(const std::shared_ptr<Set> other) {
     return !((*this & *other)->count());
   }

@@ -91,7 +91,11 @@ namespace BF {
     return std::make_shared<Tuple>(items->begin(), items->end());
   }
 
-  std::shared_ptr<String> type(const std::shared_ptr<Object>& anything) {
+  std::shared_ptr<String> type(const bool anything) {
+    return String::spawn("basic bool");
+  }
+
+  std::shared_ptr<String> type(const std::shared_ptr<const Object>& anything) {
     return String::spawn(anything->type());
   }
 

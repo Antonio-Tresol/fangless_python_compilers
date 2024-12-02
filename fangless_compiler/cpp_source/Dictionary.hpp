@@ -160,6 +160,14 @@ class Dictionary : public Object {
 
   void clear() { elements_.clear(); }
 
+  std::shared_ptr<Dictionary> copy() {
+    auto copyElement = std::make_shared<Dictionary>();
+    for (auto [key, val] : elements_) {
+      copyElement->set(key, val);
+    }
+    return copyElement;
+  }
+
   std::shared_ptr<Number> len() const {
     return Number::spawn(static_cast<int64_t>(elements_.size()));
   }

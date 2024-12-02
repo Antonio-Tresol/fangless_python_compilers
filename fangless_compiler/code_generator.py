@@ -7,7 +7,6 @@ from abstract_syntax_tree.name_node import (
     NameNode,
 )
 from common import (
-    METHODS,
     BUILTIN_FUNCTIONS,
 )
 
@@ -25,7 +24,6 @@ NOT_A_OPERATOR_NODE = (
     type(None),
     NameNode,
 )
-
 
 class FanglessGenerator:
     def __init__(self) -> None:
@@ -207,7 +205,7 @@ class FanglessGenerator:
         if_str = "if" if tree.operator == OperatorType.IF else "else if"
 
         operation = (
-            f"{if_str} (Function::boolEval({condition})) {{ \n {true_body} }}"
+            f"{if_str}(Function::boolEval({condition})) {{ \n {true_body} }}"
         )
 
         if alternative_tree is None:
@@ -242,7 +240,7 @@ class FanglessGenerator:
             if function_name in {"bool", "float", "int"}:
                 function_name += "_"
         else:
-            namespace = "GF::" if function_name not in METHODS else "" 
+            namespace = "GF::"
             parameters_str = f"Function::spawnArgs({parameters_str})"
 
         return f"{predefine}{namespace}{function_name}({parameters_str})"
@@ -253,7 +251,7 @@ class FanglessGenerator:
 
         right_child = tree.get_adjacent(Operand.METHOD)
         method_name = right_child.get_adjacent(Operand.FUNCTION_NAME).id
-        METHODS.add(method_name)
+        # METHODS.add(method_name)
 
         right_child = self.visit_tree([right_child])
 
@@ -315,8 +313,21 @@ class FanglessGenerator:
         return code
 
     def visit_unpack_assignation(self, tree: OperatorNode) -> None:
-        pass
+        names = tree.get_left_operand()
+        value = tree.get_right_operand()
+        value = f"BF::list({self.visit_tree([value])})"
 
+        code = f"auto iter_{self.iter_count} = {value};"
+        for index, name in enumerate(names):
+            code += (
+                f"auto {name.id} = "
+                f"(*iter_{self.iter_count})[Number::spawn({index})];\n"
+            )
+        code = code[:-2]
+        self.iter_count += 1
+
+        return code
+  
     def visit_return(self, tree: OperatorNode) -> str:
         return_value = tree.get_center_operand()
         update = tree.get_adjacent(Operand.UPDATE_ARGS)
@@ -338,27 +349,50 @@ class FanglessGenerator:
         condition = tree.get_adjacent(Operand.CONDITION)
         condition = self.visit_tree([condition])
         body = tree.get_adjacent(Operand.BODY)
+
+        pre_define = ""
+        post_define = ""
+        alternative = tree.get_adjacent(Operand.ALTERNATIVE)
+        if alternative is not None:
+            alternative = self.visit_tree(alternative,
+                is_standalone=True)
+
+            pre_define = (
+                f"auto canElse_{self.iter_count} = Bool::spawn(true);\n"
+            )
+            dont_else  = f"canElse_{self.iter_count} = Bool::spawn(false);\n"
+
+            self.dont_else_on_break(body, dont_else)
+
+            post_define = (
+                f"\nif(Function::boolEval(canElse_{self.iter_count})) {{"
+                f"{alternative} }}"
+            )
+            self.iter_count += 1
+        
         body = self.visit_tree(body, is_standalone=True)
 
-        while_str = f"while (Function::boolEval({condition})) {{ \n {body} }}"
-        alternative_body = tree.get_adjacent(Operand.ALTERNATIVE)
-        if alternative_body is None:
-            return while_str
-
-        alternative_body = self.visit_tree(alternative_body,
-                                            is_standalone=True)
-
         return (
-            f"if (Function::boolEval({condition})) {{ {while_str} \n }}"
-            f"else {{ {alternative_body} }}"
+            f"{pre_define} while (Function::boolEval({condition})) {{ \n"
+            f"{body} }}"
+            f"{post_define}"
         )
 
     def visit_for(self, tree: OperatorNode) -> str:
         for_literal = tree.get_adjacent(Operand.FOR_LITERAL)
-        pre_define = ""
+        body = tree.get_adjacent(Operand.BODY)
+        for_symbols = tree.get_adjacent(Operand.SYMBOLS)
+        alternative = tree.get_adjacent(Operand.ALTERNATIVE)
 
+        pre_define = ""
+        post_define = ""
+        code = ""
+
+        # Multiple structures
         if isinstance(for_literal, NameNode):
             for_literal = self.visit_tree([for_literal])
+
+        # One structure
         else:
             pre_define = (
                 f"auto iter_{self.iter_count} = "
@@ -366,37 +400,50 @@ class FanglessGenerator:
             )
             for_literal = f"iter_{self.iter_count}"
             self.iter_count += 1
+        
+        # Has else
+        if alternative is not None:
+            alternative = self.visit_tree(alternative, True)
+            pre_define += (
+                f"auto canElse_{self.iter_count} = Bool::spawn(true);\n"
+            )
+            dont_else  = f"canElse_{self.iter_count} = Bool::spawn(false);\n"
 
-        for_symbols = tree.get_adjacent(Operand.SYMBOLS)
-        names = for_symbols
+            self.dont_else_on_break(body, dont_else)
+            post_define = (
+                f"\nif(Function::boolEval(canElse_{self.iter_count})) {{"
+                f"{alternative} }}"
+            )
+            self.iter_count += 1
 
-        if len(names) == 1:
-            for_symbols = f"auto& {names[0].id}"
-            body = tree.get_adjacent(Operand.BODY)
+        # One symbol
+        if len(for_symbols) == 1:
+            for_symbols = f"auto& {for_symbols[0].id}"
             body = self.visit_tree(body, is_standalone=True)
-
             return (
                 f"{pre_define}"
                 f"for ({for_symbols} : *{for_literal}) {{ \n {body} }}"
+                f"{post_define}"
             )
 
+        # Multiple symbols
         body_pre_define = ""
         body_pre_define += "auto tuple = symbols->asTuple();\n"
 
-        for i, name in enumerate(names):
+        for i, name in enumerate(for_symbols):
             body_pre_define += (
                 f"auto {name.id} = tuple->at(Number::spawn({i}));\n"
             )
 
-        body = tree.get_adjacent(Operand.BODY)
         body = self.visit_tree(body, is_standalone=True)
 
         return (
             f"{pre_define}"
             f"for (auto symbols : *{for_literal})"
             f" {{ \n {body_pre_define} {body} }}"
+            f"{post_define}"
         )
-
+  
     def visit_func_declaration(self, tree: OperatorNode) -> str:
         func_name = tree.get_adjacent(Operand.FUNCTION_NAME)
         arguments = tree.get_adjacent(Operand.ARGUMENTS)
@@ -432,18 +479,8 @@ class FanglessGenerator:
         )
 
         self.function_dependencies[func_name.id] = []
-        has_return = False
-        for stmnt in body:
-            if isinstance(stmnt, OperatorNode):
-                if stmnt.operator == OperatorType.RETURN:
-                    stmnt.add_named_adjacent(Operand.UPDATE_ARGS, update)
-                    has_return = True
-                elif stmnt.operator == OperatorType.FUNCTION_CALL:
-                    dependency = stmnt.get_adjacent(Operand.FUNCTION_NAME).id
-                    if (dependency not in BUILTIN_FUNCTIONS and
-                        dependency != func_name.id):
-                        self.function_dependencies[func_name.id].append(
-                            dependency)
+        has_return = self.update_args_and_find_dependencies(
+            body, update, func_name.id)
 
         if not has_return:
             fake_return = OperatorNode(OperatorType.RETURN)
@@ -465,8 +502,12 @@ class FanglessGenerator:
         return "// There was a pass here"
 
     def visit_break(self, tree: OperatorNode) -> str:
-        _ = tree
-        return "break"
+        dont_else = tree.get_adjacent(Operand.DONT_ELSE)
+        if dont_else is None:
+            dont_else = ""
+
+
+        return f"{dont_else} break"
 
     def visit_continue(self, tree: OperatorNode) -> str:
         _ = tree
@@ -544,3 +585,63 @@ class FanglessGenerator:
 
         return f"{name} = {right}"
 
+
+    def update_args_and_find_dependencies(self, body: list, update: str, func_name:str) -> bool: 
+        has_return = False
+        for stmnt in body:
+            if isinstance(stmnt, OperatorNode):
+                if (stmnt.operator == OperatorType.IF or 
+                    stmnt.operator == OperatorType.ELIF or
+                    stmnt.operator == OperatorType.WHILE or
+                    stmnt.operator == OperatorType.FOR):
+                    new_body = stmnt.get_adjacent(Operand.BODY)
+                    has_return = (
+                        self.update_args_and_find_dependencies(
+                            new_body, update, func_name)
+                        or has_return
+                    )
+                    alternative = stmnt.get_adjacent(Operand.ALTERNATIVE)
+                    if alternative is not None:
+                        if not isinstance(alternative, list):
+                            alternative = [alternative]
+                        has_return = (
+                            self.update_args_and_find_dependencies(
+                                alternative, update, func_name)
+                            or has_return
+                        )
+                elif stmnt.operator == OperatorType.RETURN:
+                    stmnt.add_named_adjacent(Operand.UPDATE_ARGS, update)
+                    has_return = True
+                elif stmnt.operator == OperatorType.FUNCTION_CALL:
+                    dependency = stmnt.get_adjacent(Operand.FUNCTION_NAME).id
+                    if (dependency not in BUILTIN_FUNCTIONS and
+                        dependency != func_name):
+                        self.function_dependencies[func_name].append(
+                            dependency)
+                        
+        return has_return
+    
+    def dont_else_on_break(self, body: list, dont_else: str) -> bool: 
+        has_break = False
+        for stmnt in body:
+            if isinstance(stmnt, OperatorNode):
+                if (stmnt.operator == OperatorType.IF or 
+                    stmnt.operator == OperatorType.ELIF):
+                    new_body = stmnt.get_adjacent(Operand.BODY)
+                    has_break = (
+                        self.dont_else_on_break(new_body, dont_else)
+                        or has_break
+                    )
+                    alternative = stmnt.get_adjacent(Operand.ALTERNATIVE)
+                    if alternative is not None:
+                        if not isinstance(alternative, list):
+                            alternative = [alternative]
+                        has_break = (
+                            self.dont_else_on_break(alternative, dont_else)
+                            or has_break
+                        )
+                elif stmnt.operator == OperatorType.BREAK:
+                    stmnt.add_named_adjacent(Operand.DONT_ELSE, dont_else)
+                    has_break = True
+                        
+        return has_break

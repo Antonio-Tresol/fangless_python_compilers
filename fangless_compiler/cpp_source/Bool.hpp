@@ -11,12 +11,12 @@ class Bool : public Object {
 
  public:
   //========Constructors========//
-  Bool(bool value_) : value_(value_) {}
+  explicit Bool(bool value_) : value_(value_) {}
 
-  Bool(int value_) : value_(bool(value_)) {}
-  Bool(Object& obj) : value_(obj.toBool()) {}
-  Bool(std::shared_ptr<Object> obj) : value_(obj->toBool()) {}
-  Bool(std::shared_ptr<Bool> obj) : value_(obj->value_) {}
+  explicit Bool(int value_) : value_(bool(value_)) {}
+  explicit Bool(const Object& obj) : value_(obj.toBool()) {}
+  explicit Bool(std::shared_ptr<Object> obj) : value_(obj->toBool()) {}
+  explicit Bool(std::shared_ptr<Bool> obj) : value_(obj->value_) {}
 
   // Static method to spawn a new Bool object
   static std::shared_ptr<Bool> spawn(bool value_) {
@@ -27,7 +27,7 @@ class Bool : public Object {
   std::string type() const override { return "Bool"; }
 
   std::string toString() const override { return value_ ? "True" : "False"; }
-  operator bool() const { return value_; }
+  explicit operator bool() const { return value_; }
 
   bool equals(const Object& other) const override {
     if (other.type() != "Bool") return false;
@@ -61,6 +61,18 @@ class Bool : public Object {
   size_t hash() const override { return std::hash<bool>{}(value_); }
 
   bool toBool() const override { return value_; }
+
+  std::shared_ptr<Number> real() {
+    return Number::spawn(static_cast<int64_t>(value_));
+  }
+
+  std::shared_ptr<Number> imag() {
+    return Number::spawn(static_cast<int64_t>(0));
+  }
+
+  std::shared_ptr<Number> conjugate() {
+    return Number::spawn(static_cast<int64_t>(value_));
+  }
 
   // std::shared_ptr<Bool> operator!() const { return Bool::spawn(!value_); }
   bool operator!() const { return !value_; }

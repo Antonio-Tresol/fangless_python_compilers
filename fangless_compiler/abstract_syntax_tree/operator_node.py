@@ -57,6 +57,7 @@ class Operand(Enum):
     CLASS_NAME = 18
     PARENT_CLASS = 19
     UPDATE_ARGS = 20
+    DONT_ELSE = 21
 
     ARGUMENT = 21
     DEFAULT = 22
