@@ -33,9 +33,9 @@ class Node:
         raise ValueError(msg)
 
     def change_adjacent(self, key: AdjacentKey, adj: "Node") -> None:
-        if len(self.adjacents) >= self.max_adjacents or key not in self.adjacents:
+        if key not in self.adjacents:
             error = (
-                f"Node {self.node_type} tried to change"
+                f"Node {self.node_type} tried to change "
                 f"nonexistent adjacent at key {key}"
             )
             raise IndexError(error)

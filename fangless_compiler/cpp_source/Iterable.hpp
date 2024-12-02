@@ -17,4 +17,17 @@ struct ObjectComparator {
   }
 };
 
+template<typename TClass>
+concept TIterable = requires(TClass a) {
+  a.begin();
+  a.end();
+} && std::is_base_of_v<Object, TClass>;
+
+template<typename TIterator>
+concept TAdvIterator = requires(TIterator it) {
+    { *it };
+    std::advance(it, 1);
+    typename std::iterator_traits<TIterator>::value_type;
+};
+
 #endif  // ITERABLE_HPPstd::vector<Object>>>

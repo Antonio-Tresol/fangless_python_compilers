@@ -9,6 +9,7 @@
 #include <variant>
 
 #include "Object.hpp"
+#include "Bool.hpp"
 
 constexpr double DELTA = 1e-9;
 
@@ -127,6 +128,10 @@ class Number : public Object {
         value_);
   }
 
+  inline bool is_integer() const {
+    return !isDouble();
+  }
+
   bool equals(const Object& other) const override {
     if (auto* numObj = dynamic_cast<const Number*>(&other)) {
       return std::visit(
@@ -241,6 +246,66 @@ class Number : public Object {
   double getDouble() const {
     return std::visit(
         [](auto&& arg) -> double { return static_cast<double>(arg); }, value_);
+  }
+
+  std::shared_ptr<Number> conjugate() {
+    return std::visit(
+        [](auto&& arg) -> std::shared_ptr<Number> {
+          using T = std::decay_t<decltype(arg)>;
+          if constexpr (std::is_same_v<T, double>) {
+            return Number::spawn(arg);
+          }
+          return Number::spawn(static_cast<int64_t>(arg));
+        },
+        value_);
+  }
+
+    std::shared_ptr<Number> denominator() {
+    return std::visit(
+        [](auto&& arg) -> std::shared_ptr<Number> {
+          using T = std::decay_t<decltype(arg)>;
+          if constexpr (std::is_same_v<T, double>) {
+            throw std::runtime_error("denominator is not a valid operation for a float");
+          }
+          return Number::spawn(static_cast<int64_t>(1));
+        },
+        value_);
+  }
+
+  std::shared_ptr<Number> imag() {
+    return std::visit(
+        [](auto&& arg) -> std::shared_ptr<Number> {
+          using T = std::decay_t<decltype(arg)>;
+          if constexpr (std::is_same_v<T, double>) {
+            return Number::spawn(0.0);
+          }
+          return Number::spawn(0);
+        },
+        value_);
+  }
+
+  std::shared_ptr<Number> real() {
+    return std::visit(
+        [](auto&& arg) -> std::shared_ptr<Number> {
+          using T = std::decay_t<decltype(arg)>;
+          if constexpr (std::is_same_v<T, double>) {
+            return Number::spawn(arg);
+          }
+          return Number::spawn(arg);
+        },
+        value_);
+  }
+
+  std::shared_ptr<Number> numerator() {
+    return std::visit(
+        [](auto&& arg) -> std::shared_ptr<Number> {
+          using T = std::decay_t<decltype(arg)>;
+          if constexpr (std::is_same_v<T, double>) {
+            throw std::runtime_error("Numerator is not a valid operation for a float");
+          }
+          return Number::spawn(arg);
+        },
+        value_);
   }
 
   bool isFinite() const {

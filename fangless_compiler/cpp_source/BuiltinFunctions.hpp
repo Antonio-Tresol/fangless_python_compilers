@@ -15,6 +15,7 @@
 
 #include "Bool.hpp"
 #include "Dictionary.hpp"
+#include "Iterable.hpp"
 #include "Function.hpp"
 #include "List.hpp"
 #include "None.hpp"
@@ -22,20 +23,6 @@
 #include "Set.hpp"
 #include "String.hpp"
 #include "Tuple.hpp"
-
-
-template<typename TClass>
-concept TIterable = requires(TClass a) {
-  a.begin();
-  a.end();
-} && std::is_base_of_v<Object, TClass>;
-
-template<typename TIterator>
-concept TAdvIterator = requires(TIterator it) {
-    { *it };
-    std::advance(it, 1);
-    typename std::iterator_traits<TIterator>::value_type;
-};
 
 // Namespace for builtin functions
 namespace BF {

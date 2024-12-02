@@ -6,6 +6,7 @@
 #include "Iterable.hpp"
 #include "List.hpp"
 #include "Object.hpp"
+#include "None.hpp"
 
 class Dictionary : public Object {
  private:
@@ -41,6 +42,40 @@ class Dictionary : public Object {
       first = false;
     }
     return result + "}";
+  }
+
+  template<TIterable TType>
+  std::shared_ptr<Dictionary> fromkeys(const std::shared_ptr<TType>& elements,
+    const std::shared_ptr<Object>& value = None::spawn()) {
+    std::shared_ptr<Dictionary> result = Dictionary::spawn();
+    for (auto element : *elements) {
+      result->set(element, value);
+    }
+
+    return result;
+  }
+
+  template<TIterable TType>
+  std::shared_ptr<None> update(const std::shared_ptr<TType>& iterable) {
+    for (auto& placeholder : *iterable) {
+      auto tuple = placeholder->asTuple();
+      set((*tuple)[Number::spawn(0)], (*tuple)[Number::spawn(1)]);
+    }
+
+    return None::spawn();
+  }
+
+  std::shared_ptr<None> update(
+    const std::shared_ptr<Dictionary>& updateElements) {
+    for (auto& [key, value] : *updateElements) {
+      set(key, value);
+    }
+
+    return None::spawn();
+  }
+
+  std::shared_ptr<None> update() {
+    return None::spawn();
   }
 
   bool equals(const Object& other) const override {
@@ -133,12 +168,14 @@ class Dictionary : public Object {
     elements_[key] = value;
   }
 
-  std::shared_ptr<Object> get(std::shared_ptr<Object> key) const {
+  std::shared_ptr<Object> get(std::shared_ptr<Object> key,
+    std::shared_ptr<Object> defaultVal = None::spawn()) const {
     auto it = elements_.find(key);
 
     if (it == elements_.end()) {
-      throw std::runtime_error("KeyError: " + key->toString());
+      return defaultVal;
     }
+
     return it->second;
   }
 
@@ -166,6 +203,55 @@ class Dictionary : public Object {
       copyElement->set(key, val);
     }
     return copyElement;
+  }
+
+  std::shared_ptr<Object> pop (const std::shared_ptr<Object>& key,
+    const std::shared_ptr<Object>& defaultVal = None::spawn()) {
+    auto it = elements_.find(key);
+
+    if (it == elements_.end()) {
+      if (defaultVal->isNone()) {
+        throw std::runtime_error(
+          "Dictionary::pop: element not found and default not given");
+      }
+      return defaultVal;
+    }
+    
+    auto result = (*it).second;
+    elements_.erase(it);
+
+    return result;
+  }
+
+  std::shared_ptr<List> popitem () {
+    if (elements_.empty()) {
+      throw std::runtime_error("No item to pop");
+    }
+
+    auto it = elements_.rbegin();
+    if (it == elements_.rend()) {
+      throw std::runtime_error("Item could not be popped off successfully");
+    }
+    
+    auto [key, value] = *it;
+
+    this->remove(key);
+    
+    return List::spawn({key, value});
+  }
+
+  std::shared_ptr<Object> setdefault(std::shared_ptr<Object> key,
+    std::shared_ptr<Object> defaultValue = None::spawn()) {
+    auto it = elements_.find(key);
+
+    if (it != elements_.end()) {
+      auto [_, element] = *it;
+      return element;
+    }
+
+    set(key, defaultValue);
+
+    return elements_[key];
   }
 
   std::shared_ptr<Number> len() const {
@@ -208,15 +294,17 @@ class Dictionary : public Object {
     throw std::runtime_error("'dict' object attributes are read-only");
   }
 
-  auto begin() { return elements_.begin(); }
-  auto end() { return elements_.end(); }
-  auto begin() const { return elements_.begin(); }
-  auto end() const { return elements_.end(); }
+  using MapType = std::map<std::shared_ptr<Object>, std::shared_ptr<Object>, ObjectComparator>;
 
-  auto rbegin() { return elements_.rbegin(); }
-  auto rend() { return elements_.rend(); }
-  auto rbegin() const { return elements_.rbegin(); }
-  auto rend() const { return elements_.rend(); }
+  MapType::iterator begin() { return elements_.begin(); }
+  MapType::iterator end() { return elements_.end(); }
+  MapType::const_iterator begin() const { return elements_.begin(); }
+  MapType::const_iterator end() const { return elements_.end(); }
+
+  MapType::reverse_iterator rbegin() { return elements_.rbegin(); }
+  MapType::reverse_iterator rend() { return elements_.rend(); }
+  MapType::const_reverse_iterator rbegin() const { return elements_.rbegin(); }
+  MapType::const_reverse_iterator rend() const { return elements_.rend(); }
 
   std::shared_ptr<Object>& operator[](const std::shared_ptr<Object> key) {
     return elements_[key];
@@ -245,6 +333,7 @@ class Dictionary : public Object {
     }
     return *this;
   }
+
   Dictionary(const Dictionary& other) : elements_(other.elements_) {}
 
   Dictionary& operator=(const Dictionary& other) {

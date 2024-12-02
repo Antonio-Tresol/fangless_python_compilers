@@ -267,7 +267,7 @@ CLASS = 3
 FUNCTION = 2
 VARIABLE = 1
 
-BUILTIN_METHODS = (
+BUILTIN_METHODS = {
     # List methods
     'append', 'clear', 'copy', 'count', 'extend', 'index', 'insert', 
     'pop', 'remove', 'reverse', 'sort', 
@@ -293,14 +293,14 @@ BUILTIN_METHODS = (
     'setdefault', 'update', 'values',
 
     # Boolean methods (since bool is a subclass of int, it shares many methods with int)
-    'real', 'imag', 'conjugate',  # Methods inherited from int
-    
+    'real', 'imag', 'conjugate',
+ 
     # Integer methods
     'conjugate', 'denominator', 'from_bytes', 'imag', 'numerator', 'real',
 
     # Float methods
     'as_integer_ratio', 'conjugate', 'imag', 'is_integer', 'real'
-)
+}
 
 
 BUILTIN_FUNCTIONS = (

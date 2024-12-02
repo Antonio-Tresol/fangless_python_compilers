@@ -11,6 +11,7 @@ from common import (
     TYPES,
     CONTAINER_TYPES,
     CPP_RESERVED_W,
+    BUILTIN_METHODS,
     fill_symbol_table_with_builtin_functions,
     add_remark,
     add_name,
@@ -1231,6 +1232,9 @@ def p_function_definition(token_list: yacc.YaccProduction) -> None:
     symbol_table[token_list[2]] = FUNCTION
     undefined_functions.discard(token_list[2])
 
+    if len(parser_state_info["classes"]) > 0:
+        BUILTIN_METHODS.add(token_list[2])
+
     func_node = OperatorNode(OperatorType.FUNC_DECLARATION, max_adjacents=3)
 
     name = token_list[2]
@@ -1326,19 +1330,18 @@ def p_argument(token_list: yacc.YaccProduction) -> None:
         name = f"{name}_{REVERSED_CPP_WORD_POSTFIX}"
     token_list[0] = NameNode(name)
 
-
 def p_function_call(token_list: yacc.YaccProduction) -> None:
     """function_call    :   NAME complete_parameter_list"""
-    symbol = symbol_table[token_list[1]]
-    if symbol not in {FUNCTION, CLASS}:
-        undefined_functions.add(token_list[1])
-
-    function_node = OperatorNode(OperatorType.FUNCTION_CALL)
-
     name = token_list[1]
     if name in CPP_RESERVED_W:
         name = f"{name}_{REVERSED_CPP_WORD_POSTFIX}"
+    
+    symbol = symbol_table[name]
+    if symbol not in {FUNCTION, CLASS}:
+        undefined_functions.add(name)
 
+    function_node = OperatorNode(OperatorType.FUNCTION_CALL)
+        
     function_node.add_named_adjacent(Operand.FUNCTION_NAME, NameNode(name))
     parameter_list: list = token_list[2]
     function_node.add_named_adjacent(Operand.ARGUMENTS, parameter_list)
@@ -1389,18 +1392,32 @@ def p_method_call(token_list: yacc.YaccProduction) -> None:
         function_node: OperatorNode = token_list[3]
         method_node.add_named_adjacent(Operand.INSTANCE, token_list[1])
 
-        undefined_functions.discard(
-            function_node.get_adjacent(Operand.FUNCTION_NAME).id)
+        mangled_name = function_node.get_adjacent(Operand.FUNCTION_NAME).id
+        demangled_name = mangled_name.replace(f"_{REVERSED_CPP_WORD_POSTFIX}", "")
+
+        if demangled_name in BUILTIN_METHODS:
+            undefined_functions.discard(mangled_name)
+
+        function_node.change_adjacent(Operand.FUNCTION_NAME,
+          NameNode(demangled_name))
+            
     else:
         names_subtree: OperatorNode = token_list[1]
 
         function_node = OperatorNode(OperatorType.FUNCTION_CALL)
-
+        mangled_name = names_subtree.get_rightmost().id
+        demangled_name = mangled_name.replace(f"_{REVERSED_CPP_WORD_POSTFIX}", "")
+  
         function_node.add_named_adjacent(
             Operand.FUNCTION_NAME,
-            names_subtree.get_rightmost(),
+            NameNode(demangled_name),
         )
         function_node.add_named_adjacent(Operand.ARGUMENTS, token_list[2])
+
+        if (demangled_name not in BUILTIN_METHODS):
+            undefined_functions.add(mangled_name)
+        else:
+            undefined_functions.discard(mangled_name)
 
         names_subtree = names_subtree.promote_righmost_sibling()
         method_node.add_named_adjacent(Operand.INSTANCE, names_subtree)
@@ -1410,13 +1427,7 @@ def p_method_call(token_list: yacc.YaccProduction) -> None:
 
 
 def p_callable(token_list: yacc.YaccProduction) -> None:
-    """callable :   structure
-                |   bool
-                |   FLOATING_NUMBER
-                |   BINARY_NUMBER
-                |   OCTAL_NUMBER
-                |   HEXADECIMAL_NUMBER
-    """
+    """callable :   scalar_statement"""
     token_list[0] = token_list[1]
 
 

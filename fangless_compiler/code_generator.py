@@ -8,6 +8,7 @@ from abstract_syntax_tree.name_node import (
 )
 from common import (
     BUILTIN_FUNCTIONS,
+    BUILTIN_METHODS,
 )
 
 from graph_operations import topological_sort
@@ -233,26 +234,27 @@ class FanglessGenerator:
         function_name = tree.get_adjacent(Operand.FUNCTION_NAME)
         function_name = function_name.id
 
+        builtin_function: bool = (function_name in BUILTIN_FUNCTIONS)
         namespace = ""
-        predefine = ""
-        if function_name in BUILTIN_FUNCTIONS:
-            namespace = "BF::"
-            if function_name in {"bool", "float", "int"}:
+        if  builtin_function or function_name in BUILTIN_METHODS:
+            namespace = (
+                "BF::"
+                if builtin_function else
+                ""
+            )
+            if function_name in {"bool", "float", "int", "union", "isascii"}:
                 function_name += "_"
         else:
             namespace = "GF::"
             parameters_str = f"Function::spawnArgs({parameters_str})"
 
-        return f"{predefine}{namespace}{function_name}({parameters_str})"
+        return f"{namespace}{function_name}({parameters_str})"
 
     def visit_method_call(self, tree: OperatorNode) -> str:
         left_child = tree.get_adjacent(Operand.INSTANCE)
         left_child = self.visit_tree([left_child])
 
         right_child = tree.get_adjacent(Operand.METHOD)
-        method_name = right_child.get_adjacent(Operand.FUNCTION_NAME).id
-        # METHODS.add(method_name)
-
         right_child = self.visit_tree([right_child])
 
         return f"{left_child}->{right_child}"
@@ -284,7 +286,7 @@ class FanglessGenerator:
         index = tree.get_adjacent(Operand.INDEX)
         index = self.visit_tree([index])
 
-        return f"{instance}->at({index})"
+        return f"(*{instance})[{index}]"
 
     def visit_assignation(self, tree: OperatorNode) -> str:
         left_child = tree.get_left_operand()

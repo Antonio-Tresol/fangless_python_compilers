@@ -243,12 +243,105 @@ class Set final : public Object {
     return copyElement;
   }
 
-  bool isDisjoint(const std::shared_ptr<Set> other) {
+  bool isdisjoint(const Set& other) const { return !(*this & other)->count(); }
+
+  bool isdisjoint(const std::shared_ptr<Set> other) {
     return !((*this & *other)->count());
   }
-
-  bool isDisjoint(const Set& other) const { return !(*this & other)->count(); }
   
+  std::shared_ptr<Set> difference(const Set& other) const {
+    auto result = std::make_shared<Set>();
+    std::vector<std::shared_ptr<Object>> temp;
+
+    std::ranges::set_difference(elements_, other.elements_,
+                                std::back_inserter(temp));
+    result->elements_.insert(temp.begin(), temp.end());
+    return result;
+  }
+
+  std::shared_ptr<Set> difference(const std::shared_ptr<Set>& other) const {
+    return difference(*other);
+  }
+
+  std::shared_ptr<Set> intersection(const Set& other) const {
+    auto result = std::make_shared<Set>();
+    std::vector<std::shared_ptr<Object>> temp;
+
+    std::ranges::set_intersection(elements_, other.elements_,
+                                  std::back_inserter(temp));
+    result->elements_.insert(temp.begin(), temp.end());
+    return result;
+  }
+
+  std::shared_ptr<Set> intersection(const std::shared_ptr<Set>& other) const {
+    return intersection(*other);
+  }
+
+  std::shared_ptr<Set> symmetric_difference(const Set& other) const {
+    auto result = std::make_shared<Set>();
+    std::vector<std::shared_ptr<Object>> temp;
+
+    std::ranges::set_symmetric_difference(elements_, other.elements_,
+                                          std::back_inserter(temp));
+    result->elements_.insert(temp.begin(), temp.end());
+    return result;
+  }
+
+  std::shared_ptr<Set> symmetric_difference(const std::shared_ptr<Set>& other)
+    const {
+    return symmetric_difference(*other);
+  }
+
+  std::shared_ptr<Set> union_(const Set& other) const {
+    auto result = std::make_shared<Set>();
+    std::vector<std::shared_ptr<Object>> temp;
+
+    std::ranges::set_union(elements_, other.elements_,
+                           std::back_inserter(temp));
+    result->elements_.insert(temp.begin(), temp.end());
+    return result;
+  }
+
+  std::shared_ptr<Set> union_(const std::shared_ptr<Set>& other) const {
+    return union_(*other);
+  }
+
+  void update(const Set& first) {
+      if (&first != this) {
+          auto copy = first;
+          *this |= copy;
+      }
+  }
+
+  template <typename... Sets>
+  void update(const Set& first, const Sets&... rest) {
+      update(first);
+      update(rest...);
+  }
+
+  void update(const std::shared_ptr<Set>& first) {
+      if (first && first.get() != this) {
+          auto copy = *first;
+          *this |= copy;
+      }
+  }
+
+  template <typename... Sets>
+  void update(const std::shared_ptr<Set>& first, const Sets&... rest) {
+      update(first);
+      update(rest...);
+  }
+
+  void update() {}
+
+  bool issubset(const std::shared_ptr<Set> other) {
+    return !((*this - *other)->count());
+  }
+
+  bool issuperset(const std::shared_ptr<Set> other) {
+    return !((*other - *this)->count());
+  }
+
   bool operator<=(const std::shared_ptr<Set> other) {
     return !((*this - *other)->count());
   }
@@ -295,7 +388,7 @@ class Set final : public Object {
 
     elements_.clear();
     elements_.insert(temp.begin(), temp.end());
-    return std::shared_ptr<Set>(this);
+    return std::shared_ptr<Set>(this, [](Set*) {});
   }
 
   std::shared_ptr<Set> operator&(const Set& other) const {
@@ -314,7 +407,7 @@ class Set final : public Object {
                                   std::back_inserter(temp));
     elements_.clear();
     elements_.insert(temp.begin(), temp.end());
-    return std::shared_ptr<Set>(this);
+    return std::shared_ptr<Set>(this, [](Set*) {});
   }
 
   std::shared_ptr<Set> operator^(const Set& other) const {
@@ -334,7 +427,7 @@ class Set final : public Object {
                                           std::back_inserter(temp));
     elements_.clear();
     elements_.insert(temp.begin(), temp.end());
-    return std::shared_ptr<Set>(this);
+    return std::shared_ptr<Set>(this, [](Set*) {});
   }
 
   std::shared_ptr<Set> operator-(const Set& other) const {
@@ -353,7 +446,7 @@ class Set final : public Object {
                                 std::back_inserter(temp));
     elements_.clear();
     elements_.insert(temp.begin(), temp.end());
-    return std::shared_ptr<Set>(this);
+    return std::shared_ptr<Set>(this, [](Set*) {});
   }
 
   friend std::ostream& operator<<(std::ostream& os,
