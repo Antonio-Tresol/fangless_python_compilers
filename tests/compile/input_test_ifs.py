@@ -19,24 +19,27 @@ else:
 
 
 if ("hola" == "mundo") and (True or False) or True:
-    "Antonio"
+    print("Antonio")
 elif (None and None and "Kenneth") == False:
-    "Antonio"
-    "Antonio"
+    print("Not Antonio")
 elif ((6.7 + 4.7) - 97.3) > 5:
     "Antonio"
     "Antonio"
     "Antonio"
+    print("So not Antonio")
 elif ((84) - 3) < 2:
     "Antonio"
     "Antonio"
     "Antonio"
     "Antonio"
+    print("Extremely not Antonio")
 elif "Caballito" == "Zebra":
     "Antonio"
     "Antonio"
     "Antonio"
     "Antonio"
     "Antonio"
+    print("Maybe Antonio")
 else:
     "Joseph"
+    print("Joseph")

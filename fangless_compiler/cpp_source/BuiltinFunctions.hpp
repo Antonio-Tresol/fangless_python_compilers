@@ -88,8 +88,8 @@ namespace BF {
     return std::make_shared<Tuple>(items->begin(), items->end());
   }
 
-  std::shared_ptr<String> type(const bool anything) {
-    return String::spawn("basic bool");
+  std::shared_ptr<String> type(const bool) {
+    return String::spawn("bool");
   }
 
   std::shared_ptr<String> type(const std::shared_ptr<const Object>& anything) {
@@ -194,6 +194,11 @@ namespace BF {
   }
 
   std::shared_ptr<Number> float_(const std::shared_ptr<String>& value) {
+    if ((**value) == "inf") {
+      return Number::spawn(std::numeric_limits<double>::infinity());
+    } else if ((**value) == "nan") {
+      return Number::spawn(std::numeric_limits<double>::quiet_NaN());
+    }
     return Number::spawn(std::stod(**value));
   }
 
@@ -362,7 +367,7 @@ namespace BF {
     for (const char& character : *mode) {
       if (character == 'r') {
         resultingMode |= std::ios_base::in;
-      } else if (character == '+' | character == 'w') {
+      } else if ((character == '+') | (character == 'w')) {
         resultingMode |= std::ios_base::out;
       } else if (character == 'a') {
         resultingMode |= std::ios_base::out | std::ios_base::app;
@@ -438,7 +443,7 @@ namespace BF {
     return None::spawn();
   }
 
-  std::shared_ptr<None> print(bool boolean) {
+  std::shared_ptr<None> print(const bool& boolean) {
     std::cout << (boolean? "True" : "False") << std::endl;
     return None::spawn();
   }

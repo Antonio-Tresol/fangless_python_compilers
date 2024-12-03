@@ -136,8 +136,8 @@ class Tuple : public Object {
     throw std::runtime_error("'tuple' object has no attribute '" + name + "'");
   }
 
-  void setAttr(const std::string& name,
-               std::shared_ptr<Object> value) override {
+  void setAttr(const std::string&,
+               std::shared_ptr<Object>) override {
     throw std::runtime_error("'tuple' object attributes are read-only");
   }
 
@@ -222,7 +222,6 @@ class Tuple : public Object {
             vector.push_back(elements_[i]);
         }
     }
-    const size_t newSize = vector.size();
 
     return std::make_shared<Tuple>(vector);
   }

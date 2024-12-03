@@ -56,7 +56,10 @@ object_symbols: defaultdict[str, defaultdict[str, Any]] = defaultdict(
 )
 
 stack: list[str] = []
+function_stack: list[str] = []
+function_dependencies: dict[str, list] = {}
 undefined_functions: set[str] = set()
+undefined_methods: set[str] = set()
 undefined_classes: set[str] = set()
 parser_state_info: defaultdict[str, int] = defaultdict(lambda: None)
 parser_state_info["loops"] = 0
@@ -159,6 +162,8 @@ def p_all(token_list: yacc.YaccProduction) -> None:
             print(f"\n\n=============== Statement: {line} ===============")
             print(statement)
             print("============================================\n")
+    print("HEY this should be the dependencies: ")
+    print(function_dependencies)
 
 
 # ================================== LITERALS =================================
@@ -425,6 +430,7 @@ def p_unary_operation(token_list: yacc.YaccProduction) -> None:
 def p_unary_operand(token_list: yacc.YaccProduction) -> None:
     """unary_operand    :   L_PARENTHESIS unary_operand R_PARENTHESIS
                         |   unary_operation
+                        |   binary_operation
                         |   scalar_statement
     """
     # if the operand has parenthesis and is an OperatorNode
@@ -1218,39 +1224,43 @@ def p_return_value(token_list: yacc.YaccProduction) -> None:
 
 
 def p_function_definition(token_list: yacc.YaccProduction) -> None:
-    """function_definition  :   def_open NAME complete_argument_list COLON body
-                            |   def_open NAME complete_argument_list ARROW hints COLON body
+    """function_definition  :   def_open complete_argument_list COLON body
+                            |   def_open complete_argument_list ARROW hints COLON body
     """
     parser_state_info["functions"] -= 1
+
+    name = token_list[1]
+
+    local_func = function_stack.pop()
+    while local_func != name:
+        local_func = function_stack.pop()
 
     local_var = stack.pop()
     while local_var != SCOPE_OPENED:
         symbol_table[local_var] = None
         local_var = stack.pop()
 
-    symbol_table[token_list[2]] = FUNCTION
-    undefined_functions.discard(token_list[2])
-
-    if parser_state_info["classes"] > 0:
-        BUILTIN_METHODS.add(token_list[2])
+    symbol_table[name] = FUNCTION
+    undefined_functions.discard(name)
 
     func_node = OperatorNode(OperatorType.FUNC_DECLARATION, max_adjacents=3)
 
-    name = token_list[2]
-    if name in CPP_RESERVED_W:
-        name = f"{name}_{REVERSED_CPP_WORD_POSTFIX}"
-
     func_node.add_named_adjacent(Operand.FUNCTION_NAME, NameNode(name))
-    func_node.add_named_adjacent(Operand.ARGUMENTS, token_list[3])
-    body_index = 5 if len(token_list) == 6 else 7
+    func_node.add_named_adjacent(Operand.ARGUMENTS, token_list[2])
+    body_index = 4 if len(token_list) == 5 else 6
     func_node.add_named_adjacent(Operand.BODY, token_list[body_index])
     token_list[0] = func_node
 
 
 def p_def_open(token_list: yacc.YaccProduction) -> None:
-    """def_open :   DEF"""
+    """def_open :   DEF NAME"""
     parser_state_info["functions"] += 1
-    _ = token_list
+    name = token_list[2]
+    if name in CPP_RESERVED_W:
+        name = f"{name}_{REVERSED_CPP_WORD_POSTFIX}"
+    function_stack.append(name)
+    function_dependencies[name] = []
+    token_list[0] = name
 
 
 def p_mixed_argument_list(token_list: yacc.YaccProduction) -> None:
@@ -1332,14 +1342,19 @@ def p_argument(token_list: yacc.YaccProduction) -> None:
 def p_function_call(token_list: yacc.YaccProduction) -> None:
     """function_call    :   NAME complete_parameter_list"""
     name = token_list[1]
-    if name in CPP_RESERVED_W:
+    was_not_builtin_funct = name not in BUILTIN_FUNCTIONS
+    if name in CPP_RESERVED_W and was_not_builtin_funct:
         name = f"{name}_{REVERSED_CPP_WORD_POSTFIX}"
     
     symbol = symbol_table[name]
-    demangled_name = name.replace(f"_{REVERSED_CPP_WORD_POSTFIX}", "")
-    if (symbol not in {FUNCTION, CLASS}
-        and demangled_name not in BUILTIN_FUNCTIONS):
+    if (symbol not in {FUNCTION, CLASS} and was_not_builtin_funct):
         undefined_functions.add(name)
+
+    if (len(function_stack) > 0 and
+        was_not_builtin_funct and
+        name != function_stack[-1] and
+        name not in function_dependencies[function_stack[-1]]):
+        function_dependencies[function_stack[-1]].append(name)
 
     function_node = OperatorNode(OperatorType.FUNCTION_CALL)
         
@@ -1412,29 +1427,63 @@ def p_method_call(token_list: yacc.YaccProduction) -> None:
         mangled_name = function_node.get_adjacent(Operand.FUNCTION_NAME).id
         demangled_name = mangled_name.replace(f"_{REVERSED_CPP_WORD_POSTFIX}", "")
 
-        if demangled_name in BUILTIN_METHODS:
-            undefined_functions.discard(mangled_name)
+        was_cpp_reserved = demangled_name in CPP_RESERVED_W
+        was_builtin_func = demangled_name in BUILTIN_FUNCTIONS
+        was_builtin_method = demangled_name in BUILTIN_METHODS
 
-        function_node.change_adjacent(Operand.FUNCTION_NAME,
-          NameNode(demangled_name))
-            
+        if was_cpp_reserved:
+            if was_builtin_func:
+                undefined_functions.discard(demangled_name)
+                if (len(function_stack) > 0 and
+                    demangled_name in
+                    function_dependencies[function_stack[-1]]):
+                    function_dependencies[function_stack[-1]].remove(
+                        demangled_name)
+            else:
+                undefined_functions.discard(mangled_name)
+                if (len(function_stack) > 0 and
+                    mangled_name in
+                    function_dependencies[function_stack[-1]]):
+                    function_dependencies[function_stack[-1]].remove(
+                        mangled_name)
+        else:
+            undefined_functions.discard(demangled_name)
+            if (len(function_stack) > 0 and
+                    demangled_name in
+                    function_dependencies[function_stack[-1]]):
+                    function_dependencies[function_stack[-1]].remove(
+                        demangled_name)
+
+        if was_builtin_method:
+            function_node.change_adjacent(Operand.FUNCTION_NAME,
+              NameNode(demangled_name))
+        elif was_builtin_func:
+            function_node.change_adjacent(Operand.FUNCTION_NAME,
+              NameNode(f"{demangled_name}_{REVERSED_CPP_WORD_POSTFIX}"))
+        
+
     else:
         names_subtree: OperatorNode = token_list[1]
 
         function_node = OperatorNode(OperatorType.FUNCTION_CALL)
         mangled_name = names_subtree.get_rightmost().id
-        demangled_name = mangled_name.replace(f"_{REVERSED_CPP_WORD_POSTFIX}", "")
-  
+        demangled_name = (
+            mangled_name.replace(f"_{REVERSED_CPP_WORD_POSTFIX}", "")
+        )
+        was_not_builtin_method = demangled_name not in BUILTIN_METHODS
+
+        name = demangled_name
+        if was_not_builtin_method:
+            symbol = symbol_table[mangled_name]
+            if (symbol not in {FUNCTION, CLASS} ):
+                undefined_functions.add(mangled_name)
+            name = mangled_name
+
         function_node.add_named_adjacent(
             Operand.FUNCTION_NAME,
-            NameNode(demangled_name),
+            NameNode(name),
         )
         function_node.add_named_adjacent(Operand.ARGUMENTS, token_list[2])
-
-        if (demangled_name not in BUILTIN_METHODS):
-            undefined_functions.add(mangled_name)
-        else:
-            undefined_functions.discard(mangled_name)
 
         names_subtree = names_subtree.promote_righmost_sibling()
         method_node.add_named_adjacent(Operand.INSTANCE, names_subtree)
@@ -1507,6 +1556,7 @@ class FanglessParser:
 
     def parse(self, source_code: str) -> Any:
         self.lexer.lex_stream(source_code)
+        self.function_dependencies = function_dependencies
         return self.parser.parse(
             lexer=self.lexer,
             debug=VERBOSE_PARSER,

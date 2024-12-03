@@ -37,12 +37,22 @@ class Bool : public Object {
     return value_ == otherBool->value_;
   }
 
+  bool operator==(const bool& other) const { return value_ == other; }
+
   bool operator==(const Bool& other) const { return equals(other); }
 
   bool operator!=(const Bool& other) const { return !equals(other); }
 
   friend bool operator==(const Bool& lhs, const Bool& rhs) {
     return lhs.equals(rhs);
+  }
+
+  friend bool operator==(const bool& lhs, const Bool& rhs) {
+    return lhs == rhs.value_;
+  }
+
+  friend bool operator==(const Bool& lhs, const bool& rhs) {
+    return lhs.value_ == rhs;
   }
 
   friend bool operator==(const std::shared_ptr<Bool>& lhs,
@@ -56,6 +66,14 @@ class Bool : public Object {
 
   friend bool operator==(const Bool& lhs, const std::shared_ptr<Bool>& rhs) {
     return rhs->equals(lhs);
+  }
+
+  friend bool operator==(const std::shared_ptr<Bool>& lhs, const bool& rhs) {
+    return (*lhs).value_ == rhs;
+  }
+
+  friend bool operator==(const bool& lhs, const std::shared_ptr<Bool>& rhs) {
+    return lhs == (*rhs).value_;
   }
 
   size_t hash() const override { return std::hash<bool>{}(value_); }
@@ -75,14 +93,22 @@ class Bool : public Object {
   }
 
   // std::shared_ptr<Bool> operator!() const { return Bool::spawn(!value_); }
-  bool operator!() const { return !value_; }
+  std::shared_ptr<Bool> operator!() const { return Bool::spawn(!value_); }
 
-  friend bool operator!(const std::shared_ptr<Bool>& obj) {
+  friend std::shared_ptr<Bool> operator!(const std::shared_ptr<Bool>& obj) {
     return obj->operator!();
   }
 
   std::shared_ptr<Bool> negate(std::shared_ptr<Bool>) {
     return Bool::spawn(!value_);
+  }
+
+  inline std::shared_ptr<Number> operator-() const {
+    return -Number::spawn((value_)? 1 : 0);
+  }
+
+  friend std::shared_ptr<Number> operator-(const std::shared_ptr<Bool>& obj) {
+    return obj->operator-();
   }
 
   inline std::shared_ptr<Number> operator~() const {
@@ -93,12 +119,12 @@ class Bool : public Object {
     return obj->operator~();
   }
 
-  std::shared_ptr<Object> getAttr(const std::string& name) const override {
+  std::shared_ptr<Object> getAttr(const std::string&) const override {
     throw std::runtime_error("'Bool' object has no attributes");
   }
 
-  void setAttr(const std::string& name,
-               std::shared_ptr<Object> value) override {
+  void setAttr(const std::string&,
+               std::shared_ptr<Object>) override {
     throw std::runtime_error("'Bool' object has no attributes");
   }
 

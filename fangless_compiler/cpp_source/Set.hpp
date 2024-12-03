@@ -174,8 +174,8 @@ class Set final : public Object {
     throw std::runtime_error("'set' object has no attribute '" + name + "'");
   }
 
-  void setAttr(const std::string& name,
-               std::shared_ptr<Object> value) override {
+  void setAttr(const std::string&,
+               std::shared_ptr<Object>) override {
     throw std::runtime_error("'set' object attributes are read-only");
   }
 

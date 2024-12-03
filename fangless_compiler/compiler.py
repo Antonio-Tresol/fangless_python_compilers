@@ -28,11 +28,13 @@ class FanglessCompiler:
         with program_to_compile_file_name.open("r") as source_file:
             common.print_step("Lexing the input")
             content = source_file.read()
+            function_dependencies: dict[str, list] = {}
             try:
                 self.parser = FanglessParser(self.lexer)
 
                 common.print_step("Parsing the tokens")
                 tree = self.parser.parse(content)
+                function_dependencies = self.parser.function_dependencies
             except IndentationMismatchError as e:
                 common.print_catastrophic_error("Could not indent", f"{e}")
                 sys.exit()
@@ -44,7 +46,7 @@ class FanglessCompiler:
                 sys.exit()
 
             common.print_step("Generating the code")
-            code = self.generator.generate_code(tree)
+            code = self.generator.generate_code(tree, function_dependencies)
 
             OUTPUT_FILE.touch(exist_ok=True)
             OUTPUT_FILE.write_text(code, encoding="utf-8")

@@ -72,13 +72,21 @@ def string_ex():
 
     print(random_operation(5, 6))
 
-
+print("fibonacci")
 print(fibonacci(4))
+print("\n\nfibonacci d")
 print(fibonacci_d(4))
+print("\n\niter")
 print(iter_example())
+print("\n\nmap")
 print(map_ex())
+print("\n\ndefault")
 print(default_ex())
+print("\n\ntuple")
 print(tuple_ex())
+print("\n\nset")
 print(set_ex())
+print("\n\nslices")
 print(slices_ex())
+print("\n\nstring")
 string_ex()

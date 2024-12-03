@@ -106,8 +106,8 @@ class String : public Object {
     throw std::runtime_error("'str' object has no attribute '" + name + "'");
   }
 
-  void setAttr(const std::string& name,
-               std::shared_ptr<Object> value) override {
+  void setAttr(const std::string&,
+               std::shared_ptr<Object>) override {
     throw std::runtime_error("'str' object attributes are read-only");
   }
 
@@ -134,7 +134,7 @@ class String : public Object {
 
   std::shared_ptr<String> center(const Number& width,
     const String& fill = String(std::string(" "))) {
-    if (value_.size() >= width.getInt()) {
+    if (static_cast<int64_t>(value_.size()) >= width.getInt()) {
         return std::make_shared<String>(value_);
     }
 
@@ -284,7 +284,7 @@ class String : public Object {
     size_t end = value_.size();
     size_t start;
     int maxSplits = maxOccurrences.getInt();
-    size_t currentSplit = 0;
+    int currentSplit = 0;
 
     if ((*separator).empty()) {
         result->append(String::spawn(value_));
@@ -315,7 +315,7 @@ class String : public Object {
     const Number& maxOcurrences = Number(-1)) {
     auto result = std::make_shared<List>();
     size_t start = 0, end;
-    size_t currentSplit = 0;
+    int currentSplit = 0;
     int maxSplits = maxOcurrences.getInt();
 
     if ((*separator).empty()) {
@@ -347,7 +347,6 @@ class String : public Object {
   std::shared_ptr<List> splitlines(const Bool& keepLineBreaks) {
     auto result = std::make_shared<List>();
     size_t start = 0;
-    size_t offset = keepLineBreaks.toBool() ? 1 : 0;
 
     for (size_t i = 0; i < value_.size(); ++i) {
       if (value_[i] == '\n' || value_[i] == '\r' ||
@@ -860,7 +859,7 @@ class String : public Object {
 
   std::shared_ptr<String> ljust(const Number& width,
     const String& fill = String(std::string(" "))) {
-    if (value_.size() >= width.getInt()) {
+    if (static_cast<int64_t>(value_.size()) >= width.getInt()) {
         return String::spawn(value_);
     }
 

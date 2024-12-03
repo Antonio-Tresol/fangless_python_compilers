@@ -73,7 +73,7 @@ class None : public Object {
   }
 
   void setAttr(const std::string& name,
-               std::shared_ptr<Object> value) override {
+               std::shared_ptr<Object>) override {
     throw std::runtime_error("'NoneType' object has no attribute '" + name +
                              "'");
   }

@@ -227,8 +227,8 @@ class Number : public Object {
                              name + "'");
   }
 
-  void setAttr(const std::string& name,
-               std::shared_ptr<Object> value) override {
+  void setAttr(const std::string&,
+               std::shared_ptr<Object>) override {
     throw std::runtime_error("'" + type() + "' object has no attributes");
   }
 
@@ -535,6 +535,52 @@ class Number : public Object {
         }, value_);
         
     return std::make_shared<Number>(old_value);
+  }
+
+  std::shared_ptr<Number> operator|(const Number& other) {
+    return std::visit([other](auto&& arg) -> std::shared_ptr<Number> {
+          using T = std::decay_t<decltype(arg)>;
+          if constexpr (std::is_same_v<T, double>) {
+            throw std::runtime_error(
+              "Number::operator | : cannot perform operation on floats");
+          } else {
+            if (other.isDouble()) {
+              throw std::runtime_error(
+                "Number::operator | : cannot perform operation on floats");
+            }
+
+            const int64_t result = arg | other.getInt();
+            return Number::spawn(result);
+          }
+        }, value_);
+  }
+
+  friend std::shared_ptr<Number> operator|(const std::shared_ptr<Number>& a,
+    const std::shared_ptr<Number>& b) {
+    return *a | *b;
+  }
+
+  std::shared_ptr<Number> operator&(const Number& other) {
+    return std::visit([other](auto&& arg) -> std::shared_ptr<Number> {
+          using T = std::decay_t<decltype(arg)>;
+          if constexpr (std::is_same_v<T, double>) {
+            throw std::runtime_error(
+              "Number::operator & : cannot perform operation on floats");
+          } else {
+            if (other.isDouble()) {
+              throw std::runtime_error(
+                "Number::operator & : cannot perform operation on floats");
+            }
+
+            const int64_t result = arg & other.getInt();
+            return Number::spawn(result);
+          }
+        }, value_);
+  }
+
+  friend std::shared_ptr<Number> operator&(const std::shared_ptr<Number>& a,
+    const std::shared_ptr<Number>& b) {
+    return *a & *b;
   }
 
   friend std::shared_ptr<Number> operator~(const std::shared_ptr<Number>& num) {

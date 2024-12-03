@@ -289,8 +289,8 @@ class Dictionary : public Object {
     throw std::runtime_error("'dict' object has no attribute '" + name + "'");
   }
 
-  void setAttr(const std::string& name,
-               std::shared_ptr<Object> value) override {
+  void setAttr(const std::string&,
+               std::shared_ptr<Object>) override {
     throw std::runtime_error("'dict' object attributes are read-only");
   }
 
