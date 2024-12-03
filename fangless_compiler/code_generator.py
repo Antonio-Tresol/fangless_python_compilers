@@ -387,7 +387,6 @@ class FanglessGenerator:
 
         pre_define = ""
         post_define = ""
-        code = ""
 
         # Multiple structures
         if isinstance(for_literal, NameNode):
@@ -568,7 +567,7 @@ class FanglessGenerator:
 
         func = f"{func}({left_child}, {right_child})"
         if "not" in tree.operator:
-            func = f"negate({func})"
+            func = f"({func})->negate()"
 
         if tree.parenthesis:
             return f"({func})"
@@ -582,7 +581,6 @@ class FanglessGenerator:
         right = self.visit_tree([tree])
 
         return f"{name} = {right}"
-
 
     def update_args(self, body: list, update: str) -> bool: 
         has_return = False

@@ -6,13 +6,13 @@
 #include "Object.hpp"
 #include "Number.hpp"
 
+
 class Bool : public Object {
   bool value_;
 
  public:
   //========Constructors========//
   explicit Bool(bool value_) : value_(value_) {}
-
   explicit Bool(int value_) : value_(bool(value_)) {}
   explicit Bool(const Object& obj) : value_(obj.toBool()) {}
   explicit Bool(std::shared_ptr<Object> obj) : value_(obj->toBool()) {}
@@ -40,8 +40,6 @@ class Bool : public Object {
   bool operator==(const bool& other) const { return value_ == other; }
 
   bool operator==(const Bool& other) const { return equals(other); }
-
-  bool operator!=(const Bool& other) const { return !equals(other); }
 
   friend bool operator==(const Bool& lhs, const Bool& rhs) {
     return lhs.equals(rhs);
@@ -76,6 +74,74 @@ class Bool : public Object {
     return lhs == (*rhs).value_;
   }
 
+  std::shared_ptr<Bool> operator&&(const Bool& other) const {
+      return Bool::spawn(value_ && other.value_);
+  }
+
+  friend std::shared_ptr<Bool> operator&&(const std::shared_ptr<Bool>& a, 
+                                          const std::shared_ptr<Bool>& b) {
+      return *a && *b;
+  }
+
+  std::shared_ptr<Bool> operator||(const Bool& other) const {
+      return Bool::spawn(value_ || other.value_);
+  }
+
+  friend std::shared_ptr<Bool> operator||(const std::shared_ptr<Bool>& a, 
+                                          const std::shared_ptr<Bool>& b) {
+      return *a || *b;
+  }
+
+
+  std::shared_ptr<Bool> operator&(const Bool& other) const {
+      return Bool::spawn(value_ & other.value_);
+  }
+
+  friend std::shared_ptr<Bool> operator&(const std::shared_ptr<Bool>& a,
+                                        const std::shared_ptr<Bool>& b) {
+      return *a & *b;
+  }
+
+  std::shared_ptr<Bool> operator|(const Bool& other) const {
+      return Bool::spawn(value_ | other.value_);
+  }
+
+  friend std::shared_ptr<Bool> operator|(const std::shared_ptr<Bool>& a,
+                                        const std::shared_ptr<Bool>& b) {
+      return *a | *b;
+  }
+
+  std::shared_ptr<Bool> operator^(const Bool& other) const {
+      return Bool::spawn(value_ ^ other.value_);
+  }
+
+  friend std::shared_ptr<Bool> operator^(const std::shared_ptr<Bool>& a,
+                                        const std::shared_ptr<Bool>& b) {
+      return *a ^ *b;
+  }
+
+  std::shared_ptr<Bool> operator|=(const Bool& other) {
+    value_ |= other.value_;
+    return std::shared_ptr<Bool>(this, [](Bool*){});
+  }
+
+  friend std::shared_ptr<Bool> operator|=(std::shared_ptr<Bool>& a, 
+                                          const std::shared_ptr<Bool>& b) {
+      *a |= *b;
+      return a;
+  }
+
+  std::shared_ptr<Bool> operator&=(const Bool& other) {
+      value_ &= other.value_;
+      return std::shared_ptr<Bool>(this, [](Bool*){});
+  }
+
+  friend std::shared_ptr<Bool> operator&=(std::shared_ptr<Bool>& a, 
+                                          const std::shared_ptr<Bool>& b) {
+      *a &= *b;
+      return a;
+  }
+
   size_t hash() const override { return std::hash<bool>{}(value_); }
 
   bool toBool() const override { return value_; }
@@ -99,7 +165,7 @@ class Bool : public Object {
     return obj->operator!();
   }
 
-  std::shared_ptr<Bool> negate(std::shared_ptr<Bool>) {
+  std::shared_ptr<Bool> negate() const {
     return Bool::spawn(!value_);
   }
 
@@ -175,6 +241,7 @@ class Bool : public Object {
                                           const std::shared_ptr<Bool>& rhs) {
     return rhs->compare(*lhs);
   }
+
   bool isInstance(const std::string& type) const override {
     return type == "bool" || type == "object";
   }

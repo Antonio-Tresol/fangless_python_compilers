@@ -9,7 +9,6 @@
 #include <variant>
 
 #include "Object.hpp"
-#include "Bool.hpp"
 
 constexpr double DELTA = 1e-9;
 
@@ -41,28 +40,28 @@ class Number : public Object {
 
   std::strong_ordering compare(const Object& other) const override {
       if (auto* numObj = dynamic_cast<const Number*>(&other)) {
-          return std::visit(
-              [](auto&& a, auto&& b) -> std::strong_ordering {
-                  double da = static_cast<double>(a);
-                  double db = static_cast<double>(b);
-  
-                  if (std::isnan(da) && std::isnan(db)) {
-                      return std::strong_ordering::equal;
-                  }
-                  if (std::isnan(da)) {
-                      return std::strong_ordering::less;
-                  }
-                  if (std::isnan(db)) {
-                      return std::strong_ordering::greater;
-                  }
-  
-                  if (da < db)
-                      return std::strong_ordering::less;
-                  if (da > db)
-                      return std::strong_ordering::greater;
-                  return std::strong_ordering::equal;
-              },
-              value_, numObj->value_);
+        return std::visit(
+          [](auto&& a, auto&& b) -> std::strong_ordering {
+            double da = static_cast<double>(a);
+            double db = static_cast<double>(b);
+
+            if (std::isnan(da) && std::isnan(db)) {
+              return std::strong_ordering::equal;
+            }
+            if (std::isnan(da)) {
+              return std::strong_ordering::less;
+            }
+            if (std::isnan(db)) {
+              return std::strong_ordering::greater;
+            }
+
+            if (da < db)
+              return std::strong_ordering::less;
+            if (da > db)
+              return std::strong_ordering::greater;
+            return std::strong_ordering::equal;
+          },
+        value_, numObj->value_);
       } 
       return type() < other.type() ? std::strong_ordering::less : std::strong_ordering::greater;
   }
@@ -191,23 +190,23 @@ class Number : public Object {
 
   size_t hash() const override {
     return std::visit(
-        [](auto&& arg) -> size_t {
-          return std::hash<std::decay_t<decltype(arg)>>{}(arg);
-        },
-        value_);
+      [](auto&& arg) -> size_t {
+        return std::hash<std::decay_t<decltype(arg)>>{}(arg);
+      },
+      value_);
   }
 
   bool toBool() const override {
     return std::visit(
-        [](auto&& arg) -> bool {
-          using T = std::decay_t<decltype(arg)>;
-          if constexpr (std::is_same_v<T, double>) {
-            return arg != 0.0 && !std::isnan(arg);
-          } else {
-            return arg != 0;
-          }
-        },
-        value_);
+      [](auto&& arg) -> bool {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, double>) {
+          return arg != 0.0 && !std::isnan(arg);
+        } else {
+          return arg != 0;
+        }
+      },
+      value_);
   }
 
   bool operator!() const { return !toBool(); }
@@ -236,117 +235,117 @@ class Number : public Object {
 
   int64_t getInt() const {
     return std::visit(
-        [](auto&& arg) -> int64_t {
-          using T = std::decay_t<decltype(arg)>;
-          if constexpr (std::is_same_v<T, double>) {
-            return static_cast<int64_t>(arg);
-          }
-          return arg;
-        },
-        value_);
+      [](auto&& arg) -> int64_t {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, double>) {
+          return static_cast<int64_t>(arg);
+        }
+        return arg;
+      },
+      value_);
   }
 
   operator int64_t() const { return getInt(); }
 
   double getDouble() const {
     return std::visit(
-        [](auto&& arg) -> double { return static_cast<double>(arg); }, value_);
+      [](auto&& arg) -> double { return static_cast<double>(arg); }, value_);
   }
 
   std::shared_ptr<Number> conjugate() {
     return std::visit(
-        [](auto&& arg) -> std::shared_ptr<Number> {
-          using T = std::decay_t<decltype(arg)>;
-          if constexpr (std::is_same_v<T, double>) {
-            return Number::spawn(arg);
-          }
-          return Number::spawn(static_cast<int64_t>(arg));
-        },
-        value_);
+      [](auto&& arg) -> std::shared_ptr<Number> {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, double>) {
+          return Number::spawn(arg);
+        }
+        return Number::spawn(static_cast<int64_t>(arg));
+      },
+      value_);
   }
 
     std::shared_ptr<Number> denominator() {
     return std::visit(
-        [](auto&& arg) -> std::shared_ptr<Number> {
-          using T = std::decay_t<decltype(arg)>;
-          if constexpr (std::is_same_v<T, double>) {
-            throw std::runtime_error("denominator is not a valid operation for a float");
-          }
-          return Number::spawn(static_cast<int64_t>(1));
-        },
-        value_);
+      [](auto&& arg) -> std::shared_ptr<Number> {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, double>) {
+          throw std::runtime_error("denominator is not a valid operation for a float");
+        }
+        return Number::spawn(static_cast<int64_t>(1));
+      },
+      value_);
   }
 
   std::shared_ptr<Number> imag() {
     return std::visit(
-        [](auto&& arg) -> std::shared_ptr<Number> {
-          using T = std::decay_t<decltype(arg)>;
-          if constexpr (std::is_same_v<T, double>) {
-            return Number::spawn(0.0);
-          }
-          return Number::spawn(0);
-        },
-        value_);
+      [](auto&& arg) -> std::shared_ptr<Number> {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, double>) {
+          return Number::spawn(0.0);
+        }
+        return Number::spawn(0);
+      },
+      value_);
   }
 
   std::shared_ptr<Number> real() {
     return std::visit(
-        [](auto&& arg) -> std::shared_ptr<Number> {
-          using T = std::decay_t<decltype(arg)>;
-          if constexpr (std::is_same_v<T, double>) {
-            return Number::spawn(arg);
-          }
+      [](auto&& arg) -> std::shared_ptr<Number> {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, double>) {
           return Number::spawn(arg);
-        },
-        value_);
+        }
+        return Number::spawn(arg);
+      },
+      value_);
   }
 
   std::shared_ptr<Number> numerator() {
     return std::visit(
-        [](auto&& arg) -> std::shared_ptr<Number> {
-          using T = std::decay_t<decltype(arg)>;
-          if constexpr (std::is_same_v<T, double>) {
-            throw std::runtime_error("Numerator is not a valid operation for a float");
-          }
-          return Number::spawn(arg);
-        },
-        value_);
+      [](auto&& arg) -> std::shared_ptr<Number> {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, double>) {
+          throw std::runtime_error("Numerator is not a valid operation for a float");
+        }
+        return Number::spawn(arg);
+      },
+      value_);
   }
 
   bool isFinite() const {
     return std::visit(
-        [](auto&& arg) -> bool {
-          using T = std::decay_t<decltype(arg)>;
-          if constexpr (std::is_same_v<T, double>) {
-            return std::isfinite(arg);
-          }
-          return true;
-        },
-        value_);
+      [](auto&& arg) -> bool {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, double>) {
+          return std::isfinite(arg);
+        }
+        return true;
+      },
+      value_);
   }
 
   bool isInf() const {
     return std::visit(
-        [](auto&& arg) -> bool {
-          using T = std::decay_t<decltype(arg)>;
-          if constexpr (std::is_same_v<T, double>) {
-            return std::isinf(arg);
-          }
-          return false;
-        },
-        value_);
+      [](auto&& arg) -> bool {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, double>) {
+          return std::isinf(arg);
+        }
+        return false;
+      },
+      value_);
   }
 
   bool isNaN() const {
     return std::visit(
-        [](auto&& arg) -> bool {
-          using T = std::decay_t<decltype(arg)>;
-          if constexpr (std::is_same_v<T, double>) {
-            return std::isnan(arg);
-          }
-          return false;
-        },
-        value_);
+      [](auto&& arg) -> bool {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, double>) {
+          return std::isnan(arg);
+        }
+        return false;
+      },
+      value_);
   }
 
   std::shared_ptr<Number> operator~() const {
@@ -363,18 +362,18 @@ class Number : public Object {
 
   std::shared_ptr<Number> operator+(const Number& other) const {
     return std::visit(
-        [](auto&& a, auto&& b) -> std::shared_ptr<Number> {
-          using A = std::decay_t<decltype(a)>;
-          using B = std::decay_t<decltype(b)>;
-          if constexpr (std::is_same_v<A, double> ||
-                        std::is_same_v<B, double>) {
-            return std::make_shared<Number>(static_cast<double>(a) +
-                                            static_cast<double>(b));
-          } else {
-            return std::make_shared<Number>(a + b);
-          }
-        },
-        value_, other.value_);
+      [](auto&& a, auto&& b) -> std::shared_ptr<Number> {
+        using A = std::decay_t<decltype(a)>;
+        using B = std::decay_t<decltype(b)>;
+        if constexpr (std::is_same_v<A, double> ||
+                      std::is_same_v<B, double>) {
+          return std::make_shared<Number>(static_cast<double>(a) +
+                                          static_cast<double>(b));
+        } else {
+          return std::make_shared<Number>(a + b);
+        }
+      },
+      value_, other.value_);
   }
 
   std::shared_ptr<Number> operator-() const {
@@ -389,83 +388,83 @@ class Number : public Object {
 
   std::shared_ptr<Number> operator-(const Number& other) const {
     return std::visit(
-        [](auto&& a, auto&& b) -> std::shared_ptr<Number> {
-          using A = std::decay_t<decltype(a)>;
-          using B = std::decay_t<decltype(b)>;
-          if constexpr (std::is_same_v<A, double> ||
-                        std::is_same_v<B, double>) {
-            return std::make_shared<Number>(static_cast<double>(a) -
-                                            static_cast<double>(b));
-          } else {
-            return std::make_shared<Number>(a - b);
-          }
-        },
-        value_, other.value_);
+      [](auto&& a, auto&& b) -> std::shared_ptr<Number> {
+        using A = std::decay_t<decltype(a)>;
+        using B = std::decay_t<decltype(b)>;
+        if constexpr (std::is_same_v<A, double> ||
+                      std::is_same_v<B, double>) {
+          return std::make_shared<Number>(static_cast<double>(a) -
+                                          static_cast<double>(b));
+        } else {
+          return std::make_shared<Number>(a - b);
+        }
+      },
+      value_, other.value_);
   }
 
   std::shared_ptr<Number> operator*(const Number& other) const {
     return std::visit(
-        [](auto&& a, auto&& b) -> std::shared_ptr<Number> {
-          using A = std::decay_t<decltype(a)>;
-          using B = std::decay_t<decltype(b)>;
-          if constexpr (std::is_same_v<A, double> ||
-                        std::is_same_v<B, double>) {
-            return std::make_shared<Number>(static_cast<double>(a) *
-                                            static_cast<double>(b));
-          } else {
-            return std::make_shared<Number>(a * b);
-          }
-        },
-        value_, other.value_);
+      [](auto&& a, auto&& b) -> std::shared_ptr<Number> {
+        using A = std::decay_t<decltype(a)>;
+        using B = std::decay_t<decltype(b)>;
+        if constexpr (std::is_same_v<A, double> ||
+                      std::is_same_v<B, double>) {
+          return std::make_shared<Number>(static_cast<double>(a) *
+                                          static_cast<double>(b));
+        } else {
+          return std::make_shared<Number>(a * b);
+        }
+      },
+      value_, other.value_);
   }
 
   std::shared_ptr<Number> operator%(const Number& other) const {
     return std::visit(
-        [](auto&& a, auto&& b) -> std::shared_ptr<Number> {
-          using A = std::decay_t<decltype(a)>;
-          using B = std::decay_t<decltype(b)>;
+      [](auto&& a, auto&& b) -> std::shared_ptr<Number> {
+        using A = std::decay_t<decltype(a)>;
+        using B = std::decay_t<decltype(b)>;
 
-          if constexpr (std::is_same_v<A, double> ||
-                        std::is_same_v<B, double>) {
-            int quotient = static_cast<int>(a / b);
-            double remainder = a - (static_cast<double>(quotient) * b);
-            return std::make_shared<Number>(remainder);
+        if constexpr (std::is_same_v<A, double> ||
+                      std::is_same_v<B, double>) {
+          int quotient = static_cast<int>(a / b);
+          double remainder = a - (static_cast<double>(quotient) * b);
+          return std::make_shared<Number>(remainder);
 
-          } else {
-            if (b == 0) {
-              throw std::runtime_error("Division by zero");
-            }
-            return std::make_shared<Number>(a % b);
+        } else {
+          if (b == 0) {
+            throw std::runtime_error("Division by zero");
           }
-        },
-        value_, other.value_);
+          return std::make_shared<Number>(a % b);
+        }
+      },
+      value_, other.value_);
   }
 
   std::shared_ptr<Number> operator/(const Number& other) const {
     return std::visit(
-        [](auto&& a, auto&& b) -> std::shared_ptr<Number> {
-          using B = std::decay_t<decltype(b)>;
+      [](auto&& a, auto&& b) -> std::shared_ptr<Number> {
+        using B = std::decay_t<decltype(b)>;
 
-          if constexpr (std::is_same_v<B, double>) {
-            if (std::abs(b) < DELTA) {
-              throw std::runtime_error("Division by zero");
-            }
-          } else {
-            if (b == 0) {
-              throw std::runtime_error("Division by zero");
-            }
+        if constexpr (std::is_same_v<B, double>) {
+          if (std::abs(b) < DELTA) {
+            throw std::runtime_error("Division by zero");
           }
+        } else {
+          if (b == 0) {
+            throw std::runtime_error("Division by zero");
+          }
+        }
 
-          return std::make_shared<Number>(static_cast<double>(a) /
-                                          static_cast<double>(b));
-        },
-        value_, other.value_);
+        return std::make_shared<Number>(static_cast<double>(a) /
+                                        static_cast<double>(b));
+      },
+      value_, other.value_);
   }
 
   std::shared_ptr<Number> pow(std::shared_ptr<Number> other) const {
     if (isDouble() || other->isDouble() || other < *Number::spawn(0)) {
       return std::make_shared<Number>(
-          std::pow(getDouble(), other->getDouble()));
+        std::pow(getDouble(), other->getDouble()));
     }
 
     const double doubleValue = std::pow(getInt(), other->getInt());
@@ -480,15 +479,15 @@ class Number : public Object {
   // pre-increment
   std::shared_ptr<Number> operator++() {
     std::visit(
-        [](auto&& arg) {
-          using T = std::decay_t<decltype(arg)>;
-          if constexpr (std::is_same_v<T, double>) {
-            arg += 1.0;
-          } else {
-            arg += 1;
-          }
-        },
-        value_);
+      [](auto&& arg) {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, double>) {
+          arg += 1.0;
+        } else {
+          arg += 1;
+        }
+      },
+      value_);
 
     return std::make_shared<Number>(*this);
   }
@@ -497,28 +496,28 @@ class Number : public Object {
   std::shared_ptr<Number> operator++(int) {
     std::shared_ptr<Number> old_value = std::make_shared<Number>(*this);
     std::visit(
-        [](auto&& arg) {
-          using T = std::decay_t<decltype(arg)>;
-          if constexpr (std::is_same_v<T, double>) {
-            arg += 1.0;
-          } else {
-            arg += 1;
-          }
-        },
-        value_);
+      [](auto&& arg) {
+        using T = std::decay_t<decltype(arg)>;
+        if constexpr (std::is_same_v<T, double>) {
+          arg += 1.0;
+        } else {
+          arg += 1;
+        }
+      },
+      value_);
 
     return std::make_shared<Number>(old_value);
   }
 
   std::shared_ptr<Number> operator--() {
     std::visit([](auto&& arg) {
-          using T = std::decay_t<decltype(arg)>;
-          if constexpr (std::is_same_v<T, double>) {
-            arg -= 1.0;
-          } else {
-            arg -= 1;
-          }
-        }, value_);
+      using T = std::decay_t<decltype(arg)>;
+      if constexpr (std::is_same_v<T, double>) {
+        arg -= 1.0;
+      } else {
+        arg -= 1;
+      }
+    }, value_);
   
     return std::make_shared<Number>(*this);
   }
@@ -526,33 +525,65 @@ class Number : public Object {
   std::shared_ptr<Number> operator--(int) {
     std::shared_ptr<Number> old_value = std::make_shared<Number>(*this);
     std::visit([](auto&& arg) {
-          using T = std::decay_t<decltype(arg)>;
-          if constexpr (std::is_same_v<T, double>) {
-            arg -= 1.0;
-          } else {
-            arg -= 1;
-          }
-        }, value_);
+      using T = std::decay_t<decltype(arg)>;
+      if constexpr (std::is_same_v<T, double>) {
+        arg -= 1.0;
+      } else {
+        arg -= 1;
+      }
+    }, value_);
         
     return std::make_shared<Number>(old_value);
   }
 
+  std::shared_ptr<Number> operator<<(const Number& rhs) const {
+    if (auto lhs_int = std::get_if<int64_t>(&value_)) {
+      return Number::spawn(*lhs_int << std::get<int64_t>(rhs.value_));
+    }
+    if (auto lhs_double = std::get_if<double>(&value_)) {
+      return Number::spawn(
+        static_cast<int64_t>(*lhs_double) << std::get<int64_t>(rhs.value_));
+    }
+    throw std::invalid_argument("Unsupported type for shift operation");
+  }
+
+  friend std::shared_ptr<Number> operator<<(const std::shared_ptr<Number>& lhs,
+    const std::shared_ptr<Number>& rhs) {
+    return *lhs << *rhs;
+  }
+
+  std::shared_ptr<Number> operator>>(const Number& rhs) const {
+    if (auto lhs_int = std::get_if<int64_t>(&value_)) {
+      return Number::spawn(*lhs_int >> std::get<int64_t>(rhs.value_));
+    }
+    if (auto lhs_double = std::get_if<double>(&value_)) {
+      return Number::spawn(
+        static_cast<int64_t>(*lhs_double) >> std::get<int64_t>(rhs.value_));
+    }
+    throw std::invalid_argument("Unsupported type for shift operation");
+  }
+
+  friend std::shared_ptr<Number> operator>>(const std::shared_ptr<Number>& lhs,
+    const std::shared_ptr<Number>& rhs) {
+    return *lhs >> *rhs;
+  }
+
   std::shared_ptr<Number> operator|(const Number& other) {
     return std::visit([other](auto&& arg) -> std::shared_ptr<Number> {
-          using T = std::decay_t<decltype(arg)>;
-          if constexpr (std::is_same_v<T, double>) {
-            throw std::runtime_error(
-              "Number::operator | : cannot perform operation on floats");
-          } else {
-            if (other.isDouble()) {
-              throw std::runtime_error(
-                "Number::operator | : cannot perform operation on floats");
-            }
+      using T = std::decay_t<decltype(arg)>;
+      if constexpr (std::is_same_v<T, double>) {
+        throw std::runtime_error(
+          "Number::operator | : cannot perform operation on floats");
+      } else {
+        if (other.isDouble()) {
+          throw std::runtime_error(
+            "Number::operator | : cannot perform operation on floats");
+        }
 
-            const int64_t result = arg | other.getInt();
-            return Number::spawn(result);
-          }
-        }, value_);
+        const int64_t result = arg | other.getInt();
+        return Number::spawn(result);
+      }
+    }, value_);
   }
 
   friend std::shared_ptr<Number> operator|(const std::shared_ptr<Number>& a,
@@ -560,27 +591,68 @@ class Number : public Object {
     return *a | *b;
   }
 
+  std::shared_ptr<Number> operator|=(const Number& other) {
+    std::shared_ptr<Number> result = *this | other;
+    value_ = result->value_;
+    return std::shared_ptr<Number>(this, [](Number*){});
+  }
+
   std::shared_ptr<Number> operator&(const Number& other) {
     return std::visit([other](auto&& arg) -> std::shared_ptr<Number> {
-          using T = std::decay_t<decltype(arg)>;
-          if constexpr (std::is_same_v<T, double>) {
-            throw std::runtime_error(
-              "Number::operator & : cannot perform operation on floats");
-          } else {
-            if (other.isDouble()) {
-              throw std::runtime_error(
-                "Number::operator & : cannot perform operation on floats");
-            }
+      using T = std::decay_t<decltype(arg)>;
+      if constexpr (std::is_same_v<T, double>) {
+        throw std::runtime_error(
+          "Number::operator & : cannot perform operation on floats");
+      } else {
+        if (other.isDouble()) {
+          throw std::runtime_error(
+            "Number::operator & : cannot perform operation on floats");
+        }
 
-            const int64_t result = arg & other.getInt();
-            return Number::spawn(result);
-          }
-        }, value_);
+        const int64_t result = arg & other.getInt();
+        return Number::spawn(result);
+      }
+    }, value_);
   }
 
   friend std::shared_ptr<Number> operator&(const std::shared_ptr<Number>& a,
     const std::shared_ptr<Number>& b) {
     return *a & *b;
+  }
+
+  std::shared_ptr<Number> operator&=(const Number& other) {
+    std::shared_ptr<Number> result = *this & other;
+    value_ = result->value_;
+    return std::shared_ptr<Number>(this, [](Number*){});
+  }
+
+  std::shared_ptr<Number> operator^(const Number& other) {
+    return std::visit([other](auto&& arg) -> std::shared_ptr<Number> {
+      using T = std::decay_t<decltype(arg)>;
+      if constexpr (std::is_same_v<T, double>) {
+        throw std::runtime_error(
+          "Number::operator ^ : cannot perform operation on floats");
+      } else {
+        if (other.isDouble()) {
+          throw std::runtime_error(
+            "Number::operator ^ : cannot perform operation on floats");
+        }
+
+        const int64_t result = arg ^ other.getInt();
+        return Number::spawn(result);
+      }
+    }, value_);
+  }
+
+  friend std::shared_ptr<Number> operator^(const std::shared_ptr<Number>& a,
+    const std::shared_ptr<Number>& b) {
+    return *a ^ *b;
+  }
+
+  std::shared_ptr<Number> operator^=(const Number& other) {
+    std::shared_ptr<Number> result = *this ^ other;
+    value_ = result->value_;
+    return std::shared_ptr<Number>(this, [](Number*){});
   }
 
   friend std::shared_ptr<Number> operator~(const std::shared_ptr<Number>& num) {

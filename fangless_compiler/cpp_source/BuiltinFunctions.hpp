@@ -448,6 +448,11 @@ namespace BF {
     return None::spawn();
   }
 
+  std::shared_ptr<None> print(const int integer) {
+    std::cout << integer << std::endl;
+    return None::spawn();
+  }
+
   std::shared_ptr<None> print(const std::shared_ptr<std::wstring>& anything) {
     std::wcout << (*anything) << std::endl;
     return None::spawn();
