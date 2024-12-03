@@ -162,8 +162,6 @@ def p_all(token_list: yacc.YaccProduction) -> None:
             print(f"\n\n=============== Statement: {line} ===============")
             print(statement)
             print("============================================\n")
-    print("HEY this should be the dependencies: ")
-    print(function_dependencies)
 
 
 # ================================== LITERALS =================================
