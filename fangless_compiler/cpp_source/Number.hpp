@@ -762,6 +762,35 @@ class Number : public Object {
     return Number(lhs? 1:0) << *rhs;
   }
 
+  std::shared_ptr<Number> operator<<=(const Number& other) {
+    std::shared_ptr<Number> result = *this << other;
+    value_ = result->value_;
+    return std::shared_ptr<Number>(this, [](Number*){}); // Shared pointer does not delete `this`
+  }
+
+  std::shared_ptr<Number> operator<<=(const bool& other) {
+      return operator<<=(Number(other ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> operator<<=(const int& other) {
+      return operator<<=(Number(other));
+  }
+
+  friend std::shared_ptr<Number> operator<<=(const std::shared_ptr<Number>& lhs,
+      const std::shared_ptr<Number>& rhs) {
+      return lhs->operator<<=(*rhs);
+  }
+
+  friend std::shared_ptr<Number> operator<<=(const std::shared_ptr<Number>& lhs,
+      const bool& rhs) {
+      return lhs->operator<<=(Number(rhs ? 1 : 0));
+  }
+
+  friend std::shared_ptr<Number> operator<<=(const std::shared_ptr<Number>& lhs,
+      const int& rhs) {
+      return lhs->operator<<=(Number(rhs));
+  }
+
   std::shared_ptr<Number> operator>>(const Number& rhs) const {
     if (auto lhs_int = std::get_if<int64_t>(&value_)) {
       return Number::spawn(*lhs_int >> std::get<int64_t>(rhs.value_));
@@ -786,6 +815,200 @@ class Number : public Object {
   friend std::shared_ptr<Number> operator>>(const bool& lhs,
     const std::shared_ptr<Number>& rhs) {
     return Number(lhs? 1:0) >> *rhs;
+  }
+
+  std::shared_ptr<Number> operator>>=(const Number& other) {
+    std::shared_ptr<Number> result = *this >> other;
+    value_ = result->value_;
+    return std::shared_ptr<Number>(this, [](Number*){}); // Shared pointer does not delete `this`
+  }
+
+  std::shared_ptr<Number> operator>>=(const bool& other) {
+    return operator>>=(Number(other ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> operator>>=(const int& other) {
+    return operator>>=(Number(other));
+  }
+
+  friend std::shared_ptr<Number> operator>>=(const std::shared_ptr<Number>& lhs,
+    const std::shared_ptr<Number>& rhs) {
+    return lhs->operator>>=(*rhs);
+  }
+
+  friend std::shared_ptr<Number> operator>>=(const std::shared_ptr<Number>& lhs,
+    const bool& rhs) {
+    return lhs->operator>>=(Number(rhs ? 1 : 0));
+  }
+
+  friend std::shared_ptr<Number> operator>>=(const std::shared_ptr<Number>& lhs,
+    const int& rhs) {
+    return lhs->operator>>=(Number(rhs));
+  }
+
+  std::shared_ptr<Number> operator+=(const Number& rhs) {
+    if (auto lhs_int = std::get_if<int64_t>(&value_)) {
+      if (auto rhs_int = std::get_if<int64_t>(&rhs.value_)) {
+        *lhs_int += *rhs_int;
+      } else if (auto rhs_double = std::get_if<double>(&rhs.value_)) {
+        *lhs_int += static_cast<int64_t>(*rhs_double);
+      }
+    } else if (auto lhs_double = std::get_if<double>(&value_)) {
+      if (auto rhs_int = std::get_if<int64_t>(&rhs.value_)) {
+        *lhs_double += static_cast<double>(*rhs_int);
+      } else if (auto rhs_double = std::get_if<double>(&rhs.value_)) {
+        *lhs_double += *rhs_double;
+      }
+    } else {
+      throw std::invalid_argument("Unsupported type for += operation");
+    }
+    return std::shared_ptr<Number>(this, [](Number*){});
+  }
+
+  std::shared_ptr<Number> operator-=(const Number& rhs) {
+    if (auto lhs_int = std::get_if<int64_t>(&value_)) {
+      if (auto rhs_int = std::get_if<int64_t>(&rhs.value_)) {
+        *lhs_int -= *rhs_int;
+      } else if (auto rhs_double = std::get_if<double>(&rhs.value_)) {
+        *lhs_int -= static_cast<int64_t>(*rhs_double);
+      }
+    } else if (auto lhs_double = std::get_if<double>(&value_)) {
+      if (auto rhs_int = std::get_if<int64_t>(&rhs.value_)) {
+        *lhs_double -= static_cast<double>(*rhs_int);
+      } else if (auto rhs_double = std::get_if<double>(&rhs.value_)) {
+        *lhs_double -= *rhs_double;
+      }
+    } else {
+      throw std::invalid_argument("Unsupported type for -= operation");
+    }
+    return std::shared_ptr<Number>(this, [](Number*){});
+  }
+
+  std::shared_ptr<Number> operator%=(const Number& rhs) {
+    if (auto lhs_int = std::get_if<int64_t>(&value_)) {
+      if (auto rhs_int = std::get_if<int64_t>(&rhs.value_)) {
+        *lhs_int %= *rhs_int;
+      } else if (auto rhs_double = std::get_if<double>(&rhs.value_)) {
+        *lhs_int %= static_cast<int64_t>(*rhs_double);
+      }
+    } else {
+      throw std::invalid_argument("Unsupported type for %= operation");
+    }
+    return std::shared_ptr<Number>(this, [](Number*){});
+  }
+
+  std::shared_ptr<Number> operator/=(const Number& rhs) {
+    if (auto lhs_int = std::get_if<int64_t>(&value_)) {
+      if (auto rhs_int = std::get_if<int64_t>(&rhs.value_)) {
+        *lhs_int /= *rhs_int;
+      } else if (auto rhs_double = std::get_if<double>(&rhs.value_)) {
+        *lhs_int /= static_cast<int64_t>(*rhs_double);
+      }
+    } else if (auto lhs_double = std::get_if<double>(&value_)) {
+      if (auto rhs_int = std::get_if<int64_t>(&rhs.value_)) {
+        *lhs_double /= static_cast<double>(*rhs_int);
+      } else if (auto rhs_double = std::get_if<double>(&rhs.value_)) {
+        *lhs_double /= *rhs_double;
+      }
+    } else {
+      throw std::invalid_argument("Unsupported type for /= operation");
+    }
+    return std::shared_ptr<Number>(this, [](Number*){});
+  }
+
+  std::shared_ptr<Number> operator*=(const Number& rhs) {
+    if (auto lhs_int = std::get_if<int64_t>(&value_)) {
+      if (auto rhs_int = std::get_if<int64_t>(&rhs.value_)) {
+        *lhs_int *= *rhs_int;
+      } else if (auto rhs_double = std::get_if<double>(&rhs.value_)) {
+        *lhs_int *= static_cast<int64_t>(*rhs_double);
+      }
+    } else if (auto lhs_double = std::get_if<double>(&value_)) {
+        if (auto rhs_int = std::get_if<int64_t>(&rhs.value_)) {
+          *lhs_double *= static_cast<double>(*rhs_int);
+        } else if (auto rhs_double = std::get_if<double>(&rhs.value_)) {
+          *lhs_double *= *rhs_double;
+        }
+    } else {
+      throw std::invalid_argument("Unsupported type for *= operation");
+    }
+    return std::shared_ptr<Number>(this, [](Number*){});
+  }
+
+
+  friend std::shared_ptr<Number> operator+=(const std::shared_ptr<Number>& lhs,
+                                           const std::shared_ptr<Number>& rhs) {
+    return lhs->operator+=( *rhs );
+  }
+
+  friend std::shared_ptr<Number> operator-=(const std::shared_ptr<Number>& lhs,
+                                           const std::shared_ptr<Number>& rhs) {
+    return lhs->operator-=( *rhs );
+  }
+
+  friend std::shared_ptr<Number> operator%=(const std::shared_ptr<Number>& lhs,
+                                           const std::shared_ptr<Number>& rhs) {
+    return lhs->operator%=( *rhs );
+  }
+
+  friend std::shared_ptr<Number> operator/=(const std::shared_ptr<Number>& lhs,
+                                           const std::shared_ptr<Number>& rhs) {
+    return lhs->operator/=( *rhs );
+  }
+
+  friend std::shared_ptr<Number> operator+=(const std::shared_ptr<Number>& lhs,
+    const bool& rhs) {
+    return lhs->operator+=(Number(rhs ? 1 : 0));
+  }
+
+  friend std::shared_ptr<Number> operator+=(const std::shared_ptr<Number>& lhs,
+    const int& rhs) {
+    return lhs->operator+=(Number(rhs));
+  }
+
+  friend std::shared_ptr<Number> operator-=(const std::shared_ptr<Number>& lhs,
+    const bool& rhs) {
+    return lhs->operator-=(Number(rhs ? 1 : 0));
+  }
+
+  friend std::shared_ptr<Number> operator-=(const std::shared_ptr<Number>& lhs,
+    const int& rhs) {
+    return lhs->operator-=(Number(rhs));
+  }
+
+  friend std::shared_ptr<Number> operator%=(const std::shared_ptr<Number>& lhs,
+    const bool& rhs) {
+    return lhs->operator%=(Number(rhs ? 1 : 0));
+  }
+
+  friend std::shared_ptr<Number> operator%=(const std::shared_ptr<Number>& lhs,
+    const int& rhs) {
+    return lhs->operator%=(Number(rhs));
+  }
+
+  friend std::shared_ptr<Number> operator/=(const std::shared_ptr<Number>& lhs,
+    const bool& rhs) {
+    return lhs->operator/=(Number(rhs ? 1 : 0));
+  }
+
+  friend std::shared_ptr<Number> operator/=(const std::shared_ptr<Number>& lhs,
+    const int& rhs) {
+    return lhs->operator/=(Number(rhs));
+  }
+
+  friend std::shared_ptr<Number> operator*=(const std::shared_ptr<Number>& lhs,
+    const bool& rhs) {
+    return lhs->operator*=(Number(rhs ? 1 : 0));
+  }
+
+  friend std::shared_ptr<Number> operator*=(const std::shared_ptr<Number>& lhs,
+    const int& rhs) {
+    return lhs->operator*=(Number(rhs));
+  }
+
+  friend std::shared_ptr<Number> operator*=(const std::shared_ptr<Number>& lhs,
+    const std::shared_ptr<Number>& rhs) {
+    return lhs->operator*=( *rhs );
   }
 
   std::shared_ptr<Number> operator|(const Number& other) const {
@@ -849,6 +1072,11 @@ class Number : public Object {
   }
   std::shared_ptr<Number> operator|=(const int& other) {
     return operator|=(Number(other));
+  }
+
+  friend std::shared_ptr<Number> operator|=(const std::shared_ptr<Number>& lhs,
+    const std::shared_ptr<Number>& rhs) {
+    return lhs->operator|=(*rhs);
   }
 
   friend std::shared_ptr<Number> operator|=(const std::shared_ptr<Number>& lhs,
@@ -925,6 +1153,11 @@ class Number : public Object {
   }
 
   friend std::shared_ptr<Number> operator&=(const std::shared_ptr<Number>& lhs,
+    const std::shared_ptr<Number>& rhs) {
+    return lhs->operator&=(*rhs);
+  }
+
+  friend std::shared_ptr<Number> operator&=(const std::shared_ptr<Number>& lhs,
     const bool& rhs) {
     return lhs->operator&=(Number(rhs? 1 : 0));
   }
@@ -995,6 +1228,11 @@ class Number : public Object {
   }
   std::shared_ptr<Number> operator^=(const int& other) {
     return operator^=(Number(other));
+  }
+
+  friend std::shared_ptr<Number> operator^=(const std::shared_ptr<Number>& lhs,
+    const std::shared_ptr<Number>& rhs) {
+    return lhs->operator^=(*rhs);
   }
 
   friend std::shared_ptr<Number> operator^=(const std::shared_ptr<Number>& lhs,

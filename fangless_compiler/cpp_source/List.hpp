@@ -438,7 +438,7 @@ class List : public Object {
   std::shared_ptr<List> operator+=(const List& other) {
     elements_.insert(elements_.end(), other.elements_.begin(),
                      other.elements_.end());
-    return std::shared_ptr<List>(this);
+    return std::shared_ptr<List>(this, [](List*){});
   }
 
   std::shared_ptr<List> operator*=(const Number& number) {
@@ -451,7 +451,7 @@ class List : public Object {
         elements_.insert(elements_.end(), original.begin(), original.end());
       }
     }
-    return std::shared_ptr<List>(this);
+    return std::shared_ptr<List>(this, [](List*){});
   }
 
   std::shared_ptr<List> operator*=(const bool& number) {
@@ -468,7 +468,7 @@ class List : public Object {
         elements_.insert(elements_.end(), original.begin(), original.end());
       }
     }
-    return std::shared_ptr<List>(this);
+    return std::shared_ptr<List>(this, [](List*){});
   }
 
   List& operator=(const List& other) {
@@ -507,6 +507,17 @@ class List : public Object {
     const std::shared_ptr<List>& b) {
     return b->operator*(Number(a? 1:0));
   }
+
+  friend std::shared_ptr<List> operator+=(const std::shared_ptr<List>& lhs,
+    const std::shared_ptr<List>& rhs) {
+    return lhs->operator+=( *rhs );
+  }
+
+  friend std::shared_ptr<List> operator*=(const std::shared_ptr<List>& lhs,
+    const std::shared_ptr<Number>& rhs) {
+    return lhs->operator*=( *rhs );
+  }
+
 };
 
 #endif  // LIST_HPP

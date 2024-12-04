@@ -612,6 +612,11 @@ class Bool : public Object {
     return Number(lhs->toBool()? 1:0) << *rhs;
   }
 
+  friend std::shared_ptr<Number> operator<<=(const std::shared_ptr<Number>& lhs,
+    const std::shared_ptr<Bool>& rhs) {
+    return lhs->operator<<=(Number(rhs->toBool() ? 1 : 0));
+  }
+
   friend std::shared_ptr<Number> operator>>(const std::shared_ptr<Bool>& lhs,
     const std::shared_ptr<Bool>& rhs) {
     return Number(lhs->toBool()? 1:0) >> Number(rhs->toBool()? 1:0);
@@ -626,6 +631,37 @@ class Bool : public Object {
     const std::shared_ptr<Number>& rhs) {
     return Number(lhs->toBool()? 1:0) >> *rhs;
   }
+
+  friend std::shared_ptr<Number> operator>>=(const std::shared_ptr<Number>& lhs,
+    const std::shared_ptr<Bool>& rhs) {
+    return lhs->operator>>=(Number(rhs->toBool() ? 1 : 0));
+  }
+
+  friend std::shared_ptr<Number> operator+=(const std::shared_ptr<Number>& lhs,
+                                           const std::shared_ptr<Bool>& rhs) {
+    return lhs->operator+=( Number(rhs->toBool() ? 1 : 0) );
+  }
+
+  friend std::shared_ptr<Number> operator-=(const std::shared_ptr<Number>& lhs,
+                                           const std::shared_ptr<Bool>& rhs) {
+    return lhs->operator-=( Number(rhs->toBool() ? 1 : 0) );
+  }
+
+  friend std::shared_ptr<Number> operator%=(const std::shared_ptr<Number>& lhs,
+                                           const std::shared_ptr<Bool>& rhs) {
+    return lhs->operator%=( Number(rhs->toBool() ? 1 : 0) );
+  }
+
+  friend std::shared_ptr<Number> operator/=(const std::shared_ptr<Number>& lhs,
+                                           const std::shared_ptr<Bool>& rhs) {
+    return lhs->operator/=( Number(rhs->toBool() ? 1 : 0) );
+  }
+
+  friend std::shared_ptr<Number> operator*=(const std::shared_ptr<Number>& lhs,
+    const std::shared_ptr<Bool>& rhs) {
+    return lhs->operator*=(Number(rhs->toBool() ? 1 : 0));
+  }
+
 
   std::shared_ptr<Bool> operator&&(const Bool& other) const {
     return Bool::spawn(value_ && other.value_);

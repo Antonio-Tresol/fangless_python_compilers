@@ -575,7 +575,7 @@ class FanglessGenerator:
     
     def visit_func_assignation(self, tree: OperatorNode) -> str:
         name = tree.get_left_operand()
-        name = tree.visit_tree([tree])
+        name = self.visit_tree([name])
 
         tree.operator = tree.operator[:-1]
         right = self.visit_tree([tree])

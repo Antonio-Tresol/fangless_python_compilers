@@ -434,6 +434,11 @@ class String : public Object {
     return std::make_shared<String>(value_ + other.value_);
   }
 
+  std::shared_ptr<String> operator+=(const String& other) {
+    value_ += other.value_;
+    return std::shared_ptr<String>(this, [](String*){});
+  }
+
   std::shared_ptr<String> operator+(const Object& other) const {
     return std::make_shared<String>(value_ + other.toString());
   }
@@ -446,6 +451,16 @@ class String : public Object {
     }
 
     return std::make_shared<String>(result);
+  }
+
+  std::shared_ptr<String> operator*=(const Number& number) {
+    int n = number.getInt();
+    std::string result;
+    for (int i = 0; i < n; ++i) {
+        result += value_;
+    }
+    value_ = result;
+    return std::shared_ptr<String>(this, [](String*){});
   }
 
   std::shared_ptr<String> operator*(const Bool& number) const {
@@ -1009,6 +1024,21 @@ std::shared_ptr<String> rjust(const Number& width, const String& fill = String("
   friend std::shared_ptr<String> operator+(const std::shared_ptr<String>& first,
     const std::shared_ptr<Object>& second) {
     return std::make_shared<String>(first->value_ + second->toString());
+  }
+
+  friend std::shared_ptr<String> operator+=(const std::shared_ptr<String>& lhs,
+    const std::shared_ptr<String>& rhs) {
+    return lhs->operator+=( *rhs );
+  }
+
+  friend std::shared_ptr<String> operator+=(const std::shared_ptr<String>& lhs,
+    const std::shared_ptr<Object>& rhs) {
+    return lhs->operator+=( String(rhs->toString()) );
+  }
+
+  friend std::shared_ptr<String> operator*=(const std::shared_ptr<String>& lhs,
+    const std::shared_ptr<Number>& rhs) {
+    return lhs->operator*=( *rhs );
   }
 };
 
