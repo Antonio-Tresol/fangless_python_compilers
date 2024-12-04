@@ -326,3 +326,239 @@ def my_function(param1 : list[list, int | bool], param2 : dict[str, set]):
 # Supported alternative to nested type hints
 x : list[tuple] = [({[5,6,7]})]
 ```
+
+## 8. Limited support for the `chr()` function  
+
+### Description:  
+This case refers to Python's `chr()` function, which returns the character associated with a given Unicode code point. While this functionality is supported for ASCII values (0–127), handling characters beyond this range presents challenges due to the complexity of managing Unicode in C++. As a result, using `chr()` with non-ASCII values will result in incorrect or faulty characters.  
+
+### Examples:  
+
+#### Unsupported cases:  
+
+```python  
+# Unsupported use of chr with non-ASCII values  
+print(chr(128))  # Non-ASCII  
+print(chr(10000))  
+```
+
+```python
+# Unsupported use of chr with Unicode code points  
+unicode_char = chr(0x1F600)  # 😀 (Unicode emoji)  
+print(unicode_char)  
+```
+
+#### Supported cases:
+
+```python  
+# Supported use of chr with ASCII values  
+print(chr(65))  # A  
+print(chr(97))  # a  
+```
+
+```python
+# Supported ASCII range examples  
+for i in range(32, 127):  
+    print(chr(i), end=" ")  # Printable ASCII characters  
+```
+
+## 9. Unsupported use of `super()` and custom class definitions  
+
+### Description:  
+This case refers to the use of the `super()` function and the definition of custom classes along with their methods in Python. While the syntax will be recognized by both the lexer and parser, the code generator does not produce output for these constructs. As a result, using `super()` or defining custom classes will lead to undefined behavior. This limitation is due to time constraints in the implementation.  
+
+### Examples:  
+
+#### Unsupported cases:  
+
+```python  
+# Unsupported use of super()  
+class Parent:  
+    def greet(self):  
+        print("Hello from Parent")  
+
+class Child(Parent):  
+    def greet(self):  
+        super().greet()  
+        print("Hello from Child")  
+
+child_instance = Child()  
+child_instance.greet()  
+```
+
+```python  
+# Unsupported custom class definition  
+class CustomClass:  
+    def __init__(self, value):  
+        self.value = value  
+
+    def display_value(self):  
+        print(f"Value: {self.value}")  
+
+obj = CustomClass(10)  
+obj.display_value()  
+```
+
+## 10. Unsupported direct calls to dunder methods  
+
+### Description:  
+This case refers to directly calling special methods (dunder methods) in Python, such as `__name__` or `__method__`, using dot notation (e.g., `object.__method__`). While these methods often correspond to specific operator overloads or intrinsic behaviors in Python, direct calls to them are not supported by the transpiler. Although the lexer, parser, and code generator will recognize such calls, they are not implemented, leading to compilation errors in C++. The object’s behavior will still function correctly when triggered by the corresponding operator or intrinsic behavior, but explicit method calls will not compile. This limitation is due to time constraints in the implementation.  
+
+### Examples:  
+
+#### Unsupported cases:  
+
+```python  
+# Unsupported direct call to dunder method  
+class CustomClass:  
+    def __str__(self):  
+        return "CustomClass instance"  
+
+obj = CustomClass()  
+print(obj.__str__())  
+```
+
+```python
+# Unsupported direct call to dunder method  
+my_list = [1, 2, 3]  
+print(my_list.__len__())  
+```
+
+```python
+# Unsupported direct call to dunder method  
+class WithAdd:  
+    def __add__(self, other):  
+        return "Adding"  
+
+obj = WithAdd()  
+print(obj.__add__(5))   
+```
+
+## 11. Limited support for the `dict()` function  
+
+### Description:  
+This case refers to the use of the `dict()` function for constructing dictionaries in Python. The transpiler only supports calling `dict()` without any parameters to create an empty dictionary. Using `dict()` with any arguments, such as key-value pairs or iterable inputs, is not supported. Such usage will either cause the parser to fail or result in compilation errors. However, dictionaries can still be created directly with key-value pairs using curly braces `{}`. This limitation is due to time constraints in the implementation.  
+
+### Examples:  
+
+#### Unsupported cases:  
+
+```python  
+# Unsupported use of dict() with key-value pairs  
+my_dict = dict(a=1, b=2)  
+```
+
+```python  
+# Unsupported use of dict() with iterable input  
+my_dict = dict([('a', 1), ('b', 2)])  
+```
+
+```python  
+# Unsupported use of dict() with keyword arguments  
+my_dict = dict(zip(["a", "b"], [1, 2]))  
+```
+
+#### Supported cases:
+
+```python  
+# Supported use of dict() to create an empty dictionary  
+empty_dict = dict()
+```
+
+```python  
+# Supported direct creation of dictionaries with key-value pairs  
+my_dict = {"a": 1, "b": 2, "c": 3}
+```
+
+## 12. Unsupported reassignment of variables to a different type  
+
+### Description:  
+This case refers to the inability to reassign a variable to a value of a different type after it has been initially declared with a specific type. While Python allows dynamic typing, the transpiler does not support this behavior due to the complexity of implementing type flexibility in C++ while maintaining the usability of variables. As a result, attempting to reassign a variable to a value of a different type will cause an error during compilation.  
+
+### Examples:  
+
+#### Unsupported cases:  
+
+```python  
+# Unsupported reassignment to a different type  
+x = 10  # Initial type is int  
+x = "Hello"  # Reassigning to a string (different type)  
+```
+
+```python  
+# Unsupported reassignment to a different type  
+my_var = [1, 2, 3]  # Initial type is list  
+my_var = 42  # Reassigning to an int (different type)  
+```
+
+```python  
+# Unsupported reassignment to a different type  
+value = 3.14  # Initial type is float  
+value = True  # Reassigning to a boolean (different type)  
+```
+
+#### Supported cases:
+
+```python  
+# Supported reassignment with the same type  
+x = 10  # Initial type is int  
+x = 20  # Reassigning with the same type  
+```
+
+```python  
+# Supported reassignment with the same type  
+my_var = [1, 2, 3]  # Initial type is list  
+my_var = [4, 5, 6]  # Reassigning with the same type  
+```
+
+## 13. Unsupported usage of extremely large numbers  
+
+### Description:  
+This case refers to the limitation in handling extremely large numbers. While Python supports arbitrarily large integers and floating-point numbers, C++ has fixed-size number types. As a result, numbers beyond the supported range will cause compilation errors, overflow, or undefined behavior. The transpiler does not handle these cases due to the complexity of implementing support for such large numbers in C++, and the minimal reward from doing so. To avoid errors, numbers should not exceed 2147483647 and -2147483647 for integers, and should stay within the range of -1.7976931348623157 × 10^308 to 1.7976931348623157 × 10^308 for doubles.  
+
+### Examples:  
+
+#### Unsupported cases:  
+
+```python  
+# Unsupported extremely large integer  
+large_num = 2147483648  # Beyond supported range for int  
+```
+
+```python  
+# Unsupported extremely small integer  
+small_num = -2147483648  # Below supported range for int   
+```
+
+```python  
+# Unsupported large floating-point number  
+large_float = 1.8e308  # Exceeds the maximum range for double  
+```
+
+```python  
+# Unsupported small floating-point number  
+small_float = -1.8e308  # Below the minimum range for double  
+```
+
+#### Supported cases:  
+
+```python  
+# Supported integer within the valid range  
+valid_int = 2147483647  # Maximum supported integer  
+```
+
+```python  
+# Supported integer within the valid range  
+valid_int = -2147483647  # Minimum supported integer  
+```
+
+```python  
+# Supported floating-point number within the valid range  
+valid_float = 1.7976931348623157e308  # Maximum supported double   
+```
+
+```python  
+# Supported floating-point number within the valid range  
+valid_float = -1.7976931348623157e308  # Minimum supported double  
+```
+

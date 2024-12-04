@@ -145,11 +145,3 @@ COMPILER_SETTINGS = {
 ## Unsupported grammar
 
 Due to time and complexity limitations, not all valid Python grammar is supported by this transpiler. As a result, certain features and functionalities have been excluded and will not work as expected. A comprehensive list of these unsupported features, along with examples, can be found in the [unsupported_cases.md](./unsupported_casses.md) file.
-
-ready list:
-ast done:
-- binary operations
-- unary
-- indexing, slicing?
-- function call
-- method call
