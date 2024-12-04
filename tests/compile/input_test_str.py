@@ -27,9 +27,9 @@ print(str(('a', 'b', 'c')))
 print("")
 
 print("Testing str with dicts")
-# '{1, 2, 3}'
+# '{1: 'One', 2: 'Two', 3: 'Three'}'
 print(str({1 : "One", 2 : "Two", 3 : "Three"}))
-# "{'a', 'b', 'c'}"
+# "{1: 'One', 2: 'Two', 3: 'Three'}"
 print(str({'a' : "ei", 'b' : "bi", 'c' : "ci"}))
 print("")
 

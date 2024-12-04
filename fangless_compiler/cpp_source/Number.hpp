@@ -85,6 +85,36 @@ class Number : public Object {
                                           const Number& rhs) {
     return rhs.compare(*lhs);
   }
+  friend std::strong_ordering operator<=>(const Number& lhs,
+    const bool& rhs) {
+    return lhs.compare(Number(rhs? 1:0));
+  }
+  friend std::strong_ordering operator<=>(const bool& lhs,
+    const Number& rhs) {
+    return Number(lhs? 1:0).compare(rhs);
+  }
+  friend std::strong_ordering operator<=>(const std::shared_ptr<Number>& lhs,
+    const bool& rhs) {
+    return lhs->compare(Number(rhs? 1:0));
+  }
+  friend std::strong_ordering operator<=>(const bool& lhs,
+    const std::shared_ptr<Number>& rhs) {
+    return Number(lhs? 1:0).compare(*rhs);
+  }
+  friend std::strong_ordering operator<=>(const Number& lhs, const int& rhs) {
+    return lhs.compare(Number(rhs));
+  }
+  friend std::strong_ordering operator<=>(const int& lhs, const Number& rhs) {
+    return Number(lhs).compare(rhs);
+  }
+  friend std::strong_ordering operator<=>(const std::shared_ptr<Number>& lhs,
+    const int& rhs) {
+    return lhs->compare(Number(rhs));
+  }
+  friend std::strong_ordering operator<=>(const int& lhs,
+    const std::shared_ptr<Number>& rhs) {
+    return Number(lhs).compare(*rhs);
+  }
 
   template <typename T>
   static std::shared_ptr<Number> spawn(T value) {
@@ -161,6 +191,10 @@ class Number : public Object {
     return equals(*other);
   }
 
+  bool operator==(const int& other) const {
+    return equals(Number(other));
+  }
+
   friend bool operator==(const Number& lhs, const Number& rhs) {
     return lhs.equals(rhs);
   }
@@ -186,6 +220,11 @@ class Number : public Object {
   friend bool operator==(const std::shared_ptr<Object>& lhs,
                          const std::shared_ptr<Number>& rhs) {
     return rhs->equals(lhs);
+  }
+
+  friend bool operator==(const std::shared_ptr<Object>& lhs,
+                         const int& rhs) {
+    return lhs->equals(Number(rhs));
   }
 
   size_t hash() const override {
@@ -245,7 +284,7 @@ class Number : public Object {
       value_);
   }
 
-  operator int64_t() const { return getInt(); }
+  // explicit operator int64_t() const { return getInt(); }
 
   double getDouble() const {
     return std::visit(
@@ -375,6 +414,32 @@ class Number : public Object {
       },
       value_, other.value_);
   }
+  std::shared_ptr<Number> operator+(const bool& other) const {
+    return operator+(Number(other? 1:0));
+  }
+  std::shared_ptr<Number> operator+(const int& other) const {
+    return operator+(Number(other));
+  }
+
+  friend std::shared_ptr<Number> operator+(const std::shared_ptr<Number>& lhs,
+    const bool& rhs) {
+    return lhs->operator+(Number(rhs? 1 : 0));
+  }
+
+  friend std::shared_ptr<Number> operator+(const bool& lhs,
+    const std::shared_ptr<Number>& rhs) {
+    return rhs->operator+(Number(lhs ? 1 : 0));
+  }
+
+  friend std::shared_ptr<Number> operator+(const std::shared_ptr<Number>& lhs,
+    const int& rhs) {
+    return lhs->operator+(Number(rhs));
+  }
+
+  friend std::shared_ptr<Number> operator+(const int& lhs,
+    const std::shared_ptr<Number>& rhs) {
+    return rhs->operator+(Number(lhs));
+  }
 
   std::shared_ptr<Number> operator-() const {
     if (this->isDouble()) {
@@ -402,6 +467,33 @@ class Number : public Object {
       value_, other.value_);
   }
 
+  std::shared_ptr<Number> operator-(const bool& other) const {
+    return operator-(Number(other? 1:0));
+  }
+  std::shared_ptr<Number> operator-(const int& other) const {
+    return operator-(Number(other));
+  }
+
+  friend std::shared_ptr<Number> operator-(const std::shared_ptr<Number>& lhs,
+    const bool& rhs) {
+    return lhs->operator-(Number(rhs? 1 : 0));
+  }
+
+  friend std::shared_ptr<Number> operator-(const bool& lhs,
+    const std::shared_ptr<Number>& rhs) {
+    return rhs->operator-(Number(lhs ? 1 : 0));
+  }
+
+  friend std::shared_ptr<Number> operator-(const std::shared_ptr<Number>& lhs,
+    const int& rhs) {
+    return lhs->operator-(Number(rhs));
+  }
+
+  friend std::shared_ptr<Number> operator-(const int& lhs,
+    const std::shared_ptr<Number>& rhs) {
+    return rhs->operator-(Number(lhs));
+  }
+
   std::shared_ptr<Number> operator*(const Number& other) const {
     return std::visit(
       [](auto&& a, auto&& b) -> std::shared_ptr<Number> {
@@ -416,6 +508,33 @@ class Number : public Object {
         }
       },
       value_, other.value_);
+  }
+
+  std::shared_ptr<Number> operator*(const bool& other) const {
+    return operator*(Number(other? 1:0));
+  }
+  std::shared_ptr<Number> operator*(const int& other) const {
+    return operator*(Number(other));
+  }
+
+  friend std::shared_ptr<Number> operator*(const std::shared_ptr<Number>& lhs,
+    const bool& rhs) {
+    return lhs->operator*(Number(rhs? 1 : 0));
+  }
+
+  friend std::shared_ptr<Number> operator*(const bool& lhs,
+    const std::shared_ptr<Number>& rhs) {
+    return rhs->operator*(Number(lhs ? 1 : 0));
+  }
+
+  friend std::shared_ptr<Number> operator*(const std::shared_ptr<Number>& lhs,
+    const int& rhs) {
+    return lhs->operator*(Number(rhs));
+  }
+
+  friend std::shared_ptr<Number> operator*(const int& lhs,
+    const std::shared_ptr<Number>& rhs) {
+    return rhs->operator*(Number(lhs));
   }
 
   std::shared_ptr<Number> operator%(const Number& other) const {
@@ -440,6 +559,33 @@ class Number : public Object {
       value_, other.value_);
   }
 
+  std::shared_ptr<Number> operator%(const bool& other) const {
+    return operator%(Number(other? 1:0));
+  }
+  std::shared_ptr<Number> operator%(const int& other) const {
+    return operator%(Number(other));
+  }
+
+  friend std::shared_ptr<Number> operator%(const std::shared_ptr<Number>& lhs,
+    const bool& rhs) {
+    return lhs->operator%(Number(rhs? 1 : 0));
+  }
+
+  friend std::shared_ptr<Number> operator%(const bool& lhs,
+    const std::shared_ptr<Number>& rhs) {
+    return rhs->operator%(Number(lhs ? 1 : 0));
+  }
+
+  friend std::shared_ptr<Number> operator%(const std::shared_ptr<Number>& lhs,
+    const int& rhs) {
+    return lhs->operator%(Number(rhs));
+  }
+
+  friend std::shared_ptr<Number> operator%(const int& lhs,
+    const std::shared_ptr<Number>& rhs) {
+    return rhs->operator%(Number(lhs));
+  }
+
   std::shared_ptr<Number> operator/(const Number& other) const {
     return std::visit(
       [](auto&& a, auto&& b) -> std::shared_ptr<Number> {
@@ -461,6 +607,33 @@ class Number : public Object {
       value_, other.value_);
   }
 
+  std::shared_ptr<Number> operator/(const bool& other) const {
+    return operator/(Number(other? 1:0));
+  }
+  std::shared_ptr<Number> operator/(const int& other) const {
+    return operator/(Number(other));
+  }
+
+  friend std::shared_ptr<Number> operator/(const std::shared_ptr<Number>& lhs,
+    const bool& rhs) {
+    return lhs->operator/(Number(rhs? 1 : 0));
+  }
+
+  friend std::shared_ptr<Number> operator/(const bool& lhs,
+    const std::shared_ptr<Number>& rhs) {
+    return rhs->operator/(Number(lhs ? 1 : 0));
+  }
+
+  friend std::shared_ptr<Number> operator/(const std::shared_ptr<Number>& lhs,
+    const int& rhs) {
+    return lhs->operator/(Number(rhs));
+  }
+
+  friend std::shared_ptr<Number> operator/(const int& lhs,
+    const std::shared_ptr<Number>& rhs) {
+    return rhs->operator/(Number(lhs));
+  }
+
   std::shared_ptr<Number> pow(std::shared_ptr<Number> other) const {
     if (isDouble() || other->isDouble() || other < *Number::spawn(0)) {
       return std::make_shared<Number>(
@@ -474,6 +647,33 @@ class Number : public Object {
     }
 
     return std::make_shared<Number>(static_cast<int64_t>(doubleValue));
+  }
+
+  std::shared_ptr<Number> pow(const bool& other) const {
+    return pow(Number::spawn(other? 1:0));
+  }
+  std::shared_ptr<Number> pow(const int& other) const {
+    return pow(Number::spawn(other));
+  }
+
+  friend std::shared_ptr<Number> pow(const std::shared_ptr<Number>& lhs,
+    const bool& rhs) {
+    return lhs->pow(Number::spawn(rhs? 1 : 0));
+  }
+
+  friend std::shared_ptr<Number> pow(const bool& lhs,
+    const std::shared_ptr<Number>& rhs) {
+    return rhs->pow(Number::spawn(lhs ? 1 : 0));
+  }
+
+  friend std::shared_ptr<Number> pow(const std::shared_ptr<Number>& lhs,
+    const int& rhs) {
+    return lhs->pow(Number::spawn(rhs));
+  }
+
+  friend std::shared_ptr<Number> pow(const int& lhs,
+    const std::shared_ptr<Number>& rhs) {
+    return rhs->pow(Number::spawn(lhs));
   }
 
   // pre-increment
@@ -568,7 +768,7 @@ class Number : public Object {
     return *lhs >> *rhs;
   }
 
-  std::shared_ptr<Number> operator|(const Number& other) {
+  std::shared_ptr<Number> operator|(const Number& other) const {
     return std::visit([other](auto&& arg) -> std::shared_ptr<Number> {
       using T = std::decay_t<decltype(arg)>;
       if constexpr (std::is_same_v<T, double>) {
@@ -586,6 +786,33 @@ class Number : public Object {
     }, value_);
   }
 
+  std::shared_ptr<Number> operator|(const bool& other) const {
+    return operator|(Number(other? 1:0));
+  }
+  std::shared_ptr<Number> operator|(const int& other) const {
+    return operator|(Number(other));
+  }
+
+  friend std::shared_ptr<Number> operator|(const std::shared_ptr<Number>& lhs,
+    const bool& rhs) {
+    return lhs->operator|(Number(rhs? 1 : 0));
+  }
+
+  friend std::shared_ptr<Number> operator|(const bool& lhs,
+    const std::shared_ptr<Number>& rhs) {
+    return rhs->operator|(Number(lhs ? 1 : 0));
+  }
+
+  friend std::shared_ptr<Number> operator|(const std::shared_ptr<Number>& lhs,
+    const int& rhs) {
+    return lhs->operator|(Number(rhs));
+  }
+
+  friend std::shared_ptr<Number> operator|(const int& lhs,
+    const std::shared_ptr<Number>& rhs) {
+    return rhs->operator|(Number(lhs));
+  }
+
   friend std::shared_ptr<Number> operator|(const std::shared_ptr<Number>& a,
     const std::shared_ptr<Number>& b) {
     return *a | *b;
@@ -597,7 +824,24 @@ class Number : public Object {
     return std::shared_ptr<Number>(this, [](Number*){});
   }
 
-  std::shared_ptr<Number> operator&(const Number& other) {
+  std::shared_ptr<Number> operator|=(const bool& other) {
+    return operator|=(Number(other? 1:0));
+  }
+  std::shared_ptr<Number> operator|=(const int& other) {
+    return operator|=(Number(other));
+  }
+
+  friend std::shared_ptr<Number> operator|=(const std::shared_ptr<Number>& lhs,
+    const bool& rhs) {
+    return lhs->operator|=(Number(rhs? 1 : 0));
+  }
+
+  friend std::shared_ptr<Number> operator|=(const std::shared_ptr<Number>& lhs,
+    const int& rhs) {
+    return lhs->operator|=(Number(rhs));
+  }
+
+  std::shared_ptr<Number> operator&(const Number& other) const {
     return std::visit([other](auto&& arg) -> std::shared_ptr<Number> {
       using T = std::decay_t<decltype(arg)>;
       if constexpr (std::is_same_v<T, double>) {
@@ -615,6 +859,33 @@ class Number : public Object {
     }, value_);
   }
 
+  std::shared_ptr<Number> operator&(const bool& other) const {
+    return operator&(Number(other? 1:0));
+  }
+  std::shared_ptr<Number> operator&(const int& other) const {
+    return operator&(Number(other));
+  }
+
+  friend std::shared_ptr<Number> operator&(const std::shared_ptr<Number>& lhs,
+    const bool& rhs) {
+    return lhs->operator&(Number(rhs? 1 : 0));
+  }
+
+  friend std::shared_ptr<Number> operator&(const bool& lhs,
+    const std::shared_ptr<Number>& rhs) {
+    return rhs->operator&(Number(lhs ? 1 : 0));
+  }
+
+  friend std::shared_ptr<Number> operator&(const std::shared_ptr<Number>& lhs,
+    const int& rhs) {
+    return lhs->operator&(Number(rhs));
+  }
+
+  friend std::shared_ptr<Number> operator&(const int& lhs,
+    const std::shared_ptr<Number>& rhs) {
+    return rhs->operator&(Number(lhs));
+  }
+
   friend std::shared_ptr<Number> operator&(const std::shared_ptr<Number>& a,
     const std::shared_ptr<Number>& b) {
     return *a & *b;
@@ -626,7 +897,24 @@ class Number : public Object {
     return std::shared_ptr<Number>(this, [](Number*){});
   }
 
-  std::shared_ptr<Number> operator^(const Number& other) {
+  std::shared_ptr<Number> operator&=(const bool& other) {
+    return operator&=(Number(other? 1:0));
+  }
+  std::shared_ptr<Number> operator&=(const int& other) {
+    return operator&=(Number(other));
+  }
+
+  friend std::shared_ptr<Number> operator&=(const std::shared_ptr<Number>& lhs,
+    const bool& rhs) {
+    return lhs->operator&=(Number(rhs? 1 : 0));
+  }
+
+  friend std::shared_ptr<Number> operator&=(const std::shared_ptr<Number>& lhs,
+    const int& rhs) {
+    return lhs->operator&=(Number(rhs));
+  }
+
+  std::shared_ptr<Number> operator^(const Number& other) const {
     return std::visit([other](auto&& arg) -> std::shared_ptr<Number> {
       using T = std::decay_t<decltype(arg)>;
       if constexpr (std::is_same_v<T, double>) {
@@ -644,6 +932,33 @@ class Number : public Object {
     }, value_);
   }
 
+  std::shared_ptr<Number> operator^(const bool& other) const {
+    return operator^(Number(other? 1:0));
+  }
+  std::shared_ptr<Number> operator^(const int& other) const {
+    return operator^(Number(other));
+  }
+
+  friend std::shared_ptr<Number> operator^(const std::shared_ptr<Number>& lhs,
+    const bool& rhs) {
+    return lhs->operator^(Number(rhs? 1 : 0));
+  }
+
+  friend std::shared_ptr<Number> operator^(const bool& lhs,
+    const std::shared_ptr<Number>& rhs) {
+    return rhs->operator^(Number(lhs ? 1 : 0));
+  }
+
+  friend std::shared_ptr<Number> operator^(const std::shared_ptr<Number>& lhs,
+    const int& rhs) {
+    return lhs->operator^(Number(rhs));
+  }
+
+  friend std::shared_ptr<Number> operator^(const int& lhs,
+    const std::shared_ptr<Number>& rhs) {
+    return rhs->operator^(Number(lhs));
+  }
+
   friend std::shared_ptr<Number> operator^(const std::shared_ptr<Number>& a,
     const std::shared_ptr<Number>& b) {
     return *a ^ *b;
@@ -653,6 +968,23 @@ class Number : public Object {
     std::shared_ptr<Number> result = *this ^ other;
     value_ = result->value_;
     return std::shared_ptr<Number>(this, [](Number*){});
+  }
+
+  std::shared_ptr<Number> operator^=(const bool& other) {
+    return operator^=(Number(other? 1:0));
+  }
+  std::shared_ptr<Number> operator^=(const int& other) {
+    return operator^=(Number(other));
+  }
+
+  friend std::shared_ptr<Number> operator^=(const std::shared_ptr<Number>& lhs,
+    const bool& rhs) {
+    return lhs->operator^=(Number(rhs? 1 : 0));
+  }
+
+  friend std::shared_ptr<Number> operator^=(const std::shared_ptr<Number>& lhs,
+    const int& rhs) {
+    return lhs->operator^=(Number(rhs));
   }
 
   friend std::shared_ptr<Number> operator~(const std::shared_ptr<Number>& num) {

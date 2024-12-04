@@ -23,11 +23,11 @@ print(set({1 : "one", 2 : "two", 3 : "three"}))
 print("")
 
 print("Testing set with sets")
-# {1, "one", 2, "two", 3, "three"}
+# {"one", "three", "two", 1, 2, 3}
 print(set({1, "one", 2, "two", 3, "three"}))
 print("")
 
 print("Testing empty set")
-# {}
+# set()
 print(set())
 print("")

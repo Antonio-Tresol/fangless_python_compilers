@@ -24,23 +24,22 @@
 #include "String.hpp"
 #include "Tuple.hpp"
 
+
 // Namespace for builtin functions
 namespace BF {
-
-  std::string removeQuotesIfNeeded(const std::string& str) {
-    if ((str.front() == '"' && str.back() == '"')||
-        (str.front() == '\'' && str.back() == '\'')) {
-      return str.substr(1, str.size() - 2);
-    }
-    return str;
-  }
-
-
   std::shared_ptr<Number> abs(const std::shared_ptr<Number>& num) {
     if (num->isDouble()) {
       return Number::spawn(std::abs(num->getDouble()));
     }
     return Number::spawn(static_cast<int64_t>(std::abs(num->getInt())));
+  }
+
+  std::shared_ptr<Number> abs(const bool& num) {
+    return abs(Number::spawn(num? 1: 0));
+  }
+
+  std::shared_ptr<Number> abs(const int& num) {
+    return abs(Number::spawn(num));
   }
 
   std::shared_ptr<Bool> any(const std::shared_ptr<String>& string) {
@@ -78,6 +77,14 @@ namespace BF {
     return Bool::spawn(object->toBool());
   }
 
+  std::shared_ptr<Bool> bool_(const bool& object) {
+    return Bool::spawn(object);
+  }
+
+  std::shared_ptr<Bool> bool_(const int& object) {
+    return Bool::spawn(object? true : false);
+  }
+
   std::shared_ptr<Tuple> tuple(const std::shared_ptr<Dictionary>& items) {
     std::shared_ptr<List> keys = items->keys();
     return std::make_shared<Tuple>(keys->begin(), keys->end());
@@ -88,7 +95,11 @@ namespace BF {
     return std::make_shared<Tuple>(items->begin(), items->end());
   }
 
-  std::shared_ptr<String> type(const bool) {
+  std::shared_ptr<String> type(const bool&) {
+    return String::spawn("bool");
+  }
+
+  std::shared_ptr<String> type(const int&) {
     return String::spawn("bool");
   }
 
@@ -112,6 +123,18 @@ namespace BF {
     }
 
     return std::make_shared<std::wstring>(str);
+  }
+
+  std::shared_ptr<std::wstring> chr(const std::shared_ptr<Bool>& code) {
+    return chr(Number::spawn(code->toBool()? 1:0));
+  }
+
+  std::shared_ptr<std::wstring> chr(const bool& code) {
+    return chr(Number::spawn(code? 1:0));
+  }
+
+  std::shared_ptr<std::wstring> chr(const int& code) {
+    return chr(Number::spawn(code));
   }
 
   std::shared_ptr<Dictionary> dict() {
@@ -143,6 +166,83 @@ namespace BF {
     return Tuple::spawn({quotient, remainder});
   }
 
+  std::shared_ptr<Tuple> divmod(const std::shared_ptr<Number>& dividend,
+    const std::shared_ptr<Bool>& divisor) {
+    return divmod(dividend, Number::spawn(divisor->toBool()? 1 : 0));
+  }
+
+  std::shared_ptr<Tuple> divmod(const std::shared_ptr<Bool>& dividend,
+    const std::shared_ptr<Number>& divisor) {
+    return divmod(Number::spawn(dividend->toBool()? 1 : 0), divisor);
+  }
+
+  std::shared_ptr<Tuple> divmod(const std::shared_ptr<Bool>& dividend,
+    const std::shared_ptr<Bool>& divisor) {
+    return divmod(Number::spawn(dividend->toBool()? 1 : 0),
+      Number::spawn(divisor->toBool()? 1 : 0));
+  }
+
+  std::shared_ptr<Tuple> divmod(const std::shared_ptr<Number>& dividend,
+    const bool& divisor) {
+    return divmod(dividend, Number::spawn(divisor? 1 : 0));
+  }
+
+  std::shared_ptr<Tuple> divmod(const bool& dividend,
+    const std::shared_ptr<Number>& divisor) {
+    return divmod(Number::spawn(dividend? 1 : 0), divisor);
+  }
+
+  std::shared_ptr<Tuple> divmod(const bool& dividend,
+    const bool& divisor) {
+    return divmod(Number::spawn(dividend? 1 : 0),
+      Number::spawn(divisor? 1 : 0));
+  }
+
+  std::shared_ptr<Tuple> divmod(const std::shared_ptr<Number>& dividend,
+    const int& divisor) {
+    return divmod(dividend, Number::spawn(divisor));
+  }
+
+  std::shared_ptr<Tuple> divmod(const int& dividend,
+    const std::shared_ptr<Number>& divisor) {
+    return divmod(Number::spawn(dividend), divisor);
+  }
+
+  std::shared_ptr<Tuple> divmod(const int& dividend,
+    const int& divisor) {
+    return divmod(Number::spawn(dividend), Number::spawn(divisor));
+  }
+
+  std::shared_ptr<Tuple> divmod(const std::shared_ptr<Bool>& dividend,
+    const bool& divisor) {
+    return divmod(dividend, Number::spawn(divisor ? 1 : 0));
+  }
+
+  std::shared_ptr<Tuple> divmod(const bool& dividend,
+    const std::shared_ptr<Bool>& divisor) {
+      return divmod(Number::spawn(dividend ? 1 : 0), divisor);
+  }
+
+  std::shared_ptr<Tuple> divmod(const std::shared_ptr<Bool>& dividend,
+    const int& divisor) {
+    return divmod(Number::spawn(dividend->toBool() ? 1 : 0),
+      Number::spawn(divisor));
+  }
+
+  std::shared_ptr<Tuple> divmod(const int& dividend,
+    const std::shared_ptr<Bool>& divisor) {
+      return divmod(Number::spawn(dividend),
+        Number::spawn(divisor->toBool() ? 1 : 0));
+  }
+
+  std::shared_ptr<Tuple> divmod(const bool& dividend, const int& divisor) {
+    return divmod(Number::spawn(dividend ? 1 : 0), Number::spawn(divisor));
+  }
+
+  std::shared_ptr<Tuple> divmod(const int& dividend, const bool& divisor) {
+      return divmod(Number::spawn(dividend), Number::spawn(divisor ? 1 : 0));
+  }
+
   std::shared_ptr<List> enumerate(const std::shared_ptr<String>& items,
     std::shared_ptr<Number> start = Number::spawn(0)) {
     std::shared_ptr<List> result = List::spawn();
@@ -153,6 +253,21 @@ namespace BF {
     }
 
     return result;
+  }
+
+  std::shared_ptr<List> enumerate(const std::shared_ptr<String>& items,
+    const std::shared_ptr<Bool> start) {
+    return enumerate(items, Number::spawn(start->toBool()? 1: 0));
+  }
+
+  std::shared_ptr<List> enumerate(const std::shared_ptr<String>& items,
+    const bool& start) {
+    return enumerate(items, Number::spawn(start? 1: 0));
+  }
+
+  std::shared_ptr<List> enumerate(const std::shared_ptr<String>& items,
+    const int& start) {
+    return enumerate(items, Number::spawn(start));
   }
 
   std::shared_ptr<List> enumerate(const std::shared_ptr<Dictionary>& items,
@@ -168,6 +283,16 @@ namespace BF {
     return result;
   }
 
+  std::shared_ptr<List> enumerate(const std::shared_ptr<Dictionary>& items,
+    const bool& start) {
+    return enumerate(items, Number::spawn(start? 1: 0));
+  }
+
+  std::shared_ptr<List> enumerate(const std::shared_ptr<Dictionary>& items,
+    const int& start) {
+    return enumerate(items, Number::spawn(start));
+  }
+
   template<TIterable TType>
   std::shared_ptr<List> enumerate(const std::shared_ptr<TType>& items,
     std::shared_ptr<Number> start = Number::spawn(0)) {
@@ -181,6 +306,18 @@ namespace BF {
     return result;
   }
 
+  template<TIterable TType>
+  std::shared_ptr<List> enumerate(const std::shared_ptr<TType>& items,
+    const bool& start) {
+    return enumerate(items, Number::spawn(start? 1: 0));
+  }
+
+  template<TIterable TType>
+  std::shared_ptr<List> enumerate(const std::shared_ptr<TType>& items,
+    const int& start) {
+    return enumerate(items, Number::spawn(start));
+  }
+
   std::shared_ptr<Number> float_() {
     return Number::spawn(0.0);
   }
@@ -191,6 +328,14 @@ namespace BF {
 
   std::shared_ptr<Number> float_(const std::shared_ptr<Bool>& value) {
     return float_(Number::spawn((value->toBool())? 1.0 : 0.0));
+  }
+
+  std::shared_ptr<Number> float_(const bool& value) {
+    return float_(Number::spawn((value)? 1.0 : 0.0));
+  }
+
+  std::shared_ptr<Number> float_(const int& value) {
+    return float_(Number::spawn((value)));
   }
 
   std::shared_ptr<Number> float_(const std::shared_ptr<String>& value) {
@@ -243,6 +388,15 @@ namespace BF {
     return Number::spawn(static_cast<int64_t>(object->id_));
   }
 
+  const std::shared_ptr<Number> id(const bool& object) {
+    return Number::spawn(static_cast<int64_t>(Bool::spawn(object)->id_));
+  }
+
+  const std::shared_ptr<Number> id(const int& object) {
+    return Number::spawn(static_cast<int64_t>(
+      Bool::spawn(object? true:false)->id_));
+  }
+
   std::shared_ptr<String> input(const std::shared_ptr<String>& prompt) {
     std::string something;
 
@@ -275,14 +429,77 @@ namespace BF {
     return Number::spawn(result);
   }
 
+  std::shared_ptr<Number> int_(const std::shared_ptr<Number>& value,
+    const bool& base) {
+    return int_(value, Number::spawn(base? 1:0));
+  }
+
+  std::shared_ptr<Number> int_(const std::shared_ptr<Number>& value,
+    const int& base) {
+    return int_(value, Number::spawn(base));
+  }
+
   std::shared_ptr<Number> int_(const std::shared_ptr<Bool>& value,
     const std::shared_ptr<Number>& base = Number::spawn(10)) {
     return int_(Number::spawn((value->toBool())? 1:0), base);
   }
 
+  std::shared_ptr<Number> int_(const std::shared_ptr<Bool>& value,
+    const bool& base) {
+    return int_(Number::spawn((value->toBool())? 1:0),
+      Number::spawn(base? 1:0));
+  }
+
+  std::shared_ptr<Number> int_(const std::shared_ptr<Bool>& value,
+    const int& base) {
+    return int_(Number::spawn((value->toBool())? 1:0), Number::spawn(base));
+  }
+
+  std::shared_ptr<Number> int_(const bool& value,
+    const std::shared_ptr<Number>& base = Number::spawn(10)) {
+    return int_(Number::spawn((value? 1:0)), base);
+  }
+
+  std::shared_ptr<Number> int_(const bool& value,
+    const bool& base) {
+    return int_(Number::spawn(value? 1:0),
+      Number::spawn(base? 1:0));
+  }
+
+  std::shared_ptr<Number> int_(const bool& value,
+    const int& base) {
+    return int_(Number::spawn(value? 1:0), Number::spawn(base));
+  }
+
+  std::shared_ptr<Number> int_(const int& value,
+    const std::shared_ptr<Number>& base = Number::spawn(10)) {
+    return int_(Number::spawn((value)), base);
+  }
+
+  std::shared_ptr<Number> int_(const int& value,
+    const bool& base) {
+    return int_(Number::spawn(value),
+      Number::spawn(base? 1:0));
+  }
+
+  std::shared_ptr<Number> int_(const int& value,
+    const int& base) {
+    return int_(Number::spawn(value), Number::spawn(base));
+  }
+
   std::shared_ptr<Number> int_(const std::shared_ptr<String>& value,
     const std::shared_ptr<Number>& base = Number::spawn(10)) {
     return Number::spawn(std::stoi(**value, nullptr, base->getInt()));
+  }
+
+  std::shared_ptr<Number> int_(const std::shared_ptr<String>& value,
+    const bool& base) {
+    return int_(value, Number::spawn(base? 1:0));
+  }
+
+  std::shared_ptr<Number> int_(const std::shared_ptr<String>& value,
+    const int& base) {
+    return int_(value, Number::spawn(base));
   }
   
   template<TIterable TType>
@@ -402,15 +619,546 @@ namespace BF {
     return base->pow(exponent);
   }
 
+  std::shared_ptr<Number> pow(const std::shared_ptr<Bool>& base,
+    const std::shared_ptr<Number>& exponent) {
+    return Number::spawn(base->toBool()? 1:0)->pow(exponent);
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Number>& base,
+    const std::shared_ptr<Bool>& exponent) {
+    return base->pow(Number::spawn(exponent->toBool()? 1:0));
+  }
+
+  std::shared_ptr<Number> pow(const bool& base,
+    const std::shared_ptr<Number>& exponent) {
+    return Number::spawn(base? 1:0)->pow(exponent);
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Number>& base,
+    const bool& exponent) {
+    return base->pow(Number::spawn(exponent? 1:0));
+  }
+
+  std::shared_ptr<Number> pow(const bool& base,
+    const bool& exponent) {
+    return Number::spawn(base? 1:0)->pow(Number::spawn(exponent? 1:0));
+  }
+
+  std::shared_ptr<Number> pow(const int& base,
+    const std::shared_ptr<Number>& exponent) {
+    return Number::spawn(base)->pow(exponent);
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Number>& base,
+    const int& exponent) {
+    return base->pow(Number::spawn(exponent));
+  }
+
+  std::shared_ptr<Number> pow(const int& base,
+    const int& exponent) {
+    return Number::spawn(base)->pow(Number::spawn(exponent));
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Bool>& base,
+    const bool& exponent) {
+    return Number::spawn(base->toBool() ? 1 : 0)->pow(
+      Number::spawn(exponent ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const bool& base,
+    const std::shared_ptr<Bool>& exponent) {
+      return Number::spawn(base ? 1 : 0)->pow(
+        Number::spawn(exponent->toBool() ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Bool>& base,
+    const int& exponent) {
+    return Number::spawn(base->toBool() ? 1 : 0)->pow(Number::spawn(exponent));
+  }
+
+  std::shared_ptr<Number> pow(const int& base,
+    const std::shared_ptr<Bool>& exponent) {
+    return Number::spawn(base)->pow(Number::spawn(exponent->toBool() ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const bool& base, const int& exponent) {
+    return Number::spawn(base ? 1 : 0)->pow(Number::spawn(exponent));
+  }
+
+  std::shared_ptr<Number> pow(const int& base, const bool& exponent) {
+      return Number::spawn(base)->pow(Number::spawn(exponent ? 1 : 0));
+  }
+
   std::shared_ptr<Number> pow(const std::shared_ptr<Number>& base,
     const std::shared_ptr<Number>& exponent,
     const std::shared_ptr<Number>& modulus) {
     return base->pow(exponent) % modulus;
   }
 
+  std::shared_ptr<Number> pow(const std::shared_ptr<Bool>& base,
+    const std::shared_ptr<Number>& exponent,
+    const std::shared_ptr<Number>& modulus) {
+    return pow(Number::spawn(base->toBool()? 1:0), exponent, modulus);
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Number>& base,
+    const std::shared_ptr<Bool>& exponent,
+    const std::shared_ptr<Number>& modulus) {
+    return pow(base, Number::spawn(exponent->toBool() ? 1 : 0), modulus);
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Number>& base,
+    const std::shared_ptr<Number>& exponent,
+    const std::shared_ptr<Bool>& modulus) {
+    return pow(base, exponent, Number::spawn(modulus->toBool() ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Bool>& base,
+    const std::shared_ptr<Bool>& exponent,
+    const std::shared_ptr<Number>& modulus) {
+    return pow(Number::spawn(base->toBool() ? 1 : 0),
+      Number::spawn(exponent->toBool() ? 1 : 0), modulus);
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Bool>& base,
+    const std::shared_ptr<Number>& exponent,
+    const std::shared_ptr<Bool>& modulus) {
+    return pow(Number::spawn(base->toBool() ? 1 : 0), exponent,
+      Number::spawn(modulus->toBool() ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Number>& base,
+    const std::shared_ptr<Bool>& exponent,
+    const std::shared_ptr<Bool>& modulus) {
+    return pow(base, Number::spawn(exponent->toBool() ? 1 : 0),
+      Number::spawn(modulus->toBool() ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Bool>& base,
+    const std::shared_ptr<Bool>& exponent,
+    const std::shared_ptr<Bool>& modulus) {
+    return pow(Number::spawn(base->toBool() ? 1 : 0),
+      Number::spawn(exponent->toBool() ? 1 : 0),
+      Number::spawn(modulus->toBool() ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const bool& base,
+    const std::shared_ptr<Number>& exponent,
+    const std::shared_ptr<Number>& modulus) {
+    return pow(Number::spawn(base ? 1 : 0), exponent, modulus);
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Number>& base,
+    const bool& exponent, const std::shared_ptr<Number>& modulus) {
+    return pow(base, Number::spawn(exponent ? 1 : 0), modulus);
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Number>& base,
+    const std::shared_ptr<Number>& exponent, const bool& modulus) {
+    return pow(base, exponent, Number::spawn(modulus ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const bool& base, const bool& exponent,
+    const std::shared_ptr<Number>& modulus) {
+    return pow(Number::spawn(base ? 1 : 0),
+      Number::spawn(exponent ? 1 : 0), modulus);
+  }
+
+  std::shared_ptr<Number> pow(const bool& base,
+    const std::shared_ptr<Number>& exponent, const bool& modulus) {
+    return pow(Number::spawn(base ? 1 : 0), exponent,
+      Number::spawn(modulus ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Number>& base,
+    const bool& exponent, const bool& modulus) {
+    return pow(base, Number::spawn(exponent ? 1 : 0),
+      Number::spawn(modulus ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const bool& base, const bool& exponent,
+    const bool& modulus) {
+    return pow(Number::spawn(base ? 1 : 0), Number::spawn(exponent ? 1 : 0),
+      Number::spawn(modulus ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const int& base,
+    const std::shared_ptr<Number>& exponent,
+    const std::shared_ptr<Number>& modulus) {
+    return pow(Number::spawn(base), exponent, modulus);
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Number>& base,
+    const int& exponent, const std::shared_ptr<Number>& modulus) {
+    return pow(base, Number::spawn(exponent), modulus);
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Number>& base,
+    const std::shared_ptr<Number>& exponent, const int& modulus) {
+    return pow(base, exponent, Number::spawn(modulus));
+  }
+
+  std::shared_ptr<Number> pow(const int& base, const int& exponent,
+    const std::shared_ptr<Number>& modulus) {
+    return pow(Number::spawn(base), Number::spawn(exponent), modulus);
+  }
+
+  std::shared_ptr<Number> pow(const int& base,
+    const std::shared_ptr<Number>& exponent, const int& modulus) {
+    return pow(Number::spawn(base), exponent, Number::spawn(modulus));
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Number>& base,
+    const int& exponent, const int& modulus) {
+    return pow(base, Number::spawn(exponent), Number::spawn(modulus));
+  }
+
+  std::shared_ptr<Number> pow(const int& base, const int& exponent,
+    const int& modulus) {
+    return pow(Number::spawn(base), Number::spawn(exponent),
+      Number::spawn(modulus));
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Number>& base,
+    const std::shared_ptr<Bool>& exponent, const bool& modulus) {
+    return pow(base, Number::spawn(exponent->toBool() ? 1 : 0),
+      Number::spawn(modulus ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Number>& base,
+    const std::shared_ptr<Bool>& exponent, const int& modulus) {
+    return pow(base, Number::spawn(exponent->toBool() ? 1 : 0),
+      Number::spawn(modulus));
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Number>& base,
+    const bool& exponent, const std::shared_ptr<Bool>& modulus) {
+    return pow(base, Number::spawn(exponent ? 1 : 0),
+      Number::spawn(modulus->toBool() ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Number>& base,
+    const bool& exponent, const int& modulus) {
+    return pow(base, Number::spawn(exponent ? 1 : 0),
+      Number::spawn(modulus));
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Number>& base,
+    const int& exponent, const std::shared_ptr<Bool>& modulus) {
+    return pow(base, Number::spawn(exponent),
+      Number::spawn(modulus->toBool() ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Number>& base,
+    const int& exponent, const bool& modulus) {
+    return pow(base, Number::spawn(exponent), Number::spawn(modulus ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Bool>& base,
+    const std::shared_ptr<Number>& exponent, const bool& modulus) {
+    return pow(Number::spawn(base->toBool() ? 1 : 0), exponent,
+      Number::spawn(modulus ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Bool>& base,
+    const std::shared_ptr<Number>& exponent, const int& modulus) {
+    return pow(Number::spawn(base->toBool() ? 1 : 0), exponent,
+      Number::spawn(modulus));
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Bool>& base,
+    const std::shared_ptr<Bool>& exponent, const bool& modulus) {
+    return pow(Number::spawn(base->toBool() ? 1 : 0),
+      Number::spawn(exponent->toBool() ? 1 : 0),
+      Number::spawn(modulus ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Bool>& base,
+    const std::shared_ptr<Bool>& exponent, const int& modulus) {
+    return pow(Number::spawn(base->toBool() ? 1 : 0),
+      Number::spawn(exponent->toBool() ? 1 : 0), Number::spawn(modulus));
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Bool>& base,
+    const bool& exponent, const std::shared_ptr<Number>& modulus) {
+    return pow(Number::spawn(base->toBool() ? 1 : 0),
+      Number::spawn(exponent ? 1 : 0), modulus);
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Bool>& base,
+    const bool& exponent, const std::shared_ptr<Bool>& modulus) {
+    return pow(Number::spawn(base->toBool() ? 1 : 0),
+      Number::spawn(exponent ? 1 : 0),
+      Number::spawn(modulus->toBool() ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Bool>& base,
+    const bool& exponent, const bool& modulus) {
+    return pow(Number::spawn(base->toBool() ? 1 : 0),
+      Number::spawn(exponent ? 1 : 0), Number::spawn(modulus ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Bool>& base,
+    const bool& exponent, const int& modulus) {
+    return pow(Number::spawn(base->toBool() ? 1 : 0),
+      Number::spawn(exponent ? 1 : 0), Number::spawn(modulus));
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Bool>& base,
+    const int& exponent, const std::shared_ptr<Number>& modulus) {
+    return pow(Number::spawn(base->toBool() ? 1 : 0),
+      Number::spawn(exponent), modulus);
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Bool>& base,
+    const int& exponent, const std::shared_ptr<Bool>& modulus) {
+    return pow(Number::spawn(base->toBool() ? 1 : 0),
+      Number::spawn(exponent), Number::spawn(modulus->toBool() ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Bool>& base,
+    const int& exponent, const bool& modulus) {
+    return pow(Number::spawn(base->toBool() ? 1 : 0),
+      Number::spawn(exponent), Number::spawn(modulus ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const std::shared_ptr<Bool>& base,
+    const int& exponent, const int& modulus) {
+    return pow(Number::spawn(base->toBool() ? 1 : 0),
+      Number::spawn(exponent), Number::spawn(modulus));
+  }
+
+  std::shared_ptr<Number> pow(const bool& base,
+    const std::shared_ptr<Number>& exponent,
+    const std::shared_ptr<Bool>& modulus) {
+    return pow(Number::spawn(base ? 1 : 0),
+      exponent, Number::spawn(modulus->toBool() ? 1 : 0));
+}
+
+  std::shared_ptr<Number> pow(const bool& base,
+    const std::shared_ptr<Number>& exponent, const int& modulus) {
+    return pow(Number::spawn(base ? 1 : 0), exponent, Number::spawn(modulus));
+  }
+
+  std::shared_ptr<Number> pow(const bool& base,
+    const std::shared_ptr<Bool>& exponent,
+    const std::shared_ptr<Number>& modulus) {
+    return pow(Number::spawn(base ? 1 : 0),
+      Number::spawn(exponent->toBool() ? 1 : 0), modulus);
+  }
+
+  std::shared_ptr<Number> pow(const bool& base,
+    const std::shared_ptr<Bool>& exponent,
+    const std::shared_ptr<Bool>& modulus) {
+    return pow(Number::spawn(base ? 1 : 0),
+      Number::spawn(exponent->toBool() ? 1 : 0), Number::spawn(modulus->toBool() ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const bool& base,
+    const std::shared_ptr<Bool>& exponent, const bool& modulus) {
+    return pow(Number::spawn(base ? 1 : 0),
+      Number::spawn(exponent->toBool() ? 1 : 0),
+      Number::spawn(modulus ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const bool& base,
+    const std::shared_ptr<Bool>& exponent, const int& modulus) {
+    return pow(Number::spawn(base ? 1 : 0),
+      Number::spawn(exponent->toBool() ? 1 : 0), Number::spawn(modulus));
+  }
+
+  std::shared_ptr<Number> pow(const bool& base,
+    const bool& exponent, const std::shared_ptr<Bool>& modulus) {
+    return pow(Number::spawn(base ? 1 : 0), Number::spawn(exponent ? 1 : 0),
+      Number::spawn(modulus->toBool() ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const bool& base, const bool& exponent,
+    const int& modulus) {
+    return pow(Number::spawn(base ? 1 : 0), Number::spawn(exponent ? 1 : 0),
+      Number::spawn(modulus));
+  }
+
+  std::shared_ptr<Number> pow(const bool& base, const int& exponent,
+    const std::shared_ptr<Number>& modulus) {
+    return pow(Number::spawn(base ? 1 : 0), Number::spawn(exponent), modulus);
+  }
+
+  std::shared_ptr<Number> pow(const bool& base, const int& exponent,
+    const std::shared_ptr<Bool>& modulus) {
+    return pow(Number::spawn(base ? 1 : 0), Number::spawn(exponent),
+      Number::spawn(modulus->toBool() ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const bool& base, const int& exponent,
+    const bool& modulus) {
+    return pow(Number::spawn(base ? 1 : 0), Number::spawn(exponent),
+      Number::spawn(modulus ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const bool& base, const int& exponent,
+    const int& modulus) {
+    return pow(Number::spawn(base ? 1 : 0), Number::spawn(exponent),
+      Number::spawn(modulus));
+  }
+
+  std::shared_ptr<Number> pow(const int& base,
+    const std::shared_ptr<Number>& exponent,
+    const std::shared_ptr<Bool>& modulus) {
+    return pow(Number::spawn(base), exponent,
+      Number::spawn(modulus->toBool() ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const int& base,
+    const std::shared_ptr<Number>& exponent, const bool& modulus) {
+    return pow(Number::spawn(base), exponent, Number::spawn(modulus ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const int& base,
+    const std::shared_ptr<Bool>& exponent,
+    const std::shared_ptr<Number>& modulus) {
+    return pow(Number::spawn(base), Number::spawn(exponent->toBool() ? 1 : 0),
+      modulus);
+  }
+
+  std::shared_ptr<Number> pow(const int& base,
+    const std::shared_ptr<Bool>& exponent,
+    const std::shared_ptr<Bool>& modulus) {
+    return pow(Number::spawn(base), Number::spawn(exponent->toBool() ? 1 : 0),
+      Number::spawn(modulus->toBool() ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const int& base,
+    const std::shared_ptr<Bool>& exponent, const bool& modulus) {
+    return pow(Number::spawn(base), Number::spawn(exponent->toBool() ? 1 : 0),
+      Number::spawn(modulus ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const int& base,
+    const std::shared_ptr<Bool>& exponent, const int& modulus) {
+    return pow(Number::spawn(base), Number::spawn(exponent->toBool() ? 1 : 0),
+      Number::spawn(modulus));
+  }
+
+  std::shared_ptr<Number> pow(const int& base, const bool& exponent,
+    const std::shared_ptr<Number>& modulus) {
+    return pow(Number::spawn(base), Number::spawn(exponent ? 1 : 0), modulus);
+  }
+
+  std::shared_ptr<Number> pow(const int& base, const bool& exponent,
+    const std::shared_ptr<Bool>& modulus) {
+    return pow(Number::spawn(base), Number::spawn(exponent ? 1 : 0),
+      Number::spawn(modulus->toBool() ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const int& base, const bool& exponent,
+    const bool& modulus) {
+    return pow(Number::spawn(base), Number::spawn(exponent ? 1 : 0),
+      Number::spawn(modulus ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const int& base, const bool& exponent,
+    const int& modulus) {
+    return pow(Number::spawn(base), Number::spawn(exponent ? 1 : 0),
+      Number::spawn(modulus));
+  }
+
+  std::shared_ptr<Number> pow(const int& base, const int& exponent,
+    const std::shared_ptr<Bool>& modulus) {
+    return pow(Number::spawn(base), Number::spawn(exponent),
+      Number::spawn(modulus->toBool() ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> pow(const int& base, const int& exponent,
+    const bool& modulus) {
+    return pow(Number::spawn(base), Number::spawn(exponent),
+      Number::spawn(modulus ? 1 : 0));
+  }
+
   std::shared_ptr<Number> intDiv(const std::shared_ptr<Number>& dividend,
     const std::shared_ptr<Number>& divisor) {
     return Number::spawn(dividend->getInt() / divisor->getInt());
+  }
+
+  std::shared_ptr<Number> intDiv(const std::shared_ptr<Bool>& dividend,
+    const std::shared_ptr<Number>& divisor) {
+    return intDiv(Number::spawn(dividend->toBool()? 1:0), divisor);
+  }
+
+  std::shared_ptr<Number> intDiv(const std::shared_ptr<Number>& dividend,
+    const std::shared_ptr<Bool>& divisor) {
+    return intDiv(dividend, Number::spawn(divisor->toBool()? 1:0));
+  }
+
+  std::shared_ptr<Number> intDiv(const std::shared_ptr<Bool>& dividend,
+    const std::shared_ptr<Bool>& divisor) {
+    return intDiv(Number::spawn(dividend->toBool()? 1:0),
+      Number::spawn(divisor->toBool()? 1:0));
+  }
+
+  std::shared_ptr<Number> intDiv(const bool& dividend,
+    const std::shared_ptr<Number>& divisor) {
+    return intDiv(Number::spawn(dividend? 1:0), divisor);
+  }
+
+  std::shared_ptr<Number> intDiv(const std::shared_ptr<Number>& dividend,
+    const bool& divisor) {
+    return intDiv(dividend, Number::spawn(divisor? 1:0));
+  }
+
+  std::shared_ptr<Number> intDiv(const bool& dividend,
+    const bool& divisor) {
+    return intDiv(Number::spawn(dividend? 1:0),
+      Number::spawn(divisor? 1:0));
+  }
+
+  std::shared_ptr<Number> intDiv(const int& dividend,
+    const std::shared_ptr<Number>& divisor) {
+    return intDiv(Number::spawn(dividend), divisor);
+  }
+
+  std::shared_ptr<Number> intDiv(const std::shared_ptr<Number>& dividend,
+    const int& divisor) {
+    return intDiv(dividend, Number::spawn(divisor));
+  }
+
+  std::shared_ptr<Number> intDiv(const int& dividend,
+    const int& divisor) {
+    return intDiv(Number::spawn(dividend),
+      Number::spawn(divisor));
+  }
+
+  std::shared_ptr<Number> intDiv(const std::shared_ptr<Bool>& dividend,
+    const bool& divisor) {
+    return intDiv(Number::spawn(dividend->toBool() ? 1 : 0),
+      Number::spawn(divisor ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> intDiv(const std::shared_ptr<Bool>& dividend,
+    const int& divisor) {
+    return intDiv(Number::spawn(dividend->toBool() ? 1 : 0),
+      Number::spawn(divisor));
+  }
+
+  std::shared_ptr<Number> intDiv(const bool& dividend,
+    const std::shared_ptr<Bool>& divisor) {
+    return intDiv(Number::spawn(dividend ? 1 : 0),
+      Number::spawn(divisor->toBool() ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> intDiv(const bool& dividend, const int& divisor) {
+    return intDiv(Number::spawn(dividend ? 1 : 0),
+      Number::spawn(divisor));
+  }
+
+  std::shared_ptr<Number> intDiv(const int& dividend,
+    const std::shared_ptr<Bool>& divisor) {
+    return intDiv(Number::spawn(dividend),
+      Number::spawn(divisor->toBool() ? 1 : 0));
+  }
+
+  std::shared_ptr<Number> intDiv(const int& dividend, const bool& divisor) {
+    return intDiv(Number::spawn(dividend), Number::spawn(divisor ? 1 : 0));
   }
 
   std::shared_ptr<None> print() {
@@ -426,7 +1174,7 @@ namespace BF {
   std::shared_ptr<None> print(const std::shared_ptr<String>& object) {
     // if the string stars and ends with a quote, remove them
     std::string str = **object;
-    str = removeQuotesIfNeeded(str); 
+    str = Function::removeQuotesIfNeeded(str); 
     std::cout << str << std::endl;
     return None::spawn();
   }
@@ -435,7 +1183,7 @@ namespace BF {
     // if type is string, remove quotes
     if (auto strPtr = std::dynamic_pointer_cast<String>(object)) {
       std::string str = **strPtr;
-      str = removeQuotesIfNeeded(str); 
+      str = Function::removeQuotesIfNeeded(str); 
       std::cout << str << std::endl;
       return None::spawn();
     }
@@ -448,7 +1196,7 @@ namespace BF {
     return None::spawn();
   }
 
-  std::shared_ptr<None> print(const int integer) {
+  std::shared_ptr<None> print(const int& integer) {
     std::cout << integer << std::endl;
     return None::spawn();
   }
@@ -486,7 +1234,7 @@ namespace BF {
         // if type is string, remove quotes
         if (auto strPtr = std::dynamic_pointer_cast<String>(objPtr)) {
           std::string str = **strPtr;
-          std::cout << removeQuotesIfNeeded(str) << std::endl;
+          std::cout << Function::removeQuotesIfNeeded(str) << std::endl;
         } else {
           std::cout << objPtr->toString().c_str() << std::endl;
         }
@@ -593,6 +1341,71 @@ namespace BF {
       value * scale)) / scale);
   }
 
+  std::shared_ptr<Number> round(const std::shared_ptr<Bool>& num,
+    const std::shared_ptr<Number>& decimals = Number::spawn(0)) {
+    return round(Number::spawn(num->toBool()? 1:0), decimals);
+  }
+
+  std::shared_ptr<Number> round(const std::shared_ptr<Bool>& num,
+    const std::shared_ptr<Bool>& decimals) {
+    return round(Number::spawn(num->toBool()? 1:0),
+      Number::spawn(decimals->toBool()? 1:0));
+  }
+
+  std::shared_ptr<Number> round(const bool& num,
+    const std::shared_ptr<Number>& decimals = Number::spawn(0)) {
+    return round(Number::spawn(num? 1:0), decimals);
+  }
+
+  std::shared_ptr<Number> round(const bool& num,
+    const bool& decimals) {
+    return round(Number::spawn(num? 1:0),
+      Number::spawn(decimals? 1:0));
+  }
+
+  std::shared_ptr<Number> round(const int& num,
+    const std::shared_ptr<Number>& decimals = Number::spawn(0)) {
+    return round(Number::spawn(num), decimals);
+  }
+
+  std::shared_ptr<Number> round(const int& num,
+    const int& decimals) {
+    return round(Number::spawn(num),
+      Number::spawn(decimals));
+  }
+
+  std::shared_ptr<Number> round(const std::shared_ptr<Bool>& num,
+    const int& decimals) {
+    return round(Number::spawn(num->toBool()? 1 : 0), Number::spawn(decimals));
+  }
+
+  std::shared_ptr<Number> round(const int& num,
+    const std::shared_ptr<Bool>& decimals) {
+    return round(Number::spawn(num), Number::spawn(decimals->toBool()? 1 : 0));
+  }
+
+  std::shared_ptr<Number> round(const bool& num,
+    const int& decimals) {
+    return round(Number::spawn(num? 1 : 0), Number::spawn(decimals));
+  }
+
+  std::shared_ptr<Number> round(const int& num,
+    const bool& decimals) {
+    return round(Number::spawn(num), Number::spawn(decimals? 1 : 0));
+  }
+
+  std::shared_ptr<Number> round(const bool& num,
+    const std::shared_ptr<Bool>& decimals) {
+    return round(Number::spawn(num? 1 : 0),
+      Number::spawn(decimals->toBool()? 1 : 0));
+  }
+
+  std::shared_ptr<Number> round(const std::shared_ptr<Bool>& num,
+    const bool& decimals) {
+    return round(Number::spawn(num->toBool()? 1 : 0),
+      Number::spawn(decimals? 1 : 0));
+  }
+
   std::shared_ptr<Set> set() {
     return Set::spawn();
   }
@@ -629,6 +1442,16 @@ namespace BF {
     return result;
   }
 
+  std::shared_ptr<String> sorted(
+    const std::shared_ptr<String>& structure,
+    const std::shared_ptr<Bool>& reverse = Bool::spawn(false)) {
+    std::string result = **structure;
+    std::sort(result.begin(), result.end());
+
+    std::shared_ptr<String> realResult = String::spawn(result);
+    return (!reverse->toBool()? realResult : reversed(realResult));
+  }
+
   std::shared_ptr<List> sorted(
     const std::shared_ptr<Dictionary>& structure,
     const std::shared_ptr<Bool>& reverse = Bool::spawn(false)) {
@@ -645,7 +1468,7 @@ namespace BF {
     }
 
     std::sort(result->begin(), result->end());
-    return (!reverse? result : reversed(result));
+    return (!reverse->toBool()? result : reversed(result));
   }
 
   std::shared_ptr<String> str() {
@@ -654,6 +1477,14 @@ namespace BF {
 
   std::shared_ptr<String> str(const std::shared_ptr<Object>& object) {
     return String::spawn(object->toString());
+  }
+
+  std::shared_ptr<String> str(const bool& object) {
+    return String::spawn(object? "True" : "False");
+  }
+
+  std::shared_ptr<String> str(const int& object) {
+    return String::spawn(std::to_string(object));
   }
 
   std::shared_ptr<Number> sum(
@@ -669,6 +1500,24 @@ namespace BF {
     return result;
   }
 
+  std::shared_ptr<Number> sum(
+    const std::shared_ptr<Dictionary>& numbers,
+    const std::shared_ptr<Bool>& extra) {
+    return sum(numbers, Number::spawn(extra->toBool()? 1:0));
+  }
+
+  std::shared_ptr<Number> sum(
+    const std::shared_ptr<Dictionary>& numbers,
+    const bool& extra) {
+    return sum(numbers, Number::spawn(extra? 1:0));
+  }
+
+  std::shared_ptr<Number> sum(
+    const std::shared_ptr<Dictionary>& numbers,
+    const int& extra) {
+    return sum(numbers, Number::spawn(extra));
+  }
+
   template<TIterable TType>
   std::shared_ptr<Number> sum(
     const std::shared_ptr<TType>& numbers,
@@ -680,6 +1529,27 @@ namespace BF {
     }
 
     return result;
+  }
+
+  template<TIterable TType>
+  std::shared_ptr<Number> sum(
+    const std::shared_ptr<TType>& numbers,
+    const std::shared_ptr<Bool>& extra) {
+    return sum(numbers, Number::spawn(extra->toBool()? 1:0));
+  }
+
+  template<TIterable TType>
+  std::shared_ptr<Number> sum(
+    const std::shared_ptr<TType>& numbers,
+    const bool& extra) {
+    return sum(numbers, Number::spawn(extra? 1:0));
+  }
+
+  template<TIterable TType>
+  std::shared_ptr<Number> sum(
+    const std::shared_ptr<TType>& numbers,
+    const int& extra) {
+    return sum(numbers, Number::spawn(extra));
   }
 
   std::shared_ptr<Tuple> tuple() {
@@ -716,7 +1586,6 @@ namespace BF {
     return Bool::spawn(it != structure->end());
   }
 
-
   std::shared_ptr<Bool> is(const std::shared_ptr<Object>& first,
     const std::shared_ptr<Object>& second) {
     if (first->isNone()) return Bool::spawn(second->isNone());
@@ -724,6 +1593,46 @@ namespace BF {
     if (second->isNone()) return Bool::spawn(first->isNone());
 
     return Bool::spawn(first.get() == second.get());
+  }
+
+  std::shared_ptr<Bool> is(const bool&,
+    const std::shared_ptr<Object>&) {
+    return Bool::spawn(false);
+  }
+
+  std::shared_ptr<Bool> is(const std::shared_ptr<Object>&,
+    const bool&) {
+    return Bool::spawn(false);
+  }
+
+  std::shared_ptr<Bool> is(const bool& first,
+    const bool& second) {
+    return Bool::spawn(&first == &second);
+  }
+
+  std::shared_ptr<Bool> is(const int&,
+    const std::shared_ptr<Object>&) {
+    return Bool::spawn(false);
+  }
+
+  std::shared_ptr<Bool> is(const std::shared_ptr<Object>&,
+    const int&) {
+    return Bool::spawn(false);
+  }
+
+  std::shared_ptr<Bool> is(const int& first,
+    const int& second) {
+    return Bool::spawn(&first == &second);
+  }
+
+  std::shared_ptr<Bool> is(const int&,
+    const bool&) {
+    return Bool::spawn(false);
+  }
+
+  std::shared_ptr<Bool> is(const bool&,
+    const int&) {
+    return Bool::spawn(false);
   }
 };
 

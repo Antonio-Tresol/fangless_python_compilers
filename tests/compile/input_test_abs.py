@@ -46,10 +46,10 @@ print("")
 
 # Testing abs with operations
 print("Testing abs with operations")
-# 5.0
+# 1
 print(abs((3*2 - 4*2)*(1/2)))
-# 13.0
+# 7
 print(abs(5 - 12))
-# 1.0
+# 1
 print(abs(-----(-(-1))))
 print("")

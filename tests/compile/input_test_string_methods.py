@@ -42,7 +42,7 @@ print("hello world".split())              # Outputs: ['hello', 'world']
 print("hello world".split(" ", 1))        # Outputs: ['hello', 'world']
 
 # capitalize
-print("capitalize example:")
+print("\ncapitalize example:")
 print("hello world".capitalize())  # Outputs: "Hello world"
 
 # casefold

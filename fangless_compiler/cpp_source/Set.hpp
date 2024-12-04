@@ -31,6 +31,10 @@ class Set final : public Object {
   std::string type() const override { return "Set"; }
 
   std::string toString() const override {
+    if (elements_.empty()) {
+      return "set()";
+    }
+
     std::string result = "{";
     bool first = true;
 
@@ -320,7 +324,7 @@ class Set final : public Object {
   }
 
   void update(const std::shared_ptr<Set>& first) {
-      if (first && first.get() != this) {
+      if (first.get() != nullptr && (first.get() != this)) {
           auto copy = *first;
           *this |= copy;
       }

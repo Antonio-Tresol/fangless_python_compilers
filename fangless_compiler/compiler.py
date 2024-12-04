@@ -64,14 +64,14 @@ class FanglessCompiler:
                 check=True,
             )
         except subprocess.CalledProcessError as e:
-            common.print_error("Could not call clang-format")
+            common.print_error("Could not use clang-format")
             print(e.stderr)
             if cs.VERBOSE_COMPILER:
                 print(common.color_yellow("Unformatted code:"))
                 print(code)
 
         except FileNotFoundError:
-            common.print_error("Could not find clang-format")
+            common.print_error("Could not use clang-format")
             if cs.VERBOSE_COMPILER:
                 print(common.color_yellow("Unformatted code:"))
                 print(code)

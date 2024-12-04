@@ -50,8 +50,8 @@ class Object {
     throw std::runtime_error("Cannot convert to tuple");
   } 
 
-  operator bool() const { return toBool(); }
-  operator std::string() const { return toString(); }
+  // explicit operator bool() const { return toBool(); }
+  // operator std::string() const { return toString(); }
 
   friend bool operator!(const std::shared_ptr<Object>& obj) {
     return !obj->toBool();
@@ -86,6 +86,14 @@ class Object {
     return equals(*other);
   }
 
+  bool operator==(const bool& other) const {
+    return toBool() == other;
+  }
+
+  bool operator!=(const bool other) const {
+    return toBool() != other;
+  }
+
   friend bool operator==(const std::shared_ptr<Object>& lhs,
                          const Object& rhs) {
     return rhs.equals(*lhs);
@@ -96,17 +104,40 @@ class Object {
     return rhs->equals(*lhs);
   }
 
-  template<typename ObjectA, typename ObjectB>
-  friend bool operator==(std::shared_ptr<ObjectA>& lhs, 
-                        std::shared_ptr<ObjectB>& rhs) {
-      return lhs->equals(*rhs);
+  friend bool operator==(const std::shared_ptr<Object>& lhs,
+                         const bool& rhs) {
+    return lhs->toBool() == rhs;
   }
-  
+
+  friend bool operator==(const bool& lhs,
+                         const std::shared_ptr<Object>& rhs) {
+    return rhs->toBool() == lhs;
+  }
+
+  friend bool operator==(const bool& lhs,
+                         const Object& rhs) {
+    return rhs.toBool() == lhs;
+  }
+
+  friend bool operator!=(const std::shared_ptr<Object>& lhs,
+                         const bool& rhs) {
+    return lhs->toBool() != rhs;
+  }
+
+  friend bool operator!=(const bool& lhs,
+                         const std::shared_ptr<Object>& rhs) {
+    return rhs->toBool() != lhs;
+  }
+
+  friend bool operator!=(const bool& lhs,
+                         const Object& rhs) {
+    return rhs.toBool() != lhs;
+  }
+
   friend std::ostream& operator<<(std::ostream& os, const Object& obj) {
     os << obj.toString();
     return os;
   }
-
 };
 
 std::ostream& operator<<(std::ostream& os, const std::shared_ptr<Object>& obj) {

@@ -13,21 +13,21 @@ def brocito(string: str, integer: int) -> str:
         print(charcito)
     return string
 
-# def brozote(amigos: list) -> list:
-#     string = "amigos: "
-#     for amigo in amigos:
-#         string = string + amigo + ", "
-#     return string
+def brozote(amigos: list) -> list:
+    string = "amigos: "
+    for amigo in amigos:
+        string = string + amigo + ", "
+    return string
 
 def brozote2(amigos: list, integer: int) -> list:
     num = 0
     amigos[0] = "Joe"
     return amigos * integer, integer + 3 + num
 
-# def brozote3(amigos: list, integer: int) -> list:
-#     num = 0
-#     amigos[0] = "sebas"
-#     print(bro(0))
+def brozote3(amigos: list, integer: int) -> list:
+    num = 0
+    amigos[0] = "sebas"
+    print(bro(0))
 
 def with_out_return():
     print("Hello")
@@ -41,11 +41,11 @@ a = ["sebas", "brandon", "jose"]
 number = 3
 print(bro(number))
 print(brocito("hola", 3))
-# asies = brozote(a)
-# print(asies)
+asies = brozote(a)
+print(asies)
 print(brozote2(a, 3))
-# asies2 = brozote3(a, 3)
-# print(asies2)
+asies2 = brozote3(a, 3)
+print(asies2)
 with_out_return()
 some = with_return()
 print(some)

@@ -71,5 +71,13 @@ namespace Function {
   bool boolEval(const std::shared_ptr<std::wstring>& obj) {
     return !obj->empty();
   }
+
+  std::string removeQuotesIfNeeded(const std::string& str) {
+  if ((str.front() == '"' && str.back() == '"')||
+      (str.front() == '\'' && str.back() == '\'')) {
+    return str.substr(1, str.size() - 2);
+  }
+    return str;
+  }
 }// namespace Function
 #endif  // FUNCTION_HPP

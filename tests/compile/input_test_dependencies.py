@@ -12,13 +12,14 @@ def func_a():
 
 def func_b():
     print("func_b")
-    func_f()
+    func_m()
     func_g()
 
 def func_c():
     print("func_c")
-    func_h()
-    func_a()
+    func_l()
+    func_f()
+    func_d()
 
 def func_d():
     print("func_d")
@@ -27,7 +28,7 @@ def func_d():
 
 def func_e():
     print("func_e")
-    func_j()
+    func_i()
     func_k()
 
 def func_f():
@@ -37,7 +38,8 @@ def func_f():
 
 def func_g():
     print("func_g")
-    func_l()
+    func_k()
+    func_e()
     func_m()
 
 def func_h():
@@ -57,7 +59,7 @@ def func_j():
 def func_k():
     print("func_k")
     func_i()
-    func_g()
+    func_o()
 
 def func_l():
     print("func_l")
@@ -67,12 +69,12 @@ def func_l():
 def func_m():
     print("func_m")
     func_e()
-    func_c()
+    func_o()
 
 def func_n():
     print("func_n")
-    func_f()
-    func_a()
+    func_b()
+    func_k()
 
 def func_o():
     print("func_o")

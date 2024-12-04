@@ -63,18 +63,16 @@ print(~len("test"))          # Expected: -5
 
 
 print("\nMixing Logical and Bitwise:")
-# print(~int(not 0))         # Expected: -2 (not 0 = True, int(True) = 1, ~1 = -2)
-# print(-int(not []))        # Expected: -1 (not [] = True, int(True) = 1, negated)
-# print(-bool(" "))          # Expected: -1 (non-empty string is True)
+print(~int(not 0))         # Expected: -2 (not 0 = True, int(True) = 1, ~1 = -2)
+print(-int(not []))        # Expected: -1 (not [] = True, int(True) = 1, negated)
+print(-bool(" "))          # Expected: -1 (non-empty string is True)
 
 
-# print("\nUnary Operations with Iterables:")
-# gen = range(3)
-# print(not any(gen))        # Expected: False (non-empty generator is truthy)
-# print(-min([10, 20, 5]))   # Expected: -5 (minimum value negated)
-# print(~max((1, 2, 3)))     # Expected: -4 (maximum value is 3, ~3 = -4)
+print("\nUnary Operations with Iterables:")
+gen = range(3)
+print(not any(gen))        # Expected: False (non-empty generator is truthy)
 
 
-# print("\nBitwise NOT with Shifts:")
-# print(~(2 << 3))           # Expected: -17 (2 << 3 = 16, ~16 = -17)
-# print(~(4 >> 1))           # Expected: -3 (4 >> 1 = 2, ~2 = -3)
+print("\nBitwise NOT with Shifts:")
+print(~(2 << 3))           # Expected: -17 (2 << 3 = 16, ~16 = -17)
+print(~(4 >> 1))           # Expected: -3 (4 >> 1 = 2, ~2 = -3)

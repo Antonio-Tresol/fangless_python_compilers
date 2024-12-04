@@ -18,9 +18,9 @@ else:
     print("woah, that was weird")
 
 
-if ("hola" == "mundo") and (True or False) or True:
+if ("hola" == "mundo") and ((True or False) or True):
     print("Antonio")
-elif (None and None and "Kenneth") == False:
+elif (True and False) == False:
     print("Not Antonio")
 elif ((6.7 + 4.7) - 97.3) > 5:
     "Antonio"
@@ -43,3 +43,6 @@ elif "Caballito" == "Zebra":
 else:
     "Joseph"
     print("Joseph")
+
+if (not True == False) == True:
+    print("Hooray")

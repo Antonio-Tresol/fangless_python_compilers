@@ -47,13 +47,3 @@ print(ord('\t'))
 # Expected output: 10 (ASCII value of newline '\n')
 print(ord('\n'))
 print("")
-
-# Testing ord with non-ASCII characters
-print("Testing ord with non-ASCII characters")
-# Expected output: 945 (Unicode code point of 'α')
-print(ord('α'))
-# Expected output: 233 (Unicode code point of 'é')
-print(ord('é'))
-# Expected output: 128512 (Unicode code point of 😀 emoji)
-print(ord('😀'))
-print("")

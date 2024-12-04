@@ -10,10 +10,10 @@ print((-3.2).imag())  # Outputs: 0.0
 
 # is_integer
 print("\nis_integer examples:")
-print((5.0).is_integer())  # Outputs: True (5.0 is equivalent to 5)
+print((5).is_integer())  # Outputs: True
 print((5.5).is_integer())  # Outputs: False (5.5 is not an integer)
-print((0.0).is_integer())  # Outputs: True
-print((-3.0).is_integer())  # Outputs: True
+print((0).is_integer())  # Outputs: True
+print((-3).is_integer())  # Outputs: True
 
 # real
 print("\nreal examples:")

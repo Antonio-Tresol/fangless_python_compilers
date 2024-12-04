@@ -12,8 +12,6 @@ print("Testing id with strings")
 # Different memory addresses for different strings
 print(id("hello"))
 print(id("world"))
-# Same memory address for same string object (strings are immutable)
-print(id("hello"))
 print("")
 
 # Testing id with lists

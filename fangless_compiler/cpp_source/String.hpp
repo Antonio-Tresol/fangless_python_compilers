@@ -7,6 +7,7 @@
 #include <compare>
 #include <string>
 
+#include "Function.hpp"
 #include "Iterable.hpp"
 #include "Tuple.hpp"
 #include "Bool.hpp"
@@ -206,12 +207,12 @@ class String : public Object {
   }
 
   std::shared_ptr<String> rstrip(const String& chars) {
-    size_t start = value_.find_last_not_of(*chars);
-    if (start == std::string::npos) {
+    size_t end = value_.find_last_not_of(*chars);
+    if (end == std::string::npos) {
         return String::spawn(std::string(""));
     }
 
-    return String::spawn(value_.substr(start));
+    return String::spawn(value_.substr(0, end + 1));
   }
 
   std::shared_ptr<String> rstrip(
@@ -843,9 +844,10 @@ class String : public Object {
     std::string result;
 
     if (elements.begin() != elements.end()) {
-      result += (*(elements.begin()))->toString();
+      result +=
+        Function::removeQuotesIfNeeded((*(elements.begin()))->toString());
       for (auto i = elements.begin()+1; i != elements.end(); ++i) {
-          result += value_ + (*i)->toString();
+          result += value_ + Function::removeQuotesIfNeeded((*i)->toString());
       }
     }
 

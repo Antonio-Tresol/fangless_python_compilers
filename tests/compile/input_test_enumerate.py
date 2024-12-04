@@ -18,7 +18,7 @@ print("")
 
 # Testing enumerate with a set
 print("Testing enumerate with a set")
-# [(0, 'a'), (1, 'c'), (2, 'b')]
+# [(0, 'a'), (1, 'b'), (2, 'c')]
 print(enumerate({'a', 'b', 'c'}))
 print("")
 

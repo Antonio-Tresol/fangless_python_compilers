@@ -2,10 +2,12 @@
 def function1():
     if True:
         if 5:
-            x = 6
-            while (x < 8):
+            x = 0
+            while (x <= 8):
                 if x:
-                    return 1
+                    print(x)
+                x = x + 1
+            return 1
         else:
             return 2
         
@@ -40,7 +42,7 @@ def function2():
         return True
 
 def function3():
-    print(5)
+    print("function 3 called")
 
 def function4():
     for w in tuple([1,5,7,8]):
