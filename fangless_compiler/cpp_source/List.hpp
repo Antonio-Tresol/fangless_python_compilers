@@ -419,6 +419,10 @@ class List : public Object {
     return result;
   }
 
+  std::shared_ptr<List> operator*(const bool& number) const {
+    return operator*(Number(number? 1:0));
+  }
+
   std::shared_ptr<List> operator*(std::shared_ptr<Number> number) const {
     int n = number->getInt();
     if (n <= 0) return std::make_shared<List>();
@@ -448,6 +452,10 @@ class List : public Object {
       }
     }
     return std::shared_ptr<List>(this);
+  }
+
+  std::shared_ptr<List> operator*=(const bool& number) {
+    return operator*=(Number(number? 1:0));
   }
 
   std::shared_ptr<List> operator*=(std::shared_ptr<Number> number) {
@@ -483,6 +491,21 @@ class List : public Object {
   friend std::shared_ptr<List> operator*(const std::shared_ptr<List>& a,
                                          const std::shared_ptr<Number>& b) {
     return *a * *b;
+  }
+
+  friend std::shared_ptr<List> operator*(const std::shared_ptr<Number>& a,
+    const std::shared_ptr<List>& b) {
+    return *b * *a; 
+  }
+
+  friend std::shared_ptr<List> operator*(const std::shared_ptr<List>& a,
+    const bool& b) {
+    return a->operator*(Number(b? 1:0));
+  }
+
+  friend std::shared_ptr<List> operator*(const bool& a,
+    const std::shared_ptr<List>& b) {
+    return b->operator*(Number(a? 1:0));
   }
 };
 

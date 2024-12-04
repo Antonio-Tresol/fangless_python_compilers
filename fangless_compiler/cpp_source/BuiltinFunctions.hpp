@@ -1077,7 +1077,8 @@ namespace BF {
 
   std::shared_ptr<Number> intDiv(const std::shared_ptr<Number>& dividend,
     const std::shared_ptr<Number>& divisor) {
-    return Number::spawn(dividend->getInt() / divisor->getInt());
+    return Number::spawn(static_cast<int>(
+      std::floor(dividend->getDouble() / divisor->getDouble())));
   }
 
   std::shared_ptr<Number> intDiv(const std::shared_ptr<Bool>& dividend,

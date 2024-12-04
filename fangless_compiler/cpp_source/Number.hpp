@@ -752,6 +752,16 @@ class Number : public Object {
     return *lhs << *rhs;
   }
 
+  friend std::shared_ptr<Number> operator<<(const std::shared_ptr<Number>& lhs,
+    const bool& rhs) {
+    return *lhs << Number(rhs? 1:0);
+  }
+
+  friend std::shared_ptr<Number> operator<<(const bool& lhs,
+    const std::shared_ptr<Number>& rhs) {
+    return Number(lhs? 1:0) << *rhs;
+  }
+
   std::shared_ptr<Number> operator>>(const Number& rhs) const {
     if (auto lhs_int = std::get_if<int64_t>(&value_)) {
       return Number::spawn(*lhs_int >> std::get<int64_t>(rhs.value_));
@@ -766,6 +776,16 @@ class Number : public Object {
   friend std::shared_ptr<Number> operator>>(const std::shared_ptr<Number>& lhs,
     const std::shared_ptr<Number>& rhs) {
     return *lhs >> *rhs;
+  }
+
+  friend std::shared_ptr<Number> operator>>(const std::shared_ptr<Number>& lhs,
+    const bool& rhs) {
+    return *lhs >> Number(rhs? 1:0);
+  }
+
+  friend std::shared_ptr<Number> operator>>(const bool& lhs,
+    const std::shared_ptr<Number>& rhs) {
+    return Number(lhs? 1:0) >> *rhs;
   }
 
   std::shared_ptr<Number> operator|(const Number& other) const {
