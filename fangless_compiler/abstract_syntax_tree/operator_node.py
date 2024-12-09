@@ -13,6 +13,7 @@ class OperatorType(Enum):
     ATTRIBUTE_CALL = "attribute_call"
     SLICING = "slicing"
     INDEXING = "indexing"
+    VAR_DECLARATION = "var_declaration"
     ASSIGNATION = "="
     UNPACK_ASSIGNATION = "unpack_assign"
     RETURN = "return"
@@ -20,10 +21,16 @@ class OperatorType(Enum):
     FOR = "for"
     FUNC_DECLARATION = "func_declaration"
     CLASS_DECLARATION = "class_declaration"
-    METHOD_DECLARATION = "method_declaration"
     PASS = "pass"
     BREAK = "break"
     CONTINUE = "continue"
+
+    def __repr__(self) -> str:
+        return self.value.lower()
+
+    def __str__(self) -> str:
+        return self.value.lower()
+
 
 
 class Operand(Enum):
@@ -49,6 +56,11 @@ class Operand(Enum):
     FOR_LITERAL = 17
     CLASS_NAME = 18
     PARENT_CLASS = 19
+    UPDATE_ARGS = 20
+    DONT_ELSE = 21
+
+    ARGUMENT = 21
+    DEFAULT = 22
 
     def __repr__(self) -> str:
         return str(self.name).lower()
@@ -63,7 +75,7 @@ class OperatorNode(Node):
         if isinstance(operator, str):
             self.operator = operator.strip()
         else:
-            self.operator = operator.value
+            self.operator = operator
         self.parenthesis = False
         self.max_adjacents = max_adjacents
 
@@ -117,6 +129,9 @@ class OperatorNode(Node):
 
     def set_center_operand(self, value: Any) -> None:
         self.adjacents[Operand.CENTER] = value
+
+    def get_center_operand(self) -> Any:
+        return self.adjacents.get(Operand.CENTER, None)
 
     def set_right_operand(self, value: Any) -> None:
         self.adjacents[Operand.RIGHT] = value

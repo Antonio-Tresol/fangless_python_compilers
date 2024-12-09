@@ -5,7 +5,9 @@ import colors
 from indentation_manager import FanglessIndentationManager
 from collections.abc import Iterable
 from ply import lex
-from common import new_token, TOKENS, RESERVED_WORDS, VERBOSE_LEXER
+from common import new_token, TOKENS, RESERVED_WORDS
+from compiler_settings import VERBOSE_LEXER
+from exceptions import LexerError
 
 
 class FanglessLexer:
@@ -149,7 +151,7 @@ class FanglessLexer:
 
         return token
 
-    def t_comment(self, token: lex.LexToken) -> None:
+    def t_COMMENT(self, token: lex.LexToken) -> None:
         r"""([ ]*\043[^\n]*)"""
         token.lexer.lineno += 1
 
@@ -263,4 +265,4 @@ class FanglessLexer:
             f"{colors.TOKEN_NOT_FOUND}: {token.value[0]}, "
             f"at line number {token.lexer.lineno}"
         )
-        raise SyntaxError(error)
+        raise LexerError(error)

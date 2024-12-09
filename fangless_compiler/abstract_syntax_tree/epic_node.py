@@ -1,7 +1,6 @@
 # temp node, pass potato up to do evil things
 from abstract_syntax_tree.node import Node
 
-
 class EpicNode(Node):
     def __init__(self, max_adjacents: int) -> None:
         super().__init__("epic")

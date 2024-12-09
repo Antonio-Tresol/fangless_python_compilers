@@ -10,6 +10,9 @@ class Node:
         self.adjacents = {}
         self.max_adjacents = 0
 
+    def is_leaf(self) -> bool:
+        return len(self.adjacents) == 0
+
     def add_named_adjacent(self, key: AdjacentKey, adj: "Node") -> AdjacentKey:
         length = len(self.adjacents)
         if length >= self.max_adjacents:
@@ -30,9 +33,9 @@ class Node:
         raise ValueError(msg)
 
     def change_adjacent(self, key: AdjacentKey, adj: "Node") -> None:
-        if len(self.adjacents) >= self.max_adjacents or key not in self.adjacents:
+        if key not in self.adjacents:
             error = (
-                f"Node {self.node_type} tried to change"
+                f"Node {self.node_type} tried to change "
                 f"nonexistent adjacent at key {key}"
             )
             raise IndexError(error)
